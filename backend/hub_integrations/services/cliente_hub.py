@@ -7,8 +7,7 @@ logger = logging.getLogger(__name__)
 
 def buscar_usuario_hub(user_id: str) -> dict | None:
     """
-    Busca os dados do usuário na API do HUB, autenticando via cookie 'system'
-    com a api_key deste sistema.
+    Busca os dados do usuário na API do HUB
     """
     url = f"{settings.HUB_BASE_URL}/api/users/get/{user_id}/"
     params = {"fields": "id,email,username,access_profile,is_active"}

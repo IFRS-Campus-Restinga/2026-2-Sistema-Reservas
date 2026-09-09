@@ -30,6 +30,7 @@ def sessao_token(request):
             'email': usuario.email,
             'nome': usuario.nome,
             'perfil_acesso': usuario.perfil_acesso,
+            'papel': usuario.papel,
         },
         'grupos': payload.get('groups', []),
     })
