@@ -1,0 +1,127 @@
+.header {
+  height: 56px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.infoHeader {
+  min-width: 0;
+}
+
+.titulo {
+  margin: 0;
+  color: #1f2937;
+  font-size: 20px;
+  line-height: 1.25;
+  font-weight: 600;
+}
+
+.subTitulo {
+  margin: 2px 0 0;
+  color: #9ca3af;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.acoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.relative {
+  position: relative;
+}
+
+.botaNovaReserva {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background-color: #009a44;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.botaNovaReserva:hover {
+  background-color: #007832;
+}
+
+.botaoNotificacao {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.botaoNotificacao:hover {
+  background-color: #f3f4f6;
+}
+
+.containerPerfil {
+  position: relative;
+  padding-left: 8px;
+  border-left: 1px solid #f3f4f6;
+}
+
+.infoPerfil {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 4px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+}
+
+.dadosUsuario {
+  display: block;
+  text-align: right;
+}
+
+.nomeUsuario {
+  margin: 0;
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.25;
+  font-weight: 600;
+}
+
+.perfilUsuario {
+  margin: 2px 0 0;
+  color: #009a44;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: #009a44;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
