@@ -1,18 +1,18 @@
+import { useNavigate  } from "react-router-dom";
 import {
     LogOut,
     ChevronLeft,
     ChevronRight,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 import { MENU } from "../../config/menuItems";
 import styles from "./SideBar.module.css";
 
 export default function Sidebar({
     paginaAtual,
     menuRecolhido,
-    recolherMenu,
-    trocarPagina
+    recolherMenu
 }) {
+    const navigate = useNavigate();
     const itens = MENU.filter((item) => item.permissoes == true);
 
     return (
@@ -48,25 +48,24 @@ export default function Sidebar({
                         const ativo = paginaAtual == titulo;
 
                         return (
-                            <Link key={id} to={url} style={{textDecoration: 'none'}}>
-                                <button
-                                    type="button"
-                                    onClick={() => trocarPagina(titulo)}
-                                    title={menuRecolhido ? titulo : undefined}
-                                    className={`${styles.item} ${menuRecolhido ? styles.itemRecolhido : ""
-                                        } ${ativo ? styles.itemAtivo : ""}`}
-                                >
-                                    <span className={styles.iconeItem}>
-                                        <Icon size={18} />
-                                    </span>
+                            <button
+                                key={id}
+                                type="button"
+                                onClick={() => navigate(url)}
+                                title={menuRecolhido ? titulo : undefined}
+                                className={`${styles.item} ${menuRecolhido ? styles.itemRecolhido : ""
+                                    } ${ativo ? styles.itemAtivo : ""}`}
+                            >
+                                <span className={styles.iconeItem}>
+                                    <Icon size={18} />
+                                </span>
 
-                                    {!menuRecolhido && (
-                                        <span className={styles.tituloItem}>
-                                            {titulo}
-                                        </span>
-                                    )}
-                                </button>
-                            </Link>
+                                {!menuRecolhido && (
+                                    <span className={styles.tituloItem}>
+                                        {titulo}
+                                    </span>
+                                )}
+                            </button>
                         );
                     })}
                 </div>

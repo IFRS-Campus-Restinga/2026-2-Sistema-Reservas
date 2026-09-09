@@ -11,12 +11,9 @@ function AppRoutes() {
       <Routes>
         <Route element={<MainLayout />}>
           <Route path="/" element={<Home />} />
-        </Route>
-        <Route element={<MainLayout />}>
           <Route path="/admin" element={<Administracao />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
-
-        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   )

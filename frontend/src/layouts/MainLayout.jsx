@@ -1,23 +1,26 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import Sidebar from '../components/SideBar/SideBar'
 import Header from '../components/Header/Header'
+import { MENU } from '../config/menuItems'
 
 function MainLayout() {
-const [menuRecolhido, setMenuRecolhido] = useState(false)
-const [paginaAtual, setPaginaAtual] = useState('Home')
+  const [menuRecolhido, setMenuRecolhido] = useState(false)
   
+  const location = useLocation();
+  const paginaAtual = MENU.find((item) => item.url === location.pathname)?.titulo || 'Página não encontrada';
+
+
   return (
     <div className="app">
-      <Sidebar 
+      <Sidebar
         menuRecolhido={menuRecolhido}
         recolherMenu={() => setMenuRecolhido((n) => !n)}
         paginaAtual={paginaAtual}
-        trocarPagina={setPaginaAtual}
       />
 
       <div className="main">
-        <Header 
+        <Header
           titulo={paginaAtual}
         />
 
