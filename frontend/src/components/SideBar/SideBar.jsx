@@ -4,71 +4,64 @@ import {
     ChevronRight,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { MENUS } from "../../config/menuItems";
+import { MENU } from "../../config/menuItems";
 import styles from "./SideBar.module.css";
 
 export default function Sidebar({
-    currentPage,
-    collapsed,
-    onToggle,
-    unreadCount,
+    paginaAtual,
+    menuRecolhido,
+    recolherMenu,
+    trocarPagina
 }) {
-    const items = MENUS.filter((item) => item.permissoes == true);
+    const itens = MENU.filter((item) => item.permissoes == true);
 
     return (
         <aside
-            className={`${styles.sidebar} ${collapsed ? styles.collapsed : styles.expanded
+            className={`${styles.sidebar} ${menuRecolhido ? styles.recolhido : styles.expandido
                 }`}
         >
-            {/* Logo */}
             <div
-                className={`${styles.logo} ${collapsed ? styles.logoCollapsed : styles.logoExpanded
+                className={`${styles.logo} ${menuRecolhido ? styles.logoRecolhido : styles.logoExpandido
                     }`}
             >
-                <div className={styles.logoIcon}>
+                <div className={styles.iconeLogo}>
                     <span>IF</span>
                 </div>
 
-                {!collapsed && (
-                    <div className={styles.logoText}>
+                {!menuRecolhido && (
+                    <div className={styles.textoLogo}>
                         <p>RESERVAS</p>
                         <span>Campus Restinga</span>
                     </div>
                 )}
             </div>
 
-            {/* Navegação */}
-            <nav className={styles.navigation}>
-                {!collapsed && (
-                    <p className={styles.navigationTitle}>
+            <nav className={styles.navegacao}>
+                {!menuRecolhido && (
+                    <p className={styles.tituloNavegacao}>
                         Menu Principal
                     </p>
                 )}
 
-                <div className={styles.navigationItems}>
-                    {items.map(({ id, titulo, icone: Icon, url }) => {
-                        const active = currentPage === id;
+                <div className={styles.itensNavegacao}>
+                    {itens.map(({ id, titulo, icone: Icon, url }) => {
+                        const ativo = paginaAtual == titulo;
 
                         return (
                             <Link key={id} to={url} style={{textDecoration: 'none'}}>
                                 <button
                                     type="button"
-                                    title={collapsed ? titulo : undefined}
-                                    className={`${styles.navItem} ${collapsed ? styles.navItemCollapsed : ""
-                                        } ${active ? styles.navItemActive : ""}`}
+                                    onClick={() => trocarPagina(titulo)}
+                                    title={menuRecolhido ? titulo : undefined}
+                                    className={`${styles.item} ${menuRecolhido ? styles.itemRecolhido : ""
+                                        } ${ativo ? styles.itemAtivo : ""}`}
                                 >
-                                    <span className={styles.navIcon}>
+                                    <span className={styles.iconeItem}>
                                         <Icon size={18} />
-
-                                        {id === "notificações" && unreadCount > 0 && (
-                                            <span className={styles.notificationBadge}>
-                                                {unreadCount}
-                                            </span>
-                                        )}
                                     </span>
 
-                                    {!collapsed && (
-                                        <span className={styles.navLabel}>
+                                    {!menuRecolhido && (
+                                        <span className={styles.tituloItem}>
                                             {titulo}
                                         </span>
                                     )}
@@ -79,28 +72,27 @@ export default function Sidebar({
                 </div>
             </nav>
 
-            {/* Rodapé */}
             <div className={styles.footer}>
                 <button
                     type="button"
-                    title={collapsed ? "Sair" : undefined}
-                    className={`${styles.footerButton} ${styles.logoutButton
-                        } ${collapsed ? styles.footerButtonCollapsed : ""}`}
+                    title={menuRecolhido ? "Sair" : undefined}
+                    className={`${styles.botaoFooter} ${styles.botaoSair
+                        } ${menuRecolhido ? styles.botaoFooterRecolhido : ""}`}
                 >
                     <LogOut size={16} />
 
-                    {!collapsed && (
+                    {!menuRecolhido && (
                         <span>Sair do Sistema</span>
                     )}
                 </button>
 
                 <button
                     type="button"
-                    onClick={onToggle}
-                    className={`${styles.footerButton} ${styles.toggleButton
-                        } ${collapsed ? styles.footerButtonCollapsed : ""}`}
+                    onClick={recolherMenu}
+                    className={`${styles.botaoFooter} ${styles.botaoRecolher
+                        } ${menuRecolhido ? styles.botaoFooterRecolhido : ""}`}
                 >
-                    {collapsed ? (
+                    {menuRecolhido ? (
                         <ChevronRight size={14} />
                     ) : (
                         <>

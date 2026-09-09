@@ -3,7 +3,7 @@ import {
   Shield,
 } from "lucide-react";
 
-export const MENUS = [
+export const MENU = [
   {
     id: "home",
     titulo: "Home",
