@@ -9,3 +9,7 @@ class RecursoGeralListCreateView(ListCreateAPIView):
 class RecursoGeralDetailView(RetrieveUpdateAPIView):
     queryset = RecursoGeral.objects.all()
     serializer_class = RecursoGeralSerializer
+
+class RecursoGeralDeleteView(DestroyAPIView):
+    queryset = RecursoGeral.objects.all()
+    serializer_class = RecursoGeralSerializer
