@@ -2,6 +2,8 @@ from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 
+from accounts.managers import HubUserManager
+
 
 class HubUser(AbstractBaseUser, PermissionsMixin):
     """
@@ -14,6 +16,8 @@ class HubUser(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=False, verbose_name="Status")
     is_staff = models.BooleanField(default=False, verbose_name="Membro da equipe")
     sincronizado_em = models.DateTimeField(auto_now=True, verbose_name="Última sincronização")
+
+    objects = HubUserManager()
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
