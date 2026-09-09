@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'api',
     'accounts',
+    'hub_integrations',
 ]
 
 MIDDLEWARE = [
@@ -113,10 +114,13 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # AUTENTICAÇÃO (HUB)
 AUTH_USER_MODEL = 'accounts.HubUser'
-FS_AUTH_SYSTEM_MODEL = 'accounts.System'
+FS_AUTH_SYSTEM_MODEL = 'hub_integrations.System'
 
 AUTH_COOKIE_NAME = env("AUTH_COOKIE_NAME", default="access_token")
 REFRESH_COOKIE_NAME = env("REFRESH_COOKIE_NAME", default="refresh_token")
+
+HUB_BASE_URL = env("HUB_BASE_URL", default="http://localhost:8000")
+HUB_SYSTEM_API_KEY = env("HUB_SYSTEM_API_KEY", default="")
 
 
 # Internationalization
