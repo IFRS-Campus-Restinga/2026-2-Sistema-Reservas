@@ -8,6 +8,7 @@ Serializer para o model Bloco.
 Responsável por serializar os campos da estrutura física de blocos
 e validar a lista de opções do enum de acessibilidade.
 """
+
 class BlocoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bloco
