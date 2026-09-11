@@ -20,6 +20,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env()
 environ.Env.read_env(BASE_DIR / '.env')
 
+FRONTEND_DIR = BASE_DIR / "frontend"
+
+STATIC_ROOT = FRONTEND_DIR / "staticfiles"
+
+STATICFILES_DIRS = [
+    FRONTEND_DIR,
+]
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -66,8 +74,9 @@ ROOT_URLCONF = 'backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        # Front: ajustar o caminho e descomentar .
-        'DIRS': [os.path.join(BASE_DIR, 'frontend', 'dist')],
+        "DIRS": [
+            FRONTEND_DIR,
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -140,8 +149,6 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-# Front: ajustar o caminho e descomentar
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'frontend', 'dist'),]
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
