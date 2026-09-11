@@ -6,8 +6,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 
-from api.models.bloco import Bloco
-from api.serializers.bloco import BlocoSerializer
+from api.models.bloco_model import Bloco
+from api.serializers.bloco_serializer import BlocoSerializer
 
 
 class BlocoListCreateView(APIView):

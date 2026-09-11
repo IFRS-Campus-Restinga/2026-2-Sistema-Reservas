@@ -1,1 +1,1 @@
-from .bloco import *
+from .bloco_view import *

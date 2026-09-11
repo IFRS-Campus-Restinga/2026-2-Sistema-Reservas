@@ -2,7 +2,7 @@
 Rotas para o CRUD do Bloco.
 """
 from django.urls import path
-from api.views.bloco import BlocoListCreateView, BlocoDetailView
+from api.views.bloco_view import BlocoListCreateView, BlocoDetailView
 
 """
 ENDPOINTS

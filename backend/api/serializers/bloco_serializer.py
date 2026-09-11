@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from api.models.bloco import Bloco
+from api.models.bloco_model import Bloco
 from api.enumerations.acessibilidade import Acessibilidade
 
 """

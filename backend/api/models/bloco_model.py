@@ -1,5 +1,4 @@
 from django.db import models
-from django.contrib.postgres.fields import ArrayField
 from .base_model import BaseModel
 from api.enumerations.acessibilidade import Acessibilidade
 
