@@ -1,3 +1,4 @@
+from django.shortcuts import redirect
 from fs_auth_middleware.utils import decode_access_token, get_access_token_from_request
 from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -26,14 +27,4 @@ def sessao_token(request):
             status=status.HTTP_502_BAD_GATEWAY,
         )
 
-    return Response({
-        'message': 'Login sincronizado com sucesso.',
-        'usuario': {
-            'id': str(usuario.id),
-            'email': usuario.email,
-            'nome': usuario.nome,
-            'perfil_acesso': usuario.perfil_acesso,
-            'papel': usuario.papel,
-        },
-        'grupos': payload.get('groups', []),
-    })
+    return redirect('/')
