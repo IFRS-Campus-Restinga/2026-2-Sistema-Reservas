@@ -1,3 +1,3 @@
-from .base_model import BaseModel
-from .tipo_recurso import TipoRecurso
-from .recurso_geral import RecursoGeral
+from .base_model import *
+from .tipo_recurso_model import *
+from .recurso_geral_model import *

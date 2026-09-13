@@ -1,8 +1,14 @@
-from rest_framework.generics import CreateAPIView
-from api.models.tipo_recurso import TipoRecurso
+from rest_framework import status
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
 from api.serializers.tipo_recurso_serializer import TipoRecursoSerializer
 
 
-class TipoRecursoCreateView(CreateAPIView):
-    queryset = TipoRecurso.objects.all()
-    serializer_class = TipoRecursoSerializer
+class TipoRecursoCreateView(APIView):
+    def post(self, request):
+        serializer = TipoRecursoSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
