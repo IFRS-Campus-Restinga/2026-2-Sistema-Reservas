@@ -61,7 +61,8 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware', 
+    'hub_integrations.middleware.RenovarTokenExpiradoMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -128,8 +129,21 @@ FS_AUTH_SYSTEM_MODEL = 'hub_integrations.System'
 AUTH_COOKIE_NAME = env("AUTH_COOKIE_NAME", default="access_token")
 REFRESH_COOKIE_NAME = env("REFRESH_COOKIE_NAME", default="refresh_token")
 
+AUTH_COOKIE_HTTPONLY = env.bool("AUTH_COOKIE_HTTPONLY", default=True)
+AUTH_COOKIE_SECURE = env.bool("AUTH_COOKIE_SECURE", default=False)
+AUTH_COOKIE_SAMESITE = env("AUTH_COOKIE_SAMESITE", default="Lax")
+
 HUB_BASE_URL = env("HUB_BASE_URL", default="http://localhost:8000")
 HUB_SYSTEM_API_KEY = env("HUB_SYSTEM_API_KEY", default="")
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'hub_integrations.authentication.HubJWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
 
 
 # Internationalization
