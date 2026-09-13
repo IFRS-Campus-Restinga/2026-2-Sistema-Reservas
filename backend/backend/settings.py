@@ -131,6 +131,15 @@ REFRESH_COOKIE_NAME = env("REFRESH_COOKIE_NAME", default="refresh_token")
 HUB_BASE_URL = env("HUB_BASE_URL", default="http://localhost:8000")
 HUB_SYSTEM_API_KEY = env("HUB_SYSTEM_API_KEY", default="")
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'hub_integrations.authentication.HubJWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
