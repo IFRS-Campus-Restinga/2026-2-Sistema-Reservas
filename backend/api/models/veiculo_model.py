@@ -4,16 +4,16 @@ from django.core.validators import MinLengthValidator, MinValueValidator
 from django.db import models
 
 class Veiculo(BaseModel):
-    nome = models.CharField(max_length=30, verbose_name="Nome")
-    placa = models.CharField(max_length=7, validators=[MinLengthValidator(7)], verbose_name="Placa")
-    marca = models.CharField(max_length=50, verbose_name="Marca")
-    modelo = models.CharField(max_length=50, verbose_name="Modelo")
+    nome = models.CharField(max_length=30,validators=[MinLengthValidator(3)], verbose_name="Nome")
+    placa = models.CharField(max_length=7, validators=[MinLengthValidator(7)], unique=True, verbose_name="Placa")
+    marca = models.CharField(max_length=50, validators=[MinLengthValidator(2)], verbose_name="Marca")
+    modelo = models.CharField(max_length=50, validators=[MinLengthValidator(2)], verbose_name="Modelo")
     capacidade = models.IntegerField(validators=[MinValueValidator(1)], verbose_name="Capacidade")
     combustivel = models.CharField(max_length=20, verbose_name="Combustível")
     quilometragem = models.FloatField(validators=[MinValueValidator(0)], verbose_name="Quilometragem")
-    observacao = models.TextField(max_length=50, verbose_name="Observação")
+    observacao = models.TextField(max_length=50, verbose_name="Observação", blank=True, null=True)
     status = models.CharField(
-        max_length=20,choices=StatusRecurso.choices,verbose_name="Status"
+        max_length=20,choices=StatusRecurso.choices,default=StatusRecurso.ATIVO, verbose_name="Status"
     )
 
     def __str__(self):
