@@ -59,21 +59,16 @@ function VeiculosAdministracao() {
     }
 
     async function salvarVeiculo(dados) {
-        try {
-            setErro('');
+        setErro('');
 
-            if (veiculoEditando) {
-                await atualizarVeiculo(veiculoEditando.id,dados);
-            } else {
-                await criarVeiculo(dados);
-            }
-            fecharModalVeiculo();
-
-            await carregarVeiculos();
-        } catch (erro) {
-            console.error(erro);
-            setErro('Não foi possível salvar o veículo.');
+        if (veiculoEditando) {
+            await atualizarVeiculo(veiculoEditando.id,dados);
+        } else {
+            await criarVeiculo(dados);
         }
+        fecharModalVeiculo();
+
+        await carregarVeiculos();
     }
 
     function solicitarExclusao(veiculo) {

@@ -52,6 +52,21 @@
   min-height: 58px;
 }
 
+.campo [aria-invalid='true'] {
+  border-color: #dc2626;
+}
+
+.campo [aria-invalid='true']:focus {
+  box-shadow: 0 0 0 2px #dc2626;
+}
+
+.erro {
+  margin-top: 4px;
+  color: #dc2626;
+  font-size: 12px;
+  line-height: 16px;
+}
+
 .linhaDupla,
 .linhaTripla {
   display: grid;

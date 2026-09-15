@@ -23,6 +23,7 @@ function VeiculoModal({
 }) {
     const [formulario, setFormulario] = useState(formularioInicial);
     const [salvando, setSalvando] = useState(false);
+    const [erros, setErros] = useState({});
 
     useEffect(() => {
         if (veiculo) {
@@ -41,6 +42,7 @@ function VeiculoModal({
         } else {
             setFormulario(formularioInicial);
         }
+        setErros({});
     }, [veiculo, aberto]);
 
     function alterarCampo(evento) {
@@ -48,8 +50,22 @@ function VeiculoModal({
 
         setFormulario({
             ...formulario,
-            [name]: value,
+            [name]: name === 'placa' ? value.toUpperCase() : value,
         });
+        setErros((anteriores) => ({ ...anteriores, [name]: '', geral: '' }));
+    }
+
+    function mostrarErro(evento) {
+        const { name, validationMessage } = evento.target;
+        setErros((anteriores) => ({ ...anteriores, [name]: validationMessage }));
+    }
+
+    function mensagemErro(campo) {
+        return erros[campo] && (
+            <p id={`erro-${campo}`} className={styles.erro} role="alert">
+                {erros[campo]}
+            </p>
+        );
     }
 
     async function enviarFormulario(evento) {
@@ -57,11 +73,29 @@ function VeiculoModal({
 
         try {
             setSalvando(true);
+            setErros({});
 
             await aoSalvar({
                 ...formulario,
                 capacidade: Number(formulario.capacidade),
+                quilometragem: Number(formulario.quilometragem),
             });
+        } catch (erro) {
+            const errosApi = erro.response?.data;
+            const novosErros = {};
+
+            if (erro.response?.status === 400 && errosApi && typeof errosApi === 'object') {
+                for (const [campo, mensagens] of Object.entries(errosApi)) {
+                    const chave = Object.hasOwn(formularioInicial, campo) ? campo : 'geral';
+                    novosErros[chave] = Array.isArray(mensagens)
+                        ? mensagens.join(' ')
+                        : String(mensagens);
+                }
+            }
+
+            setErros(Object.keys(novosErros).length > 0
+                ? novosErros
+                : { geral: 'Não foi possível salvar o veículo. Tente novamente.' });
         } finally {
             setSalvando(false);
         }
@@ -97,7 +131,9 @@ function VeiculoModal({
                 id="formulario-veiculo"
                 className={styles.formulario}
                 onSubmit={enviarFormulario}
+                onInvalid={mostrarErro}
             >
+                {mensagemErro('geral')}
                 <div className={styles.campo}>
                     <label htmlFor="nome">
                         Nome *
@@ -109,8 +145,14 @@ function VeiculoModal({
                         value={formulario.nome}
                         onChange={alterarCampo}
                         placeholder="Ex.: Carro Administrativo"
+                        minLength={3}
+                        maxLength={30}
+                        pattern={'.*\\S.*'}
+                        aria-invalid={Boolean(erros.nome)}
+                        aria-describedby="erro-nome"
                         required
                     />
+                    {mensagemErro('nome')}
                 </div>
 
                 <div className={styles.linhaDupla}>
@@ -125,13 +167,20 @@ function VeiculoModal({
                             value={formulario.placa}
                             onChange={alterarCampo}
                             placeholder="ABC1D23"
+                            minLength={7}
+                            maxLength={7}
+                            pattern="[A-Z]{3}[0-9]{4}|[A-Z]{3}[0-9][A-Z][0-9]{2}"
+                            title="Use ABC1234 ou ABC1D23, sem espaços ou hífen."
+                            aria-invalid={Boolean(erros.placa)}
+                            aria-describedby="erro-placa"
                             required
                         />
+                        {mensagemErro('placa')}
                     </div>
 
                     <div className={styles.campo}>
                         <label htmlFor="cor">
-                            Cor
+                            Cor *
                         </label>
 
                         <input
@@ -140,14 +189,21 @@ function VeiculoModal({
                             value={formulario.cor}
                             onChange={alterarCampo}
                             placeholder="Branco"
+                            minLength={2}
+                            maxLength={20}
+                            pattern={'.*\\S.*'}
+                            aria-invalid={Boolean(erros.cor)}
+                            aria-describedby="erro-cor"
+                            required
                         />
+                        {mensagemErro('cor')}
                     </div>
                 </div>
 
                 <div className={styles.linhaDupla}>
                     <div className={styles.campo}>
                         <label htmlFor="marca">
-                            Marca
+                            Marca *
                         </label>
 
                         <input
@@ -156,12 +212,19 @@ function VeiculoModal({
                             value={formulario.marca}
                             onChange={alterarCampo}
                             placeholder="Ex.: Fiat"
+                            minLength={2}
+                            maxLength={50}
+                            pattern={'.*\\S.*'}
+                            aria-invalid={Boolean(erros.marca)}
+                            aria-describedby="erro-marca"
+                            required
                         />
+                        {mensagemErro('marca')}
                     </div>
 
                     <div className={styles.campo}>
                         <label htmlFor="modelo">
-                            Modelo
+                            Modelo *
                         </label>
 
                         <input
@@ -170,14 +233,21 @@ function VeiculoModal({
                             value={formulario.modelo}
                             onChange={alterarCampo}
                             placeholder="Ex.: Ducato"
+                            minLength={2}
+                            maxLength={50}
+                            pattern={'.*\\S.*'}
+                            aria-invalid={Boolean(erros.modelo)}
+                            aria-describedby="erro-modelo"
+                            required
                         />
+                        {mensagemErro('modelo')}
                     </div>
                 </div>
 
                 <div className={styles.linhaTripla}>
                     <div className={styles.campo}>
                         <label htmlFor="capacidade">
-                            Lugares
+                            Lugares *
                         </label>
 
                         <input
@@ -185,14 +255,19 @@ function VeiculoModal({
                             name="capacidade"
                             type="number"
                             min="1"
+                            step="1"
                             value={formulario.capacidade}
                             onChange={alterarCampo}
+                            aria-invalid={Boolean(erros.capacidade)}
+                            aria-describedby="erro-capacidade"
+                            required
                         />
+                        {mensagemErro('capacidade')}
                     </div>
 
                     <div className={styles.campo}>
                         <label htmlFor="combustivel">
-                            Combustível
+                            Combustível *
                         </label>
 
                         <input
@@ -201,21 +276,34 @@ function VeiculoModal({
                             value={formulario.combustivel}
                             onChange={alterarCampo}
                             placeholder="Flex"
+                            maxLength={20}
+                            pattern={'.*\\S.*'}
+                            aria-invalid={Boolean(erros.combustivel)}
+                            aria-describedby="erro-combustivel"
+                            required
                         />
+                        {mensagemErro('combustivel')}
                     </div>
 
                     <div className={styles.campo}>
                         <label htmlFor="quilometragem">
-                            Quilometragem
+                            Quilometragem *
                         </label>
 
                         <input
                             id="quilometragem"
                             name="quilometragem"
+                            type="number"
+                            min="0"
+                            step="any"
                             value={formulario.quilometragem}
                             onChange={alterarCampo}
                             placeholder="0 km"
+                            aria-invalid={Boolean(erros.quilometragem)}
+                            aria-describedby="erro-quilometragem"
+                            required
                         />
+                        {mensagemErro('quilometragem')}
                     </div>
                 </div>
 
@@ -231,7 +319,11 @@ function VeiculoModal({
                         value={formulario.observacao}
                         onChange={alterarCampo}
                         placeholder="Uso recomendado, restrições..."
+                        maxLength={50}
+                        aria-invalid={Boolean(erros.observacao)}
+                        aria-describedby="erro-observacao"
                     />
+                    {mensagemErro('observacao')}
                 </div>
 
                 <div className={styles.campo}>
@@ -244,6 +336,9 @@ function VeiculoModal({
                         name="status"
                         value={formulario.status}
                         onChange={alterarCampo}
+                        aria-invalid={Boolean(erros.status)}
+                        aria-describedby="erro-status"
+                        required
                     >
                         <option value="ATIVO">
                             Ativo
@@ -257,6 +352,7 @@ function VeiculoModal({
                             Inativo
                         </option>
                     </select>
+                    {mensagemErro('status')}
                 </div>
             </form>
         </Modal>
