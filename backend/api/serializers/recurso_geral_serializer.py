@@ -7,6 +7,7 @@ class RecursoGeralSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecursoGeral
         fields = "__all__"
+        extra_kwargs = {"observacao": {"allow_blank": True, "required": False}}
 
     def validate_nome(self, value):
         nome = value.strip()
