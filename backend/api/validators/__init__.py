@@ -1,0 +1,1 @@
+from .veiculo_validator import validar_placa

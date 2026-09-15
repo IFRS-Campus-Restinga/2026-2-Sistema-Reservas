@@ -1,3 +1,4 @@
+from api.validators.veiculo_validator import validar_placa
 from .base_model import BaseModel
 from api.enumerations import StatusRecurso
 from django.core.validators import MinLengthValidator, MinValueValidator
@@ -5,7 +6,7 @@ from django.db import models
 
 class Veiculo(BaseModel):
     nome = models.CharField(max_length=30,validators=[MinLengthValidator(3)], verbose_name="Nome")
-    placa = models.CharField(max_length=7, validators=[MinLengthValidator(7)], unique=True, verbose_name="Placa")
+    placa = models.CharField(max_length=7, validators=[MinLengthValidator(7), validar_placa], unique=True, verbose_name="Placa")
     marca = models.CharField(max_length=50, validators=[MinLengthValidator(2)], verbose_name="Marca")
     modelo = models.CharField(max_length=50, validators=[MinLengthValidator(2)], verbose_name="Modelo")
     capacidade = models.IntegerField(validators=[MinValueValidator(1)], verbose_name="Capacidade")
