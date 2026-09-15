@@ -1,13 +1,23 @@
 import styles from "./Header.module.css";
 import { Bell, Plus } from "lucide-react";
 
-const usuario = {
-  nome: "Carlos Mendes",
-  iniciais: "CM",
-  perfil: "Administrador",
+const PAPEL_LABEL = {
+  admin: "Administrador",
+  servidor: "Servidor",
+  aluno: "Aluno",
+  convidado: "Convidado",
 };
 
-function Header({ titulo }) {
+function iniciaisDoNome(nome) {
+  return nome
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((parte) => parte[0].toUpperCase())
+    .join("");
+}
+
+function Header({ titulo, usuario }) {
   return (
     <header className={styles.header}>
       <div className={styles.infoHeader}>
@@ -33,16 +43,20 @@ function Header({ titulo }) {
           </button>
         </div>
 
-        <div className={styles.containerPerfil}>
-          <div className={styles.infoPerfil}>
-            <div className={styles.dadosUsuario}>
-              <p className={styles.nomeUsuario}>{usuario.nome}</p>
-              <p className={styles.perfilUsuario}>{usuario.perfil}</p>
-            </div>
+        {usuario && (
+          <div className={styles.containerPerfil}>
+            <div className={styles.infoPerfil}>
+              <div className={styles.dadosUsuario}>
+                <p className={styles.nomeUsuario}>{usuario.nome}</p>
+                <p className={styles.perfilUsuario}>
+                  {PAPEL_LABEL[usuario.papel] ?? usuario.papel}
+                </p>
+              </div>
 
-            <div className={styles.avatar}>{usuario.iniciais}</div>
+              <div className={styles.avatar}>{iniciaisDoNome(usuario.nome)}</div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </header>
   );

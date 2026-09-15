@@ -7,6 +7,13 @@ export default defineConfig({
 
   base: '/static/',
 
+  server: {
+    proxy: {
+      '/session': 'http://localhost:8001',
+      '/api': 'http://localhost:8001',
+    },
+  },
+
   build: {
     outDir: path.resolve(__dirname, '../backend/frontend'),
     emptyOutDir: true,
