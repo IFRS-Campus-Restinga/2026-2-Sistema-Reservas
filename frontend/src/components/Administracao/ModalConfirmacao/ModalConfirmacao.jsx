@@ -1,5 +1,6 @@
 import { Trash2 } from 'lucide-react';
 import Modal from '../Modal/Modal';
+import styles from './ModalConfirmacao.module.css';
 
 function ModalConfirmacao({
     aberto,
@@ -12,12 +13,21 @@ function ModalConfirmacao({
     return (
         <Modal
             aberto={aberto}
-            titulo={titulo}
+            variante="confirmacao"
+            titulo={
+                <span className={styles.titulo}>
+                    <span className={styles.icone}>
+                        <Trash2 size={20} aria-hidden="true" />
+                    </span>
+                    {titulo}
+                </span>
+            }
             aoFechar={aoCancelar}
             rodape={
                 <>
                     <button
                         type="button"
+                        className={styles.cancelar}
                         onClick={aoCancelar}
                     >
                         Cancelar
@@ -25,6 +35,7 @@ function ModalConfirmacao({
 
                     <button
                         type="button"
+                        className={styles.excluir}
                         onClick={aoConfirmar}
                     >
                         Excluir
@@ -32,13 +43,11 @@ function ModalConfirmacao({
                 </>
             }
         >
-            <div>
-                <Trash2 size={24} />
-
-                <p>{mensagem}</p>
+            <div className={styles.conteudo}>
+                <p className={styles.mensagem}>{mensagem}</p>
 
                 {aviso && (
-                    <p>{aviso}</p>
+                    <p className={styles.aviso}>{aviso}</p>
                 )}
             </div>
         </Modal>

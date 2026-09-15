@@ -7,6 +7,7 @@ function Modal({
     aoFechar,
     children,
     rodape,
+    variante = 'padrao',
 }) {
     if (!aberto) {
         return null;
@@ -14,7 +15,7 @@ function Modal({
 
     return (
         <div
-            className={styles.fundo}
+            className={`${styles.fundo} ${styles[variante] ?? ''}`}
             onMouseDown={aoFechar}
         >
             <div

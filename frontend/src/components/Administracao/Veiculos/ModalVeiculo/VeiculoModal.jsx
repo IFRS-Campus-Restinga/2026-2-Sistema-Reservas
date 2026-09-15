@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Modal from '../../Modal/Modal';
+import styles from './VeiculoModal.module.css';
 
 const formularioInicial = {
     nome: '',
@@ -75,6 +76,7 @@ function VeiculoModal({
                 <>
                     <button
                         type="button"
+                        className={styles.cancelar}
                         onClick={aoFechar}
                     >
                         Cancelar
@@ -82,6 +84,7 @@ function VeiculoModal({
 
                     <button
                         type="submit"
+                        className={styles.salvar}
                         form="formulario-veiculo"
                         disabled={salvando}
                     >
@@ -92,9 +95,10 @@ function VeiculoModal({
         >
             <form
                 id="formulario-veiculo"
+                className={styles.formulario}
                 onSubmit={enviarFormulario}
             >
-                <div>
+                <div className={styles.campo}>
                     <label htmlFor="nome">
                         Nome *
                     </label>
@@ -109,8 +113,8 @@ function VeiculoModal({
                     />
                 </div>
 
-                <div>
-                    <div>
+                <div className={styles.linhaDupla}>
+                    <div className={styles.campo}>
                         <label htmlFor="placa">
                             Placa *
                         </label>
@@ -125,7 +129,7 @@ function VeiculoModal({
                         />
                     </div>
 
-                    <div>
+                    <div className={styles.campo}>
                         <label htmlFor="cor">
                             Cor
                         </label>
@@ -140,8 +144,8 @@ function VeiculoModal({
                     </div>
                 </div>
 
-                <div>
-                    <div>
+                <div className={styles.linhaDupla}>
+                    <div className={styles.campo}>
                         <label htmlFor="marca">
                             Marca
                         </label>
@@ -155,7 +159,7 @@ function VeiculoModal({
                         />
                     </div>
 
-                    <div>
+                    <div className={styles.campo}>
                         <label htmlFor="modelo">
                             Modelo
                         </label>
@@ -170,8 +174,8 @@ function VeiculoModal({
                     </div>
                 </div>
 
-                <div>
-                    <div>
+                <div className={styles.linhaTripla}>
+                    <div className={styles.campo}>
                         <label htmlFor="capacidade">
                             Lugares
                         </label>
@@ -186,7 +190,7 @@ function VeiculoModal({
                         />
                     </div>
 
-                    <div>
+                    <div className={styles.campo}>
                         <label htmlFor="combustivel">
                             Combustível
                         </label>
@@ -200,7 +204,7 @@ function VeiculoModal({
                         />
                     </div>
 
-                    <div>
+                    <div className={styles.campo}>
                         <label htmlFor="quilometragem">
                             Quilometragem
                         </label>
@@ -215,13 +219,14 @@ function VeiculoModal({
                     </div>
                 </div>
 
-                <div>
+                <div className={styles.campo}>
                     <label htmlFor="observacao">
                         Observação
                     </label>
 
                     <textarea
                         id="observacao"
+                        rows={2}
                         name="observacao"
                         value={formulario.observacao}
                         onChange={alterarCampo}
@@ -229,7 +234,7 @@ function VeiculoModal({
                     />
                 </div>
 
-                <div>
+                <div className={styles.campo}>
                     <label htmlFor="status">
                         Status
                     </label>

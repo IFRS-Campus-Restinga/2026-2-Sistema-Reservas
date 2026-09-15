@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Shield } from "lucide-react";
+import styles from "./Administracao.module.css";
 
 import AbasAdmin from "../../components/Administracao/AbasAdmin/AbasAdmin";
 import VeiculosAdmin from "../../components/Administracao/Veiculos/VeiculosAdmin";
@@ -18,8 +20,9 @@ function Administracao() {
   const [abaAtiva, setAbaAtiva] = useState("visao-geral");
 
   return (
-    <div>
-      <div>
+    <div className={styles.pagina}>
+      <div className={styles.faixaAdministrativa}>
+        <Shield size={14} aria-hidden="true" />
         <span>Painel administrativo · acesso restrito</span>
       </div>
 
@@ -29,15 +32,15 @@ function Administracao() {
         aoSelecionar={setAbaAtiva}
       />
 
-      <main>
+      <div className={styles.conteudo}>
         {abaAtiva === "visao-geral" && (
-          <p>Visão geral da administração.</p>
+          <p className={styles.visaoGeral}>Visão geral da administração.</p>
         )}
 
         {abaAtiva === "veiculos" && (
           <VeiculosAdmin />
         )}
-      </main>
+      </div>
     </div>
   );
 }

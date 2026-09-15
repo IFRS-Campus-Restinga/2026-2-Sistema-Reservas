@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Pencil, Plus, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
+import styles from './VeiculosAdmin.module.css';
 
 import {
     buscarVeiculos,
@@ -133,34 +134,42 @@ function VeiculosAdministracao() {
         {
             chave: 'status',
             titulo: 'Status',
-            renderizar: (veiculo) =>
-                mostrarStatus(veiculo.status),
+            renderizar: (veiculo) => (
+                <span className={styles.status} data-status={veiculo.status}>
+                    {veiculo.status === 'ATIVO'
+                        ? <ToggleRight size={13} aria-hidden="true" />
+                        : <ToggleLeft size={13} aria-hidden="true" />}
+                    {mostrarStatus(veiculo.status)}
+                </span>
+            ),
         },
         {
             chave: 'acao',
             titulo: 'Ação',
             renderizar: (veiculo) => (
-                <div>
+                <div className={styles.acoes}>
                     <button
                         type="button"
+                        className={styles.editar}
                         onClick={() =>
                             abrirEdicao(veiculo)
                         }
                         title="Editar"
                         aria-label={`Editar ${veiculo.nome}`}
                     >
-                        <Pencil size={16} />
+                        <Pencil size={13} />
                     </button>
 
                     <button
                         type="button"
+                        className={styles.excluir}
                         onClick={() =>
                             solicitarExclusao(veiculo)
                         }
                         title="Excluir"
                         aria-label={`Excluir ${veiculo.nome}`}
                     >
-                        <Trash2 size={16} />
+                        <Trash2 size={13} />
                     </button>
                 </div>
             ),
@@ -169,10 +178,11 @@ function VeiculosAdministracao() {
 
 
     return (
-        <div>
-            <div>
+        <div className={styles.veiculos}>
+            <div className={styles.barraAcoes}>
                 <button
                     type="button"
+                    className={styles.adicionar}
                     onClick={abrirCadastro}
                 >
                     <Plus size={16} />
@@ -181,11 +191,11 @@ function VeiculosAdministracao() {
             </div>
 
             {erro && (
-                <p>{erro}</p>
+                <p className={styles.erro} role="alert">{erro}</p>
             )}
 
             {carregando ? (
-                <p>Carregando veículos...</p>
+                <p className={styles.carregando} role="status">Carregando veículos...</p>
             ) : (
                 <TabelaAdministracao
                     colunas={colunas}
