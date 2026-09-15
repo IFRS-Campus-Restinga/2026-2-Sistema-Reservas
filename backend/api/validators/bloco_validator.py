@@ -1,5 +1,5 @@
 from django.core.exceptions import ValidationError
-from api.enumerations.acessibilidade import Acessibilidade
+from api.enumerations.bloco_enumerations.acessibilidade import Acessibilidade
 
 
 def validar_acessibilidade_bloco(value):

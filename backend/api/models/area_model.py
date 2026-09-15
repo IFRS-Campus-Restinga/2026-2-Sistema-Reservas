@@ -4,7 +4,6 @@ from django.db import models
 from api.enumerations.area_enumerations.area_enums import StatusRecurso, TipoArea
 from .base_model import BaseModel
 from .bloco_model import Bloco
-from django.contrib.postgres.fields import ArrayField
 from api.enumerations.area_enumerations.area_enums import EquipamentoArea
 from api.validators.area_validator import validar_equipamentos_area
 
@@ -57,8 +56,8 @@ class Area(BaseModel):
         blank=False,
         help_text="Tipo de área"
     )
-    equipamento = ArrayField(
-        models.CharField(max_length=50, choices=EquipamentoArea.choices),
+    equipamento = models.JSONField(
+        models.CharField(max_length=50),
         default=list,
         blank=True,
         validators=[validar_equipamentos_area],

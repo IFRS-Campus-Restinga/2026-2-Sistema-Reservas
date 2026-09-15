@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from api.models.bloco_model import Bloco
-from api.enumerations.acessibilidade import Acessibilidade
+from api.enumerations.bloco_enumerations.acessibilidade import Acessibilidade
 
 
 class BlocoSerializer(serializers.ModelSerializer):

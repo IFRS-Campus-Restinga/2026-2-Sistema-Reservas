@@ -1,11 +1,10 @@
-from django.contrib.postgres.fields import ArrayField
 from django.core.validators import (
     MaxLengthValidator,
     MinLengthValidator,
     integer_validator,
 )
 from django.db import models
-from api.enumerations.acessibilidade import Acessibilidade
+from api.enumerations.bloco_enumerations.acessibilidade import Acessibilidade
 from api.validators.bloco_validator import validar_acessibilidade_bloco
 from .base_model import BaseModel
 
@@ -18,7 +17,7 @@ class Bloco(BaseModel):
         numero (CharField): Código numérico de identificação do bloco (no máximo 2 dígitos).
         nome (CharField): Nome descritivo do bloco (máximo 100 caracteres).
         banheiro (BooleanField): Indica a presença de estrutura sanitária (padrão: True).
-        acessibilidade (ArrayField): Lista com as opções de acessibilidade disponíveis (padrão: lista vazia).
+        acessibilidade (JSONField): Lista com as opções de acessibilidade disponíveis (padrão: lista vazia).
     """
 
     class Meta:
@@ -50,8 +49,8 @@ class Bloco(BaseModel):
         blank=False,
         help_text="Indica se o bloco possúi sanitários."
     )
-    acessibilidade = ArrayField(
-        models.CharField(max_length=50, choices=Acessibilidade.choices),
+    acessibilidade = models.JSONField(
+        models.CharField(max_length=50),
         default=list,
         blank=True,
         validators=[validar_acessibilidade_bloco],
