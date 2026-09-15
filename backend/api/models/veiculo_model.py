@@ -11,6 +11,7 @@ class Veiculo(BaseModel):
     capacidade = models.IntegerField(validators=[MinValueValidator(1)], verbose_name="Capacidade")
     combustivel = models.CharField(max_length=20, verbose_name="Combustível")
     quilometragem = models.FloatField(validators=[MinValueValidator(0)], verbose_name="Quilometragem")
+    cor = models.CharField(max_length=20,validators=[MinLengthValidator(2)], verbose_name="Cor")
     observacao = models.TextField(max_length=50, verbose_name="Observação", blank=True, null=True)
     status = models.CharField(
         max_length=20,choices=StatusRecurso.choices,default=StatusRecurso.ATIVO, verbose_name="Status"
