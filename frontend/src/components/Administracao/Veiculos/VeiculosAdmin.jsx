@@ -1,0 +1,221 @@
+import { useEffect, useState } from 'react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
+
+import {
+    buscarVeiculos,
+    criarVeiculo,
+    atualizarVeiculo,
+    excluirVeiculo,
+} from '../../../services';
+
+import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
+import VeiculoModal from './ModalVeiculo/VeiculoModal';
+import ModalConfirmacao from '../ModalConfirmacao/ModalConfirmacao';
+
+
+function VeiculosAdministracao() {
+    const [veiculos, setVeiculos] = useState([]);
+    const [carregando, setCarregando] = useState(true);
+    const [erro, setErro] = useState('');
+
+    const [modalVeiculoAberto, setModalVeiculoAberto] =  useState(false);
+    const [veiculoEditando, setVeiculoEditando] =useState(null);
+    const [veiculoExcluindo, setVeiculoExcluindo] = useState(null);
+
+    useEffect(() => {
+        carregarVeiculos();
+    }, []);
+
+    async function carregarVeiculos() {
+        try {
+            setCarregando(true);
+            setErro('');
+
+            const dados = await buscarVeiculos();
+
+            setVeiculos(dados);
+        } catch (erro) {
+            console.error(erro);
+            setErro('Não foi possível carregar os veículos.');
+        } finally {
+            setCarregando(false);
+        }
+    }
+
+    function abrirCadastro() {
+        setVeiculoEditando(null);
+        setModalVeiculoAberto(true);
+    }
+
+    function abrirEdicao(veiculo) {
+        setVeiculoEditando(veiculo);
+        setModalVeiculoAberto(true);
+    }
+
+    function fecharModalVeiculo() {
+        setModalVeiculoAberto(false);
+        setVeiculoEditando(null);
+    }
+
+    async function salvarVeiculo(dados) {
+        try {
+            setErro('');
+
+            if (veiculoEditando) {
+                await atualizarVeiculo(veiculoEditando.id,dados);
+            } else {
+                await criarVeiculo(dados);
+            }
+            fecharModalVeiculo();
+
+            await carregarVeiculos();
+        } catch (erro) {
+            console.error(erro);
+            setErro('Não foi possível salvar o veículo.');
+        }
+    }
+
+    function solicitarExclusao(veiculo) {
+        setVeiculoExcluindo(veiculo);
+    }
+
+    async function confirmarExclusao() {
+        if (!veiculoExcluindo) {
+            return;
+        }
+        try {
+            setErro('');
+
+            await excluirVeiculo(
+                veiculoExcluindo.id
+            );
+
+            setVeiculoExcluindo(null);
+
+            await carregarVeiculos();
+        } catch (erro) {
+            console.error(erro);
+            setErro('Não foi possível excluir o veículo.');
+        }
+    }
+
+    function mostrarStatus(status) {
+      switch (status) {
+        case 'ATIVO':
+          return 'Ativo';
+        case 'MANUTENCAO':
+          return 'Manutenção';
+        case 'INATIVO':
+          return 'Inativo';
+        default:
+          return status;
+      }
+    }
+
+
+    const colunas = [
+        {
+            chave: 'nome',
+            titulo: 'Veículo',
+            campo: 'nome',
+        },
+        {
+            chave: 'placa',
+            titulo: 'Placa',
+            campo: 'placa',
+        },
+        {
+            chave: 'capacidade',
+            titulo: 'Capacidade',
+            renderizar: (veiculo) =>
+                `${veiculo.capacidade} lugares`,
+        },
+        {
+            chave: 'status',
+            titulo: 'Status',
+            renderizar: (veiculo) =>
+                mostrarStatus(veiculo.status),
+        },
+        {
+            chave: 'acao',
+            titulo: 'Ação',
+            renderizar: (veiculo) => (
+                <div>
+                    <button
+                        type="button"
+                        onClick={() =>
+                            abrirEdicao(veiculo)
+                        }
+                        title="Editar"
+                        aria-label={`Editar ${veiculo.nome}`}
+                    >
+                        <Pencil size={16} />
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() =>
+                            solicitarExclusao(veiculo)
+                        }
+                        title="Excluir"
+                        aria-label={`Excluir ${veiculo.nome}`}
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                </div>
+            ),
+        },
+    ];
+
+
+    return (
+        <div>
+            <div>
+                <button
+                    type="button"
+                    onClick={abrirCadastro}
+                >
+                    <Plus size={16} />
+                    Adicionar
+                </button>
+            </div>
+
+            {erro && (
+                <p>{erro}</p>
+            )}
+
+            {carregando ? (
+                <p>Carregando veículos...</p>
+            ) : (
+                <TabelaAdministracao
+                    colunas={colunas}
+                    dados={veiculos}
+                    mensagemVazia="Nenhum veículo cadastrado."
+                />
+            )}
+
+            <VeiculoModal
+                aberto={modalVeiculoAberto}
+                veiculo={veiculoEditando}
+                aoFechar={fecharModalVeiculo}
+                aoSalvar={salvarVeiculo}
+            />
+
+            <ModalConfirmacao
+                aberto={Boolean(veiculoExcluindo)}
+                titulo="Excluir veículo?"
+                mensagem={
+                    veiculoExcluindo
+                        ? `Tem certeza que deseja excluir ${veiculoExcluindo.nome}?`
+                        : ''
+                }
+                aoCancelar={() =>
+                    setVeiculoExcluindo(null)
+                }
+                aoConfirmar={confirmarExclusao}
+            />
+        </div>
+    );
+}
+
+export default VeiculosAdministracao;
