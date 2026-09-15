@@ -7,6 +7,9 @@ from api.models.area_model import Area
 from api.permissions.is_admin_or_read_only import IsAdminUserOrReadOnly
 from api.serializers.area_serializer import AreaSerializer
 
+"""
+View para gerenciamento do CRUD de Area.
+"""
 
 class AreaListCreateView(APIView):
     """

@@ -10,7 +10,6 @@ class IsAdminUserOrReadOnly(permissions.BasePermission):
     autenticados que possuam privilégios de administrador (por enquanto) (is_staff=True).
     """
 
-    # Variável de mensagem padrão utilizada prlo próprio Django REST Framework
     message = "Você não tem permissão para realizar esta ação."
 
     def has_permission(self, request, view):

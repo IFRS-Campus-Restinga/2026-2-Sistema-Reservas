@@ -1,7 +1,3 @@
-"""
-View para gerenciamento do CRUD de Bloco.
-"""
-
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -11,6 +7,9 @@ from api.models.bloco_model import Bloco
 from api.serializers.bloco_serializer import BlocoSerializer
 from api.permissions.is_admin_or_read_only import IsAdminUserOrReadOnly
 
+"""
+View para gerenciamento do CRUD de Bloco.
+"""
 
 class BlocoListCreateView(APIView):
     """
