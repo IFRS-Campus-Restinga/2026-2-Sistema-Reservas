@@ -8,6 +8,8 @@ from fs_auth_middleware.utils import (
     get_refresh_token_from_request,
 )
 
+from hub_integrations.services.sincronizacao import sincronizar_usuario
+
 logger = logging.getLogger(__name__)
 
 
@@ -43,8 +45,11 @@ class RenovarTokenExpiradoMiddleware:
 
         novo_token = self._pedir_renovacao_ao_hub(refresh_token)
         if novo_token:
-            
             request.COOKIES[settings.AUTH_COOKIE_NAME] = novo_token
+
+            novo_payload = decode_access_token(novo_token, request)
+            if novo_payload:
+                sincronizar_usuario(novo_payload)
 
         return novo_token
 
