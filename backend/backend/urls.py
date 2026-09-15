@@ -16,12 +16,20 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import include, path
 from .views import ReactAppView
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
-    # ROTAS PARA O APP API
+    # rota do admin
+    path("django-admin/", admin.site.urls),
+    
+    # Integrações
+    path("session/", include("hub_integrations.urls")),
+    
+    # Rotas do app API (inclui as rotas do CRUD atual implenentado (Blocos))
     path("api/", include("api.urls")),
+    
+    # Servidor de arquivos/rotas do Frontend React
     path("", ReactAppView.as_view(), name="react"),
+    path("<path:rota>", ReactAppView.as_view(), name="react-catchall"),
 ]

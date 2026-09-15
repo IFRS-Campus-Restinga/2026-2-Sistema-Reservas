@@ -11,9 +11,14 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 import os
 from pathlib import Path
+import environ
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+env = environ.Env()
+environ.Env.read_env(BASE_DIR / '.env')
 
 FRONTEND_DIR = BASE_DIR / "frontend"
 
@@ -28,7 +33,8 @@ STATICFILES_DIRS = [
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-0x46+94)-pm)nd*3^oq7f(&qds9150^y(or)yns@3$22$a81^('
+SECRET_KEY = env("SECRET_KEY", default="django-insecure-0x46+94)-pm)nd*3^oq7f(&qds9150^y(or)yns@3$22$a81^(")
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -48,12 +54,15 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'api',
+    'accounts',
+    'hub_integrations',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware', 
+    'hub_integrations.middleware.RenovarTokenExpiradoMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -113,6 +122,30 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+# AUTENTICAÇÃO (HUB)
+AUTH_USER_MODEL = 'accounts.HubUser'
+FS_AUTH_SYSTEM_MODEL = 'hub_integrations.System'
+
+AUTH_COOKIE_NAME = env("AUTH_COOKIE_NAME", default="access_token")
+REFRESH_COOKIE_NAME = env("REFRESH_COOKIE_NAME", default="refresh_token")
+
+AUTH_COOKIE_HTTPONLY = env.bool("AUTH_COOKIE_HTTPONLY", default=True)
+AUTH_COOKIE_SECURE = env.bool("AUTH_COOKIE_SECURE", default=False)
+AUTH_COOKIE_SAMESITE = env("AUTH_COOKIE_SAMESITE", default="Lax")
+
+HUB_BASE_URL = env("HUB_BASE_URL", default="http://localhost:8000")
+HUB_SYSTEM_API_KEY = env("HUB_SYSTEM_API_KEY", default="")
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'hub_integrations.authentication.HubJWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
+
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
@@ -134,3 +167,4 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
  ]
+CORS_ALLOW_CREDENTIALS = True

@@ -1,0 +1,1 @@
+export { buscarUsuarioLogado } from './sessao'
