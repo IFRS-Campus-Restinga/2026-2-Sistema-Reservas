@@ -1,0 +1,54 @@
+.fundo {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+    z-index: 1000;
+}
+
+.modal {
+    width: 100%;
+    max-width: 500px;
+
+    background: white;
+    border-radius: 16px;
+
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.cabecalho {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 20px 24px;
+    border-bottom: 1px solid #eee;
+}
+
+.cabecalho h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.cabecalho button {
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+.conteudo {
+    padding: 24px;
+}
+
+.rodape {
+    display: flex;
+    gap: 12px;
+
+    padding: 16px 24px 20px;
+}
