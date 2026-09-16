@@ -6,3 +6,10 @@ export {
     atualizarVeiculo,
     excluirVeiculo,
 } from './veiculos';
+export {
+    buscarBlocos,
+    buscarBloco,
+    criarBloco,
+    atualizarBloco,
+    excluirBloco,
+} from './blocos';

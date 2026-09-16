@@ -4,6 +4,7 @@ import styles from "./Administracao.module.css";
 
 import AbasAdmin from "../../components/Administracao/AbasAdmin/AbasAdmin";
 import VeiculosAdmin from "../../components/Administracao/Veiculos/VeiculosAdmin";
+import BlocosAdmin from "../../components/Administracao/Blocos/BlocosAdmin";
 
 const abas = [
   {
@@ -13,6 +14,10 @@ const abas = [
   {
     id: "veiculos",
     rotulo: "Veículos",
+  },
+  {
+    id: "blocos",
+    rotulo: "Blocos",
   }
 ];
 
@@ -39,6 +44,10 @@ function Administracao() {
 
         {abaAtiva === "veiculos" && (
           <VeiculosAdmin />
+        )}
+
+        {abaAtiva === "blocos" && (
+          <BlocosAdmin />
         )}
       </div>
     </div>
