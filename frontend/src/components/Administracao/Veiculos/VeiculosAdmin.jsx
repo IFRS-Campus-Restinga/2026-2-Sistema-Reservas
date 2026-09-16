@@ -12,10 +12,12 @@ import {
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import VeiculoModal from './ModalVeiculo/VeiculoModal';
 import ModalConfirmacao from '../ModalConfirmacao/ModalConfirmacao';
+import CampoBusca from '../CampoBusca/CampoBusca';
 
 
 function VeiculosAdministracao() {
     const [veiculos, setVeiculos] = useState([]);
+    const [busca, setBusca] = useState('');
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState('');
 
@@ -109,6 +111,12 @@ function VeiculosAdministracao() {
     }
 
 
+    const termoBusca = busca.trim().toLowerCase();
+    const veiculosFiltrados = veiculos.filter((veiculo) =>
+        veiculo.nome.toLowerCase().includes(termoBusca) ||
+        veiculo.placa.toLowerCase().includes(termoBusca)
+    );
+
     const colunas = [
         {
             chave: 'nome',
@@ -175,6 +183,11 @@ function VeiculosAdministracao() {
     return (
         <div className={styles.veiculos}>
             <div className={styles.barraAcoes}>
+                <CampoBusca
+                    valor={busca}
+                    aoAlterar={setBusca}
+                    placeholder="Buscar por nome ou placa..."
+                />
                 <button
                     type="button"
                     className={styles.adicionar}
@@ -194,8 +207,10 @@ function VeiculosAdministracao() {
             ) : (
                 <TabelaAdministracao
                     colunas={colunas}
-                    dados={veiculos}
-                    mensagemVazia="Nenhum veículo cadastrado."
+                    dados={veiculosFiltrados}
+                    mensagemVazia={termoBusca
+                        ? 'Nenhum veículo encontrado para esta busca.'
+                        : 'Nenhum veículo cadastrado.'}
                 />
             )}
 
