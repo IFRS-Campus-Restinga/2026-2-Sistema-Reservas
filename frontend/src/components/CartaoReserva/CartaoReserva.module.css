@@ -1,0 +1,98 @@
+.cartao {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  transition: background-color 0.2s ease;
+}
+
+.cartao:hover {
+  background-color: #f9fafb;
+}
+
+.barraStatus {
+  width: 6px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background-color: #9ca3af;
+}
+
+.barraStatus[data-status="confirmada"] {
+  background-color: var(--cor-marca);
+}
+
+.barraStatus[data-status="pendente"] {
+  background-color: #fb923c;
+}
+
+.conteudo {
+  flex: 1;
+  min-width: 0;
+}
+
+.linhaTitulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.nome {
+  min-width: 0;
+  overflow: hidden;
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tagTipo {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.tagTipo[data-tipo="interna"] {
+  background-color: var(--cor-marca);
+}
+
+.tagTipo[data-tipo="externa"] {
+  background-color: #2563eb;
+}
+
+.descricao {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.horario {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.badgeStatus {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.badgeStatus[data-status="confirmada"] {
+  border-color: #bbf7d0;
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.badgeStatus[data-status="pendente"] {
+  border-color: #fed7aa;
+  background-color: #ffedd5;
+  color: #ea580c;
+}
