@@ -13,3 +13,10 @@ export {
     atualizarBloco,
     excluirBloco,
 } from './blocos';
+export {
+    buscarAreas,
+    buscarArea,
+    criarArea,
+    atualizarArea,
+    excluirArea,
+} from './areas';
