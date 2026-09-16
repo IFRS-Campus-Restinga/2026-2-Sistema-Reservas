@@ -1,7 +1,10 @@
+from django.urls import path
+
+from api.views.veiculo_view import VeiculoCreateView, VeiculoDetailView
+
 """
 Rotas para o CRUD do Bloco.
 """
-from django.urls import path
 from api.views.bloco_view import BlocoListCreateView, BlocoDetailView
 from api.views.area_view import AreaDetailView, AreaListCreateView
 
@@ -32,4 +35,7 @@ urlpatterns = [
     # Rotas de Área
     path('areas/', AreaListCreateView.as_view(), name='area-list-create'),
     path('areas/<int:pk>/', AreaDetailView.as_view(), name='area-detail'),
+
+    path("veiculos/", VeiculoCreateView.as_view(), name="veiculo-list"),
+    path("veiculos/<int:pk>/", VeiculoDetailView.as_view(), name="veiculo-detail"),
 ]
