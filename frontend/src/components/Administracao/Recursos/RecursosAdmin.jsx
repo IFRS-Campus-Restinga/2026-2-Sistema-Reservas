@@ -159,7 +159,9 @@ function RecursosAdmin() {
             titulo: 'Status',
             renderizar: (recurso) => (
                 <span className={styles.status} data-status={recurso.status}>
-                    <Eye size={13} aria-hidden="true" />
+                    {recurso.status === 'ATIVO'
+                        ? <ToggleRight size={13} aria-hidden="true" />
+                        : <ToggleLeft size={13} aria-hidden="true" />}
                     {mostrarStatus(recurso.status)}
                 </span>
             ),
