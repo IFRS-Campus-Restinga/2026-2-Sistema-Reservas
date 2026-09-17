@@ -2,12 +2,7 @@ import { useEffect, useState } from 'react';
 import { Pencil, Plus, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import styles from './BlocosAdmin.module.css';
 
-import {
-    buscarBlocos,
-    criarBloco,
-    atualizarBloco,
-    excluirBloco,
-} from '../../../services';
+import { buscarBlocos, criarBloco, atualizarBloco, excluirBloco } from '../../../services';
 
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import BlocoModal from './ModalBloco/BlocoModal';
