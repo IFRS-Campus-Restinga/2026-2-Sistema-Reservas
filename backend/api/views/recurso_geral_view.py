@@ -1,7 +1,6 @@
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
 from django.shortcuts import get_object_or_404
 from api.models.recurso_geral_model import RecursoGeral
 from api.serializers.recurso_geral_serializer import RecursoGeralSerializer

@@ -3,7 +3,9 @@ async function tratarResposta(resposta) {
     return null
   }
 
-  const dados = await resposta.json().catch(() => ({}))
+  const dados = await resposta.json().catch(() => {
+  throw new Error('O servidor retornou uma resposta inválida.')
+  })
 
   if (!resposta.ok) {
     const mensagem = dados.detail || 'Não foi possível concluir a operação.'
