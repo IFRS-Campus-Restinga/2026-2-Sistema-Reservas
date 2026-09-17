@@ -1,4 +1,5 @@
 from django.contrib.auth.base_user import BaseUserManager
+from accounts.enumerations import Papel
 
 
 class HubUserManager(BaseUserManager):
@@ -11,6 +12,7 @@ class HubUserManager(BaseUserManager):
                 'perfil_acesso': dados_hub.get('access_profile', ''),
                 'papel': papel,
                 'is_active': dados_hub.get('is_active', False),
+                'is_staff': papel == Papel.ADMIN,
             },
         )
         return usuario
