@@ -1,0 +1,44 @@
+.pagina {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  background-color: #f9fafb;
+}
+
+.faixaAdministrativa {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background-color: #1f2937;
+  color: #9ca3af;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.conteudo {
+  flex: 1;
+  min-height: 0;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.visaoGeral {
+  padding: 24px;
+  border: 1px solid #f3f4f6;
+  border-radius: 12px;
+  background-color: #ffffff;
+  color: #6b7280;
+}
+
+@media (max-width: 767px) {
+  .faixaAdministrativa {
+    padding-inline: 16px;
+  }
+
+  .conteudo {
+    padding: 16px;
+  }
+}
