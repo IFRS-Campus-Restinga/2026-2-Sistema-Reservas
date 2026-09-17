@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Eye, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Pencil, Plus, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 import styles from './RecursosAdmin.module.css';
 
 import {
