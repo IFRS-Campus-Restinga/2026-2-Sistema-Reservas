@@ -28,9 +28,9 @@ class IsAdminUserOrReadOnly(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
 
-        # Exige usuário autenticado e com a flag is_staff habilitada
+        # Exige usuário autenticado e com a flag is_staff habilitada ou papel de administrador
         return bool(
             request.user and 
             request.user.is_authenticated and 
-            request.user.is_staff
+            (request.user.is_staff or getattr(request.user, 'papel', None) == 'admin')
         )
