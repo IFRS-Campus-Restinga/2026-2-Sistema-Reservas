@@ -1,0 +1,30 @@
+.faixa {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 16px;
+  background-color: var(--cor-marca);
+  color: #ffffff;
+}
+
+.saudacao {
+  margin-bottom: 4px;
+  color: #dcfce7;
+  font-size: 14px;
+}
+
+.nome {
+  font-family: var(--fonte-titulo);
+  font-size: 24px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.subtitulo {
+  margin-top: 4px;
+  color: #dcfce7;
+  font-size: 14px;
+  text-transform: capitalize;
+}
