@@ -4,18 +4,8 @@ import styles from "./Home.module.css";
 import Banner from "../../components/Banner/Banner";
 import CartaoReserva from "../../components/CartaoReserva/CartaoReserva";
 import { formatarDataCurta } from "../../utils/data";
-
-const PAPEL_LABEL = {
-  admin: "Administrador",
-  servidor: "Servidor",
-  aluno: "Aluno",
-  convidado: "Convidado",
-};
-
-const STATUS_LABEL_ATIVIDADE = {
-  pendente: "Pendente",
-  confirmada: "Confirmada",
-};
+import { STATUS_RESERVA_LABEL } from "../../utils/reserva";
+import { PAPEL_USUARIO_LABEL } from "../../utils/usuario";
 
 function formatarDataISO(data) {
   return data.toISOString().slice(0, 10);
@@ -130,7 +120,7 @@ function Home() {
       <Banner
         saudacao="Bem-vindo,"
         nome={usuario.nome}
-        subtitulo={`${PAPEL_LABEL[usuario.papel] ?? usuario.papel} · ${rotuloHoje}`}
+        subtitulo={`${PAPEL_USUARIO_LABEL[usuario.papel] ?? usuario.papel} · ${rotuloHoje}`}
       />
 
       <div className={styles.grade}>
@@ -181,7 +171,7 @@ function Home() {
                   <div>
                     <p className={styles.nomeAtividade}>{reserva.nome}</p>
                     <p className={styles.detalheAtividade}>
-                      {formatarDataCurta(reserva.data)} · {STATUS_LABEL_ATIVIDADE[reserva.status]}
+                      {formatarDataCurta(reserva.data)} · {STATUS_RESERVA_LABEL[reserva.status]}
                     </p>
                   </div>
                 </div>

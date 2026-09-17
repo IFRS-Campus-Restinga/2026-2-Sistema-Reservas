@@ -1,15 +1,7 @@
 import styles from "./CartaoReserva.module.css";
 import { formatarDataCurta } from "../../utils/data";
-
-const STATUS_LABEL = {
-  confirmada: "Confirmada",
-  pendente: "Pendente",
-};
-
-const TIPO_RESERVA_LABEL = {
-  interna: "Interna",
-  externa: "Externa",
-};
+import { STATUS_RESERVA_LABEL } from "../../utils/reserva";
+import { TIPO_RESERVA_LABEL } from "../../utils/reserva";
 
 function CartaoReserva({ reserva }) {
   return (
@@ -30,7 +22,7 @@ function CartaoReserva({ reserva }) {
       </div>
 
       <span className={styles.badgeStatus} data-status={reserva.status}>
-        {STATUS_LABEL[reserva.status] ?? reserva.status}
+        {STATUS_RESERVA_LABEL[reserva.status] ?? reserva.status}
       </span>
     </div>
   );
