@@ -5,6 +5,4 @@ from .veiculo_model import Veiculo
 from .bloco_model import *
 from .area_model import *
 from .grupo_model import Grupo
-from .grupo_servidor_model import GrupoServidor
-from .grupo_aluno_model import GrupoAluno
 from .membro_grupo_model import MembroGrupo

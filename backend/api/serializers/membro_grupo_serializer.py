@@ -1,8 +1,6 @@
 from rest_framework import serializers
 
 from api.models.membro_grupo_model import MembroGrupo
-from api.models.grupo_servidor_model import GrupoServidor
-from api.models.grupo_aluno_model import GrupoAluno
 
 
 class MembroGrupoSerializer(serializers.ModelSerializer):
@@ -16,12 +14,19 @@ class MembroGrupoSerializer(serializers.ModelSerializer):
         usuario = attrs.get('usuario') or getattr(self.instance, 'usuario', None)
         papel = getattr(usuario, 'papel', None)
 
-        if GrupoServidor.objects.filter(pk=grupo.pk).exists() and papel != 'servidor':
+        if papel != grupo.tipo_membro_permitido:
             raise serializers.ValidationError(
-                {"usuario": "Apenas usuários com papel de servidor podem ser membros deste grupo."}
+                {"usuario": f"Apenas usuários com papel de {grupo.get_tipo_membro_permitido_display().lower()} podem ser membros deste grupo."}
             )
-        if GrupoAluno.objects.filter(pk=grupo.pk).exists() and papel != 'aluno':
-            raise serializers.ValidationError(
-                {"usuario": "Apenas usuários com papel de aluno podem ser membros deste grupo."}
-            )
+
+        data_fim_validade = attrs.get('data_fim_validade', getattr(self.instance, 'data_fim_validade', None))
+        if data_fim_validade:
+            if data_fim_validade < grupo.data_inicio_validade:
+                raise serializers.ValidationError(
+                    {"data_fim_validade": "Não pode ser anterior à data de início de validade do grupo."}
+                )
+            if grupo.data_fim_validade and data_fim_validade > grupo.data_fim_validade:
+                raise serializers.ValidationError(
+                    {"data_fim_validade": "Não pode ser posterior à data de fim de validade do grupo."}
+                )
         return attrs

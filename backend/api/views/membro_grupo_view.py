@@ -3,12 +3,12 @@ from rest_framework.views import APIView
 
 from api.models.grupo_model import Grupo
 from api.models.membro_grupo_model import MembroGrupo
-from api.permissions.grupo_permissions import PodeGerenciarGrupo
+from api.permissions.grupo_permissions import PodeGerenciarMembrosGrupo
 from api.serializers.membro_grupo_serializer import MembroGrupoSerializer
 from .grupo_view_helpers import BuscarObjetoComPermissaoMixin, listar, detalhar, criar, atualizar, remover
 
 class MembroGrupoListCreateView(APIView):
-    permission_classes = [PodeGerenciarGrupo]
+    permission_classes = [PodeGerenciarMembrosGrupo]
 
     def get_grupo(self, grupo_pk):
         return get_object_or_404(Grupo, pk=grupo_pk)
@@ -24,7 +24,7 @@ class MembroGrupoListCreateView(APIView):
 
 
 class MembroGrupoDetailView(BuscarObjetoComPermissaoMixin, APIView):
-    permission_classes = [PodeGerenciarGrupo]
+    permission_classes = [PodeGerenciarMembrosGrupo]
 
     def get_queryset(self):
         return MembroGrupo.objects.filter(grupo_id=self.kwargs['grupo_pk']).select_related('usuario', 'grupo')

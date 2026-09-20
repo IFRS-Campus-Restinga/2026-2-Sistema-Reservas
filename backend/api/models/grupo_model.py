@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinLengthValidator
 from django.db import models
 
+from accounts.enumerations import Papel
 from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
 from .base_model import BaseModel
 from .tipo_recurso_model import TipoRecurso
@@ -15,6 +16,13 @@ class Grupo(BaseModel):
         null=False,
         blank=False,
         help_text="Nome do grupo de autorização."
+    )
+    tipo_membro_permitido = models.CharField(
+        max_length=12,
+        choices=[(Papel.SERVIDOR, Papel.SERVIDOR.label), (Papel.ALUNO, Papel.ALUNO.label)],
+        null=False,
+        blank=False,
+        help_text="Papel de usuário (servidor ou aluno) autorizado a ser membro deste grupo."
     )
     tipo_recurso_autorizado = models.CharField(
         max_length=20,

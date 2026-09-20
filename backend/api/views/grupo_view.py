@@ -1,62 +1,36 @@
 from rest_framework.views import APIView
 
-from api.models.grupo_servidor_model import GrupoServidor
-from api.models.grupo_aluno_model import GrupoAluno
+from api.models.grupo_model import Grupo
 from api.permissions.grupo_permissions import PodeCriarGrupo, PodeGerenciarGrupo
-from api.serializers.grupo_serializer import GrupoServidorSerializer, GrupoAlunoSerializer
+from api.permissions.regras_comuns import usuario_e_admin
+from api.serializers.grupo_serializer import GrupoSerializer
 from .grupo_view_helpers import BuscarObjetoComPermissaoMixin, listar, detalhar, criar, atualizar, remover
 
-class GrupoServidorListCreateView(APIView):
+class GrupoListCreateView(APIView):
     permission_classes = [PodeCriarGrupo]
-    papeis_permitidos = ('admin',)
 
     def get(self, request):
-        return listar(GrupoServidor.objects.select_related('criador'), GrupoServidorSerializer)
+        queryset = Grupo.objects.select_related('criador')
+        if not usuario_e_admin(request.user):
+            queryset = queryset.filter(criador=request.user)
+        return listar(queryset, GrupoSerializer)
 
     def post(self, request):
-        return criar(request, GrupoServidorSerializer, criador=request.user)
+        return criar(request, GrupoSerializer, criador=request.user)
 
 
-class GrupoServidorDetailView(BuscarObjetoComPermissaoMixin, APIView):
+class GrupoDetailView(BuscarObjetoComPermissaoMixin, APIView):
     permission_classes = [PodeGerenciarGrupo]
-    queryset = GrupoServidor.objects.select_related('criador')
+    queryset = Grupo.objects.select_related('criador')
 
     def get(self, request, pk):
-        return detalhar(self.get_object(pk), GrupoServidorSerializer)
+        return detalhar(self.get_object(pk), GrupoSerializer)
 
     def put(self, request, pk):
-        return atualizar(request, self.get_object(pk), GrupoServidorSerializer)
+        return atualizar(request, self.get_object(pk), GrupoSerializer)
 
     def patch(self, request, pk):
-        return atualizar(request, self.get_object(pk), GrupoServidorSerializer, partial=True)
-
-    def delete(self, request, pk):
-        return remover(self.get_object(pk))
-
-
-class GrupoAlunoListCreateView(APIView):
-    permission_classes = [PodeCriarGrupo]
-    papeis_permitidos = ('admin', 'servidor')
-
-    def get(self, request):
-        return listar(GrupoAluno.objects.select_related('criador'), GrupoAlunoSerializer)
-
-    def post(self, request):
-        return criar(request, GrupoAlunoSerializer, criador=request.user)
-
-
-class GrupoAlunoDetailView(BuscarObjetoComPermissaoMixin, APIView):
-    permission_classes = [PodeGerenciarGrupo]
-    queryset = GrupoAluno.objects.select_related('criador')
-
-    def get(self, request, pk):
-        return detalhar(self.get_object(pk), GrupoAlunoSerializer)
-
-    def put(self, request, pk):
-        return atualizar(request, self.get_object(pk), GrupoAlunoSerializer)
-
-    def patch(self, request, pk):
-        return atualizar(request, self.get_object(pk), GrupoAlunoSerializer, partial=True)
+        return atualizar(request, self.get_object(pk), GrupoSerializer, partial=True)
 
     def delete(self, request, pk):
         return remover(self.get_object(pk))

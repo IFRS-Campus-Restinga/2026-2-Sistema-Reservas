@@ -1,11 +1,14 @@
 from rest_framework import serializers
 
-from api.models.grupo_servidor_model import GrupoServidor
-from api.models.grupo_aluno_model import GrupoAluno
+from api.models.grupo_model import Grupo
 
 
-class GrupoBaseSerializer(serializers.ModelSerializer):
+class GrupoSerializer(serializers.ModelSerializer):
     criador = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = Grupo
+        fields = '__all__'
 
     def validate_nome(self, value):
         nome_sanitizado = value.strip()
@@ -34,15 +37,3 @@ class GrupoBaseSerializer(serializers.ModelSerializer):
                 {"tipo_recurso": "Este campo só deve ser preenchido quando o tipo de recurso autorizado for Recurso Geral."}
             )
         return attrs
-
-
-class GrupoServidorSerializer(GrupoBaseSerializer):
-    class Meta:
-        model = GrupoServidor
-        fields = '__all__'
-
-
-class GrupoAlunoSerializer(GrupoBaseSerializer):
-    class Meta:
-        model = GrupoAluno
-        fields = '__all__'
