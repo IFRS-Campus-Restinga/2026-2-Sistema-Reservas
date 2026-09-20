@@ -5,6 +5,7 @@ import Header from '../components/Header/Header'
 import NaoAutenticado from '../pages/NaoAutenticado/NaoAutenticado'
 import { MENU } from '../config/menuItems'
 import { buscarUsuarioLogado } from '../services'
+import styles from './MainLayout.module.css'
 
 function MainLayout() {
   const [menuRecolhido, setMenuRecolhido] = useState(false)
@@ -30,20 +31,20 @@ function MainLayout() {
   }
 
   return (
-    <div className="app">
+    <div className={styles.app}>
       <Sidebar
         menuRecolhido={menuRecolhido}
         recolherMenu={() => setMenuRecolhido((n) => !n)}
         paginaAtual={paginaAtual}
       />
 
-      <div className="main">
+      <div className={styles.main}>
         <Header
           titulo={paginaAtual}
           usuario={usuario}
         />
 
-        <main className="content">
+        <main className={styles.content}>
           <Outlet context={{ usuario }} />
         </main>
       </div>

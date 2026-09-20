@@ -1,0 +1,195 @@
+.pagina {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 20px;
+  padding: 16px;
+  background-color: #f9fafb;
+}
+
+@media (min-width: 768px) {
+  .pagina {
+    padding: 24px;
+  }
+}
+
+.grade {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+
+@media (min-width: 1024px) {
+  .grade {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+}
+
+.painelReservas {
+  min-width: 0;
+  border: 1px solid #f3f4f6;
+  border-radius: 12px;
+  background-color: #ffffff;
+}
+
+.cabecalhoPainel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.tituloPainel {
+  color: #374151;
+  font-family: var(--fonte-titulo);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.botaoVerTodas {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  color: var(--cor-marca);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.botaoVerTodas:hover {
+  text-decoration: underline;
+}
+
+.listaReservas > * + * {
+  border-top: 1px solid #f9fafb;
+}
+
+.estadoVazio {
+  padding: 40px 0;
+  color: #9ca3af;
+  font-size: 14px;
+  text-align: center;
+}
+
+.iconeVazio {
+  margin: 0 auto 8px;
+  opacity: 0.3;
+}
+
+.painelLateral {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.cartaoCalendario,
+.cartaoAtividade {
+  padding: 16px;
+  border: 1px solid #f3f4f6;
+  border-radius: 12px;
+  background-color: #ffffff;
+}
+
+.tituloSecundario {
+  margin-bottom: 12px;
+  color: #374151;
+  font-family: var(--fonte-titulo);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+}
+
+.diaSemana {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.rotuloDia {
+  color: #9ca3af;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.numeroDia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: #4b5563;
+  cursor: default;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+
+.numeroDia[data-hoje="true"] {
+  background-color: var(--cor-marca);
+  color: #ffffff;
+}
+
+.marcadorEvento {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--cor-marca);
+}
+
+.listaAtividade {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.itemAtividade {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.marcadorStatus {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background-color: #9ca3af;
+}
+
+.marcadorStatus[data-status="confirmada"] {
+  background-color: var(--cor-marca);
+}
+
+.marcadorStatus[data-status="pendente"] {
+  background-color: #fb923c;
+}
+
+.nomeAtividade {
+  color: #374151;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.detalheAtividade {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.textoVazio {
+  color: #9ca3af;
+  font-size: 12px;
+}

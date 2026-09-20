@@ -1,12 +1,6 @@
 import styles from "./Header.module.css";
 import { Bell, Plus } from "lucide-react";
-
-const PAPEL_LABEL = {
-  admin: "Administrador",
-  servidor: "Servidor",
-  aluno: "Aluno",
-  convidado: "Convidado",
-};
+import { PAPEL_USUARIO_LABEL } from "../../utils/usuario";
 
 function iniciaisDoNome(nome) {
   return nome
@@ -49,7 +43,7 @@ function Header({ titulo, usuario }) {
               <div className={styles.dadosUsuario}>
                 <p className={styles.nomeUsuario}>{usuario.nome}</p>
                 <p className={styles.perfilUsuario}>
-                  {PAPEL_LABEL[usuario.papel] ?? usuario.papel}
+                  {PAPEL_USUARIO_LABEL[usuario.papel] ?? usuario.papel}
                 </p>
               </div>
 
