@@ -57,6 +57,10 @@ class Grupo(BaseModel):
     def __str__(self):
         return self.nome
 
+    @property
+    def grupo_relacionado(self):
+        return self
+
     def clean(self):
         super().clean()
         if self.nome:
