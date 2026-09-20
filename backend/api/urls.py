@@ -9,6 +9,7 @@ from api.views.grupo_view import (
     GrupoAlunoListCreateView,
     GrupoAlunoDetailView,
 )
+from api.views.membro_grupo_view import MembroGrupoListCreateView, MembroGrupoDetailView
 
 from api.views.veiculo_view import VeiculoCreateView, VeiculoDetailView
 
@@ -26,4 +27,6 @@ urlpatterns = [
     path('grupos-servidores/<int:pk>/', GrupoServidorDetailView.as_view(), name='grupo-servidor-detail'),
     path('grupos-alunos/', GrupoAlunoListCreateView.as_view(), name='grupo-aluno-list-create'),
     path('grupos-alunos/<int:pk>/', GrupoAlunoDetailView.as_view(), name='grupo-aluno-detail'),
+    path('grupos/<int:grupo_pk>/membros/', MembroGrupoListCreateView.as_view(), name='membro-grupo-list-create'),
+    path('grupos/<int:grupo_pk>/membros/<int:pk>/', MembroGrupoDetailView.as_view(), name='membro-grupo-detail'),
 ]

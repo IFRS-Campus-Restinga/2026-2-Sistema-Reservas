@@ -27,11 +27,11 @@ class GrupoBaseSerializer(serializers.ModelSerializer):
         tipo_recurso = attrs.get('tipo_recurso', getattr(self.instance, 'tipo_recurso', None))
         if tipo_recurso_autorizado == 'RECURSO_GERAL' and not tipo_recurso:
             raise serializers.ValidationError(
-                {"tipo_recurso": "Obrigatório informar o tipo de recurso geral autorizado (ex.: bola)."}
+                {"tipo_recurso": "É obrigatório informar o tipo de recurso geral autorizado (por exemplo, bola)."}
             )
         if tipo_recurso_autorizado != 'RECURSO_GERAL' and tipo_recurso:
             raise serializers.ValidationError(
-                {"tipo_recurso": "Só deve ser informado quando tipo_recurso_autorizado = RECURSO_GERAL."}
+                {"tipo_recurso": "Este campo só deve ser preenchido quando o tipo de recurso autorizado for Recurso Geral."}
             )
         return attrs
 

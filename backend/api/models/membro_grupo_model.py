@@ -32,7 +32,12 @@ class MembroGrupo(BaseModel):
 
     def __str__(self):
         return f"{self.usuario} em {self.grupo}"
-    
+
+    @property
+    def grupo_relacionado(self):
+        return self.grupo
+
+
     class Meta:
             db_table = 'membro_grupo'
             verbose_name = 'Membro do Grupo'

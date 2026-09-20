@@ -67,11 +67,11 @@ class Grupo(BaseModel):
             self.nome = self.nome.strip()
         if self.tipo_recurso_autorizado == TipoRecursoReservavel.RECURSO_GERAL and not self.tipo_recurso_id:
             raise ValidationError(
-                {"tipo_recurso": "Obrigatório informar o tipo de recurso geral autorizado (ex.: bola)."}
+                {"tipo_recurso": "É obrigatório informar o tipo de recurso geral autorizado (por exemplo, bola)."}
             )
         if self.tipo_recurso_autorizado != TipoRecursoReservavel.RECURSO_GERAL and self.tipo_recurso_id:
             raise ValidationError(
-                {"tipo_recurso": "Só deve ser informado quando tipo_recurso_autorizado = RECURSO_GERAL."}
+                {"tipo_recurso": "Este campo só deve ser preenchido quando o tipo de recurso autorizado for Recurso Geral."}
             )
 
     def save(self, *args, **kwargs):
