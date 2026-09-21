@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from .base_model import BaseModel
@@ -37,6 +38,32 @@ class MembroGrupo(BaseModel):
     def grupo_relacionado(self):
         return self.grupo
 
+    def clean(self):
+        super().clean()
+        if self.grupo_id and self.usuario_id:
+            papel = getattr(self.usuario, 'papel', None)
+            if papel != self.grupo.tipo_membro_permitido:
+                raise ValidationError(
+                    {"usuario": f"Apenas usuários com papel de {self.grupo.get_tipo_membro_permitido_display().lower()} podem ser membros deste grupo."}
+                )
+            ja_membro = MembroGrupo.objects.filter(grupo_id=self.grupo_id, usuario_id=self.usuario_id)
+            if self.pk:
+                ja_membro = ja_membro.exclude(pk=self.pk)
+            if ja_membro.exists():
+                raise ValidationError({"usuario": "Este usuário já é membro deste grupo."})
+        if self.grupo_id and self.data_fim_validade:
+            if self.data_fim_validade < self.grupo.data_inicio_validade:
+                raise ValidationError(
+                    {"data_fim_validade": "Não pode ser anterior à data de início de validade do grupo."}
+                )
+            if self.grupo.data_fim_validade and self.data_fim_validade > self.grupo.data_fim_validade:
+                raise ValidationError(
+                    {"data_fim_validade": "Não pode ser posterior à data de fim de validade do grupo."}
+                )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     class Meta:
             db_table = 'membro_grupo'

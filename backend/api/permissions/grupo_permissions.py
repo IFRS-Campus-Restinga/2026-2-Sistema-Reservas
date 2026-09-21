@@ -48,10 +48,7 @@ class PodeGerenciarMembrosGrupo(permissions.BasePermission):
     def has_permission(self, request, view):
         if not (request.user and request.user.is_authenticated):
             return False
-        grupo_pk = view.kwargs.get('grupo_pk')
-        if grupo_pk is None:
-            return True
-        grupo = get_object_or_404(Grupo, pk=grupo_pk)
+        grupo = get_object_or_404(Grupo, pk=view.kwargs['grupo_pk'])
         return usuario_e_criador_ou_admin(request.user, grupo)
 
     def has_object_permission(self, request, view, obj):

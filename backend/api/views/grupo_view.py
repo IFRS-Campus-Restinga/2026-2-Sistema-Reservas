@@ -4,16 +4,16 @@ from api.models.grupo_model import Grupo
 from api.permissions.grupo_permissions import PodeCriarGrupo, PodeGerenciarGrupo
 from api.permissions.regras_comuns import usuario_e_admin
 from api.serializers.grupo_serializer import GrupoSerializer
-from .grupo_view_helpers import BuscarObjetoComPermissaoMixin, listar, detalhar, criar, atualizar, remover
+from .view_helpers import BuscarObjetoComPermissaoMixin, listar, detalhar, criar, atualizar, remover
 
 class GrupoListCreateView(APIView):
     permission_classes = [PodeCriarGrupo]
 
     def get(self, request):
-        queryset = Grupo.objects.select_related('criador')
+        queryset = Grupo.objects.select_related('criador').order_by('id')
         if not usuario_e_admin(request.user):
             queryset = queryset.filter(criador=request.user)
-        return listar(queryset, GrupoSerializer)
+        return listar(request, queryset, GrupoSerializer)
 
     def post(self, request):
         return criar(request, GrupoSerializer, criador=request.user)
