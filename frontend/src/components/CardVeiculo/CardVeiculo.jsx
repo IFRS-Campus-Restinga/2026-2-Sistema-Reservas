@@ -8,54 +8,46 @@ import styles from "./CardVeiculo.module.css";
  * <CardVeiculo
  *   veiculo={veiculo}
  *   aoClicar={(veiculo) => setVeiculoSelecionado(veiculo)}
- *   disponivelAgora={true}
  * />
  *
  * Props:
  * - veiculo: objeto retornado pela API de Veiculos (nome, marca, modelo, placa, capacidade, status, ...)
  * - aoClicar: função chamada ao clicar no card do veiculo
- * - disponivelAgora (opcional, boolean): se o veículo está livre neste momento. O cálculo
- *   (normalmente a partir das reservas do veículo) é responsabilidade do componente pai.
- *   Quando não informado, a linha "Livre agora/Ocupado" não é exibida.
  */
 
-function CardVeiculo({ veiculo, aoClicar, disponivelAgora }) {
+function CardVeiculo({ veiculo, aoClicar }) {
   const estaAtivo = veiculo.status === "ATIVO";
   const rotuloStatus = STATUS_RECURSO_LABEL[veiculo.status] ?? STATUS_RECURSO_LABEL.INATIVO;
-  const mostrarDisponibilidade = typeof disponivelAgora === "boolean";
 
   return (
-    <Card className={styles.card} onClick={() => aoClicar(veiculo)}>
-      <Card.Body className={styles.corpo}>
+    <Card 
+      className={`rounded-3 ${styles.card}`} 
+      onClick={() => aoClicar(veiculo)}
+    >
+      <Card.Body className="p-3">
         <div className="d-flex align-items-start justify-content-between mb-3">
           <div
-            className={`${styles.iconeContainer} ${
-              estaAtivo ? styles.iconeAtivo : styles.iconeInativo
+            className={`d-flex align-items-center justify-content-center rounded-3 ${styles.iconeContainer} ${
+              estaAtivo ? styles.iconeAtivo : `bg-light ${styles.iconeInativo}`
             }`}
           >
             <Car size={18} />
           </div>
-          <Badge pill bg="" className={styles.badgeStatus} data-status={veiculo.status}>
+          <Badge pill bg="" className={`fw-semibold px-2 py-2 ${styles.badgeStatus}`} data-status={veiculo.status}>
             {rotuloStatus}
           </Badge>
         </div>
 
-        <Card.Title className={styles.nome}>{veiculo.nome}</Card.Title>
-        <Card.Text className={styles.subtitulo}>
+        <Card.Title className={`fs-6 fw-bold ${styles.nome}`}>
+          {veiculo.nome}
+        </Card.Title>
+        <Card.Text className={`mt-1 mb-0 ${styles.subtitulo}`}>
           {veiculo.marca} {veiculo.modelo} · {veiculo.placa}
         </Card.Text>
 
-        <div className={`d-flex align-items-center gap-3 ${styles.rodape}`}>
-          <div className="d-flex align-items-center gap-1">
-            <Users size={11} />
-            <span>{veiculo.capacidade}</span>
-          </div>
-
-          {mostrarDisponibilidade && (
-            <span className={disponivelAgora ? styles.livreAgora : ""}>
-              {disponivelAgora ? "Livre agora" : "Ocupado"}
-            </span>
-          )}
+        <div className={`d-flex align-items-center gap-1 mt-3 pt-3 border-top border-light ${styles.rodape}`}>
+          <Users size={11} />
+          <span>{veiculo.capacidade}</span>
         </div>
       </Card.Body>
     </Card>

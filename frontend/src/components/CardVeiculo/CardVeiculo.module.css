@@ -1,6 +1,5 @@
 .card {
   border-color: #f3f4f6;
-  border-radius: 12px;
   cursor: pointer;
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
@@ -10,17 +9,9 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.corpo {
-  padding: 16px;
-}
-
 .iconeContainer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: 40px;
   height: 40px;
-  border-radius: 12px;
 }
 
 .iconeAtivo {
@@ -29,14 +20,11 @@
 }
 
 .iconeInativo {
-  background-color: #f3f4f6;
   color: #9ca3af;
 }
 
 .badgeStatus {
   font-size: 10px;
-  font-weight: 600;
-  padding: 2px 8px;
 }
 
 .badgeStatus[data-status="ATIVO"] {
@@ -56,8 +44,6 @@
 
 .nome {
   font-family: var(--fonte-titulo);
-  font-size: 14px;
-  font-weight: 700;
   color: #1f2937;
   transition: color 0.2s ease;
 }
@@ -69,19 +55,9 @@
 .subtitulo {
   font-size: 12px;
   color: #9ca3af;
-  margin-top: 2px;
-  margin-bottom: 0;
 }
 
 .rodape {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #f3f4f6;
   font-size: 12px;
   color: #9ca3af;
-}
-
-.livreAgora {
-  color: var(--cor-marca);
-  font-weight: 500;
 }
