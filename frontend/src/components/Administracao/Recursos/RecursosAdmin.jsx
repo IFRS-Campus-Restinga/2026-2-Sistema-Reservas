@@ -139,7 +139,7 @@ function RecursosAdmin() {
         },
         {
             chave: 'tipo_recurso',
-            titulo: 'Categoria',
+            titulo: 'Tipo de recurso',
             renderizar: (recurso) => tiposPorId[recurso.tipo_recurso] || '-',
         },
         {
@@ -201,7 +201,7 @@ function RecursosAdmin() {
                 <CampoBusca
                     valor={busca}
                     aoAlterar={setBusca}
-                    placeholder="Buscar por nome, categoria ou código..."
+                    placeholder="Buscar por nome, tipo de recurso ou código..."
                 />
 
                 <button
