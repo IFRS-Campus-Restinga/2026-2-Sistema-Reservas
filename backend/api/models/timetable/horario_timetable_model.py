@@ -2,10 +2,12 @@ from django.db import models
 from api.models.base_model import BaseModel
 
 class HorarioTimetable(BaseModel):
+    
     """
     Tabela de mapeamento dos períodos do EduPage.
-    Como os horários vêm null no JSON, essa tabela cruza o ID numérico
-    (1 a 15) com as horas reais (ex: 07:30 às 08:20).
+    Como os horários vêm null no JSON (periodo={"id": "4", "inicio": null, "fim": null}),
+    essa tabela cruza o ID numérico (1 a 15) 
+    com as horas reais (ex: 07:30 às 08:20).
     """
 
     class Meta:

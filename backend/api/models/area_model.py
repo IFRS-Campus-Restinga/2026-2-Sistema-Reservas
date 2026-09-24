@@ -67,6 +67,13 @@ class Area(BaseModel):
         validators=[validar_equipamentos_area],
         help_text="Equipamentos encontrados na área"
     )
+    edupage_id = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        unique=True,
+        help_text="ID interno da sala no JSON do EduPage (ex: '-61')"
+    )
     bloco = models.ForeignKey(
         Bloco,
         on_delete=models.CASCADE,
