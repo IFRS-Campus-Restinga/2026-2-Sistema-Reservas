@@ -1,1 +1,2 @@
 from .periodo_letivo_model import PeriodoLetivo
+from .horario_timetable_model import HorarioTimetable
