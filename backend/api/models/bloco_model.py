@@ -61,11 +61,12 @@ class Bloco(BaseModel):
         return f"Bloco {self.numero} - {self.nome}"
 
     def clean(self):
-        super().clean()
+        
         if self.nome:
             self.nome = self.nome.strip()
         if self.numero:
             self.numero = self.numero.strip()
+        super().clean()
         
     def save(self, *args, **kwargs):
         self.full_clean()

@@ -80,11 +80,12 @@ class Area(BaseModel):
         return f"{self.nome} - {self.bloco.nome}"  
 
     def clean(self):
-        super().clean()
+        
         if self.nome:
             self.nome = self.nome.strip()
         if self.caracteristica:
             self.caracteristica = self.caracteristica.strip()
+        super().clean()
 
     def save(self, *args, **kwargs):
         self.full_clean()
