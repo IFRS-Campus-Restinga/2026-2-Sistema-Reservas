@@ -51,7 +51,7 @@ class Bloco(BaseModel):
     )
     acessibilidade = models.JSONField(
         models.CharField(max_length=50),
-        default=lambda: [Acessibilidade.PISO_TATIL],
+        default=lambda: [Acessibilidade.PISO_TATIL, Acessibilidade.BANHEIRO],
         blank=True,
         validators=[validar_acessibilidade_bloco],
         help_text="Opções de acessibilidade disponíveis no bloco."
