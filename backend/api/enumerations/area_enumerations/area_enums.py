@@ -12,6 +12,7 @@ class TipoArea(models.TextChoices):
     AUDITORIO = 'AUDITORIO', 'Auditório'
     QUADRA = 'QUADRA', 'Quadra'
     CHURRASQUEIRA = 'CHURRASQUEIRA', 'Churrasqueira'
+    SALA = 'SALA', 'Sala'
 
 
 class EquipamentoArea(models.TextChoices):
