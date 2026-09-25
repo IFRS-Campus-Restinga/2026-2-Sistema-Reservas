@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from api.models.reserva_recurso_geral_model import ReservaRecursoGeral
+from django.utils import timezone
 
 class ReservaRecursoGeralSerializer(serializers.ModelSerializer):
 
@@ -29,6 +30,21 @@ class ReservaRecursoGeralSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, dados):
+        agora = timezone.localtime()
+
+        if dados["data"] < agora.date():
+            raise serializers.ValidationError({
+                "data": "Não é possível reservar uma data passada."
+            })
+
+        if (
+            dados["data"] == agora.date()
+            and dados["horario_inicio"] <= agora.time().replace(tzinfo=None)
+        ):
+            raise serializers.ValidationError({
+                "horario_inicio": "O horário de início deve ser posterior ao horário atual."
+            })
+
         if dados["horario_fim"] <= dados["horario_inicio"]:
             raise serializers.ValidationError({
                 "horario_fim": "O horário de fim deve ser posterior ao início."
