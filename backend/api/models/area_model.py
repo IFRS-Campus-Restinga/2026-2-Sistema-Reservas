@@ -20,8 +20,8 @@ class Area(BaseModel):
         unique_together = ['nome', 'bloco'] # unique constraint
 
     nome = models.CharField(
-        max_length=50,
-        validators=[MinLengthValidator(4)],
+        max_length=25,
+        validators=[MinLengthValidator(3)],
         null=False,
         blank=False,
         help_text="Nome da área contendo entre 4 e 50 caracteres."

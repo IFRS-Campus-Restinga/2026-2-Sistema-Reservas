@@ -1,1 +1,2 @@
-from .timetable.edupage_service import EdupageService
+from .timetable.edupage_service import *
+from .timetable.timetable_service import *
