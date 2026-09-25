@@ -47,10 +47,14 @@ class PeriodoLetivo(BaseModel):
             self.nome = self.nome.strip()
 
     def save(self, *args, **kwargs):
+
         self.full_clean()
-        
-        # Garante que apenas UM período letivo pode ser ativo por vez
+
+        # Garante que apenas UM período letivo pode ser ativo por vez        
         if self.ativo:
+
+            # Caso um OUTRO período letivo seja encontrado ativo no momento do salvamento, ele será desativado, 
+            # sobrando apenas o que está sendo salvo no momento. É útil quando virar o semestre
             PeriodoLetivo.objects.filter(ativo=True).update(ativo=False)
             
         super().save(*args, **kwargs)
