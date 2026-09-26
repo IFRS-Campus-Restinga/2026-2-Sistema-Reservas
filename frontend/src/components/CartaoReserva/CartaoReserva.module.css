@@ -1,3 +1,4 @@
+
 .cartao {
   display: flex;
   align-items: center;
@@ -15,20 +16,34 @@
   height: 48px;
   flex-shrink: 0;
   border-radius: 999px;
-  background-color: #9ca3af;
+  background: #9ca3af;
 }
 
 .barraStatus[data-status="confirmada"] {
-  background-color: var(--cor-marca);
+  background: var(--cor-marca, #009a44);
 }
 
 .barraStatus[data-status="pendente"] {
-  background-color: #fb923c;
+  background: #fb923c;
+}
+
+.barraStatus[data-status="aguardando_termo"] {
+  background: #eab308;
+}
+
+.barraStatus[data-status="cancelada"],
+.barraStatus[data-status="rejeitada"] {
+  background: #94a3b8;
+}
+
+.barraStatus[data-status="concluida"] {
+  background: #0ea5e9;
 }
 
 .conteudo {
   flex: 1;
   min-width: 0;
+  text-align: left;
 }
 
 .linhaTitulo {
@@ -52,28 +67,32 @@
   flex-shrink: 0;
   padding: 2px 6px;
   border-radius: 999px;
-  color: #ffffff;
+  color: white;
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
 }
 
 .tagTipo[data-tipo="interna"] {
-  background-color: var(--cor-marca);
+  background: var(--cor-marca, #009a44);
 }
 
 .tagTipo[data-tipo="externa"] {
-  background-color: #2563eb;
+  background: #2563eb;
 }
 
 .descricao {
+  display: block;
   color: #6b7280;
   font-size: 12px;
+  margin-top: 5px;
 }
 
 .horario {
-  color: #9ca3af;
+  display: block;
+  color: #94a3b8;
   font-size: 12px;
+  margin-top: 8px;
 }
 
 .badgeStatus {
@@ -87,12 +106,90 @@
 
 .badgeStatus[data-status="confirmada"] {
   border-color: #bbf7d0;
-  background-color: #dcfce7;
+  background: #dcfce7;
   color: #15803d;
 }
 
 .badgeStatus[data-status="pendente"] {
   border-color: #fed7aa;
-  background-color: #ffedd5;
+  background: #ffedd5;
   color: #ea580c;
+}
+
+.badgeStatus[data-status="aguardando_termo"] {
+  border-color: #fde68a;
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.badgeStatus[data-status="cancelada"],
+.badgeStatus[data-status="rejeitada"] {
+  border-color: #e2e8f0;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.badgeStatus[data-status="concluida"] {
+  border-color: #bae6fd;
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.porModalidade {
+  border: 1px solid #e4eaf1;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.porModalidade[data-tipo="interna"] {
+  border-color: #a7e9c2;
+}
+
+.porModalidade[data-tipo="externa"] {
+  border-color: #a9c7ff;
+}
+
+.porModalidade .barraStatus[data-tipo="interna"] {
+  background: #009a44;
+}
+
+.porModalidade .barraStatus[data-tipo="externa"] {
+  background: #2563eb;
+}
+
+.tagTipo[data-tipo="modalidade"] {
+  background: #f1f5f9;
+  color: #64748b;
+  border-radius: 4px;
+}
+
+.clicavel {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.clicavel:hover {
+  background: #f8fdfb;
+}
+
+.clicavel:focus-visible {
+  outline: 3px solid #059669;
+  outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .cartao {
+    padding: 13px;
+    gap: 10px;
+  }
+
+  .linhaTitulo {
+    flex-wrap: wrap;
+  }
+
+  .nome {
+    white-space: normal;
+  }
 }

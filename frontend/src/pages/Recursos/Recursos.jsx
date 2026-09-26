@@ -1,11 +1,12 @@
 
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PackageSearch } from 'lucide-react';
 
 import CardRecurso from '../../components/CardRecurso/CardRecurso';
+import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/ReservaRecursoGeralModal';
 import { listarRecursosGerais, listarTiposRecurso } from '../../services';
 import { CATEGORIA_RECURSO_LABEL } from '../../utils/categoriaRecurso';
-import { TIPO_PRAZO_LABEL } from '../../utils/tipoPrazo';
 import styles from './Recursos.module.css';
 
 const CATEGORIAS_ANTIGAS = {
@@ -53,10 +54,12 @@ function quantidadeDisponivel(recurso) {
 }
 
 function Recursos() {
+  const navigate = useNavigate();
+
   const [recursos, setRecursos] = useState([]);
   const [tipos, setTipos] = useState([]);
   const [categoria, setCategoria] = useState('');
-  const [tipoAberto, setTipoAberto] = useState('');
+  const [reserva, setReserva] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -70,17 +73,21 @@ function Recursos() {
       .catch(console.error);
   }, []);
 
-  const grupos = tipos.map((tipo) => ({
-    ...tipo,
-    categoriaReserva: categoriaDoTipo(tipo),
-    recursos: recursos.filter(
-      (recurso) => String(recurso.tipo_recurso) === String(tipo.id)
-    ),
-  })).filter((tipo) => tipo.recursos.some(
-    (recurso) =>
-      recurso.status === 'ATIVO' &&
-      quantidadeDisponivel(recurso) > 0
-  ));
+  const grupos = tipos
+    .map((tipo) => ({
+      ...tipo,
+      categoriaReserva: categoriaDoTipo(tipo),
+      recursos: recursos.filter(
+        (recurso) => String(recurso.tipo_recurso) === String(tipo.id)
+      ),
+    }))
+    .filter((tipo) =>
+      tipo.recursos.some(
+        (recurso) =>
+          recurso.status === 'ATIVO' &&
+          quantidadeDisponivel(recurso) > 0
+      )
+    );
 
   const categoriasDisponiveis = new Set(
     grupos.map((tipo) => tipo.categoriaReserva)
@@ -90,23 +97,30 @@ function Recursos() {
     .filter((tipo) => !categoria || tipo.categoriaReserva === categoria)
     .sort((a, b) => a.descricao.localeCompare(b.descricao, 'pt-BR'));
 
-  const selecionado = tiposExibidos.find(
-    (tipo) => String(tipo.id) === tipoAberto
-  );
+  function abrirReserva(tipo) {
+    const recurso = tipo.recursos.find(
+      (item) =>
+        item.status === 'ATIVO' &&
+        quantidadeDisponivel(item) > 0
+    );
 
-  function filtrarCategoria(novaCategoria) {
-    setCategoria(novaCategoria);
-    setTipoAberto('');
-  }
-
-  function selecionarTipo(id) {
-    setTipoAberto(tipoAberto === id ? '' : id);
+    if (recurso) {
+      setReserva({ tipo, recurso });
+    }
   }
 
   return (
     <div className={styles.pagina}>
+      <div className={styles.apresentacao}>
+        <p>
+          Escolha uma categoria para consultar os tipos de recurso disponíveis.
+        </p>
+      </div>
 
-      <section className={styles.filtros} aria-label="Filtros de recursos">
+      <section
+        className={styles.filtros}
+        aria-label="Filtros de recursos"
+      >
         <div className={styles.cabecalhoFiltros}>
           <h2>Categorias</h2>
           <span>Selecione uma para filtrar os tipos</span>
@@ -116,7 +130,7 @@ function Recursos() {
           <button
             type="button"
             className={`${styles.filtroCategoria} ${!categoria ? styles.ativo : ''}`}
-            onClick={() => filtrarCategoria('')}
+            onClick={() => setCategoria('')}
             aria-pressed={!categoria}
           >
             Todas
@@ -129,7 +143,7 @@ function Recursos() {
                 type="button"
                 key={codigo}
                 className={`${styles.filtroCategoria} ${categoria === codigo ? styles.ativo : ''}`}
-                onClick={() => filtrarCategoria(codigo)}
+                onClick={() => setCategoria(codigo)}
                 aria-pressed={categoria === codigo}
               >
                 {nome}
@@ -157,17 +171,14 @@ function Recursos() {
             {tiposExibidos.map((tipo) => (
               <div
                 key={tipo.id}
+                className={styles.cartao}
                 role="button"
                 tabIndex={0}
-                aria-label={`Ver recursos do tipo ${tipo.descricao}`}
-                aria-pressed={String(tipo.id) === tipoAberto}
-                className={`${styles.cartao} ${
-                  String(tipo.id) === tipoAberto ? styles.selecionado : ''
-                }`}
+                aria-label={`Reservar recurso do tipo ${tipo.descricao}`}
                 onKeyDown={(evento) => {
                   if (evento.key === 'Enter' || evento.key === ' ') {
                     evento.preventDefault();
-                    selecionarTipo(String(tipo.id));
+                    abrirReserva(tipo);
                   }
                 }}
               >
@@ -175,7 +186,7 @@ function Recursos() {
                   categoria={tipo.categoriaReserva}
                   titulo={tipo.descricao}
                   recursos={tipo.recursos}
-                  aoClicar={() => selecionarTipo(String(tipo.id))}
+                  aoClicar={() => abrirReserva(tipo)}
                 />
               </div>
             ))}
@@ -183,59 +194,17 @@ function Recursos() {
         )}
       </section>
 
-      {selecionado && (
-        <section
-          className={styles.detalhes}
-          aria-label={`Recursos do tipo ${selecionado.descricao}`}
-        >
-          <div className={styles.cabecalhoResultados}>
-            <div>
-              <h2>{selecionado.descricao}</h2>
-              <p>
-                {CATEGORIA_RECURSO_LABEL[selecionado.categoriaReserva]}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              className={styles.fechar}
-              onClick={() => setTipoAberto('')}
-            >
-              Fechar
-            </button>
-          </div>
-
-          <div className={styles.listaItens}>
-            {selecionado.recursos
-              .filter(
-                (recurso) =>
-                  recurso.status === 'ATIVO' &&
-                  quantidadeDisponivel(recurso) > 0
-              )
-              .map((recurso) => (
-                <div className={styles.item} key={recurso.id}>
-                  <div>
-                    <h3>{recurso.nome}</h3>
-                    <p>
-                      {TIPO_PRAZO_LABEL[recurso.tipo_prazo] || recurso.tipo_prazo}
-                      {recurso.codigo && ` · Código: ${recurso.codigo}`}
-                      {recurso.tem_termo_de_responsabilidade && ' · Exige termo'}
-                    </p>
-                  </div>
-
-                  <strong>
-                    {quantidadeDisponivel(recurso)} disponível(is)
-                  </strong>
-                </div>
-              ))}
-          </div>
-
-          <p className={styles.observacao}>
-            A disponibilidade para a data escolhida será confirmada
-            na etapa de reserva.
-          </p>
-        </section>
-      )}
+      <ReservaRecursoGeralModal
+        aberto={Boolean(reserva)}
+        tipo={reserva?.tipo}
+        recursoInicial={reserva?.recurso}
+        aoFechar={() => setReserva(null)}
+        aoReservar={() =>
+          navigate('/minhas-reservas', {
+            state: { criada: true },
+          })
+        }
+      />
     </div>
   );
 }

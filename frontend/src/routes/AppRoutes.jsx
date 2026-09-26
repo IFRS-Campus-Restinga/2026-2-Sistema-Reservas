@@ -5,6 +5,7 @@ import Home from '../pages/Home/Home'
 import Recursos from '../pages/Recursos/Recursos'
 import Administracao from '../pages/Administracao/Administracao'
 import NotFound from '../pages/NotFound/NotFound'
+import MinhasReservas from '../pages/MinhasReservas/MinhasReservas';
 
 function AppRoutes() {
   return (
@@ -13,6 +14,7 @@ function AppRoutes() {
         <Route element={<MainLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/recursos" element={<Recursos />} />
+          <Route path="/minhas-reservas" element={<MinhasReservas />}/>
           <Route path="/admin" element={<Administracao />} />
           <Route path="*" element={<NotFound />} />
         </Route>

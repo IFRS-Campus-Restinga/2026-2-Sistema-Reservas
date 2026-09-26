@@ -1,11 +1,14 @@
+
 from datetime import datetime
+
 from rest_framework.exceptions import ValidationError
+
 from api.enumerations.status_recurso import StatusRecurso
 from api.enumerations.status_reserva import StatusReserva
 from api.models.reserva_recurso_geral_model import ReservaRecursoGeral
 
 
-def validar_disponibilidade(dados):
+def validar_disponibilidade(dados, excluir_reserva=None):
     recurso = dados["recurso_geral"]
     quantidade = dados["quantidades"]
 
@@ -41,6 +44,9 @@ def validar_disponibilidade(dados):
         data__lte=dados["data_devolucao_prevista"],
         data_devolucao_prevista__gte=dados["data"],
     )
+
+    if excluir_reserva is not None:
+        reservas = reservas.exclude(pk=excluir_reserva)
 
     periodos = []
     instantes = {inicio}
