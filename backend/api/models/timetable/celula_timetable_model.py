@@ -32,7 +32,19 @@ class CelulaTimetable(BaseModel):
     horario = models.ForeignKey(
         HorarioTimetable,
         on_delete=models.PROTECT,
-        help_text="O período/horário de início da aula"
+        help_text="O período original no Edupage de início da aula"
+    )
+    horario_inicio = models.TimeField(
+        default="00:00:00",
+        null=False,
+        blank=False,
+        help_text="Hora real de início da aula"
+    )
+    horario_fim = models.TimeField(
+        default="00:00:00",
+        null=False,
+        blank=False,
+        help_text="Hora real calculada de término da aula (considerando períodos múltiplos)"
     )
     disciplina = models.CharField(
         max_length=150,

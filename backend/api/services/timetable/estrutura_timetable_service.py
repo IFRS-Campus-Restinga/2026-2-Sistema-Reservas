@@ -63,6 +63,8 @@ class EstruturaTimetableService:
             
             if not sala_numero:
                 continue
+                
+            sala_numero = sala_numero.strip()
 
             # Tenta encontrar a área no banco cujo nome contenha "516",
             # se não for encontrada, os blocos serão criados automaticamente
@@ -90,12 +92,15 @@ class EstruturaTimetableService:
                     defaults={'nome': f"Bloco {numero_bloco}"}
                 )
                 
-                # Cria a área com os valores default automáticos
-                Area.objects.create(
+                # Cria a área com os valores default automáticos ou resgata se já existir
+                area_obj, created = Area.objects.get_or_create(
                     nome=sala_numero,
                     bloco=bloco,
-                    edupage_id=sala_id
+                    defaults={'edupage_id': sala_id}
                 )
+                if not created:
+                    area_obj.edupage_id = sala_id
+                    area_obj.save()
 
     def preparar_estrutura(self):
             """
@@ -104,7 +109,7 @@ class EstruturaTimetableService:
             self.criar_horarios()
             
             tabelas = self.api_service.obter_tabelas_brutas()
-            dados_salas = next((t["data_rows"] for t in tabelas if t["id"] == "classsalas"), [])
+            dados_salas = next((t["data_rows"] for t in tabelas if t["id"] == "classrooms"), [])
             
             self.sincronizar_salas(dados_salas)
             

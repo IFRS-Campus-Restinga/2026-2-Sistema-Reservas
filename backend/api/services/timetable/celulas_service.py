@@ -74,7 +74,7 @@ class CelulasService:
         criando instâncias físicas na tabela CelulaTimetable.
         Envolto em transaction.atomic para garantir que ou salva tudo, ou não salva nada em caso de erro.
         """
-        semestre_ativo = self._obter_semestre_atual()
+        semestre_ativo = self.obter_semestre_atual()
         
         # 1. Extração dos dicionários do JSON
         dados_cards = self.encontrar_tabela(tabelas, "cards")
@@ -124,23 +124,31 @@ class CelulasService:
             professor = ", ".join(filter(None, [idx_teachers.get(t_id) for t_id in teacher_ids]))
             turma = ", ".join(filter(None, [idx_classes.get(c_id) for c_id in class_ids]))
             
-            dia_traduzido = self._traduzir_dias(days)
+            dia_traduzido = self.traduzir_dias(days)
             if not dia_traduzido:
                 continue
                 
             # Buscar no banco as instâncias reais vinculadas
             area_banco = Area.objects.filter(edupage_id=sala_edupage_id).first()
-            horario_banco = HorarioTimetable.objects.filter(edupage_id=int(period_id)).first()
+            period_id_int = int(period_id)
+            horario_banco = HorarioTimetable.objects.filter(edupage_id=period_id_int).first()
             
             # Se a sala ou horário não estiverem no nosso banco, ignoramos a criação dessa célula
             if not area_banco or not horario_banco:
                 continue
+                
+            # Calculamos a hora real de início e fim baseando-se na duração de períodos letivos
+            horario_banco_fim = HorarioTimetable.objects.filter(edupage_id=period_id_int + duracao - 1).first()
+            hora_inicio = horario_banco.horario_inicio
+            hora_fim = horario_banco_fim.horario_fim if horario_banco_fim else horario_banco.horario_fim
                 
             celulas_para_salvar.append(
                 CelulaTimetable(
                     area=area_banco,
                     periodo_letivo=semestre_ativo,
                     horario=horario_banco,
+                    horario_inicio=hora_inicio,
+                    horario_fim=hora_fim,
                     disciplina=disciplina[:150],  # [:150] garante que não ultrapassará o max_length do model
                     professor=professor[:150],
                     turma=turma[:100],
@@ -154,4 +162,4 @@ class CelulasService:
         if celulas_para_salvar:
             CelulaTimetable.objects.bulk_create(celulas_para_salvar)
             
-        return len(celulas_para_salvar)
+        return celulas_para_salvar

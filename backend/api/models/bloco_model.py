@@ -7,7 +7,8 @@ from django.db import models
 from api.enumerations.bloco_enumerations.acessibilidade import Acessibilidade
 from api.validators.bloco_validator import validar_acessibilidade_bloco
 from .base_model import BaseModel
-
+def acessibilidade_default():
+    return [Acessibilidade.PISO_TATIL, Acessibilidade.BANHEIRO]
 
 class Bloco(BaseModel):
     """
@@ -51,7 +52,7 @@ class Bloco(BaseModel):
     )
     acessibilidade = models.JSONField(
         models.CharField(max_length=50),
-        default=lambda: [Acessibilidade.PISO_TATIL, Acessibilidade.BANHEIRO],
+        default=acessibilidade_default,
         blank=True,
         validators=[validar_acessibilidade_bloco],
         help_text="Opções de acessibilidade disponíveis no bloco."
