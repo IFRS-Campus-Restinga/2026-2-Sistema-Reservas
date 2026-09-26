@@ -5,6 +5,7 @@ from api.views.bloco_view import BlocoListCreateView, BlocoDetailView
 from api.views.area_view import AreaDetailView, AreaListCreateView
 
 from api.views.veiculo_view import VeiculoCreateView, VeiculoDetailView
+from api.views.timetable_view import TimetableView
 
 urlpatterns = [
     path('recursos-gerais/', RecursoGeralListCreateView.as_view(), name='recurso-geral-list-create'),
@@ -16,4 +17,5 @@ urlpatterns = [
     path('areas/<int:pk>/', AreaDetailView.as_view(), name='area-detail'),
     path("veiculos/", VeiculoCreateView.as_view(), name="veiculo-list"),
     path("veiculos/<int:pk>/", VeiculoDetailView.as_view(), name="veiculo-detail"),
+    path('timetable/', TimetableView.as_view(), name='timetable-list'),
 ]
