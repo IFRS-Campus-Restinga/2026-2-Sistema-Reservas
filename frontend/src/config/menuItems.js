@@ -1,5 +1,6 @@
 import {
   Home,
+  Package,
   Shield,
 } from "lucide-react";
 
@@ -9,6 +10,13 @@ export const MENU = [
     titulo: "Home",
     icone: Home,
     url: '/',
+    permissoes: true,
+  },
+  {
+    id: "recursos",
+    titulo: "Recursos",
+    icone: Package,
+    url: "/recursos",
     permissoes: true,
   },
   {
