@@ -1,11 +1,14 @@
-
-from datetime import datetime
-
 from rest_framework.exceptions import ValidationError
-
 from api.enumerations.status_recurso import StatusRecurso
 from api.enumerations.status_reserva import StatusReserva
 from api.models.reserva_recurso_geral_model import ReservaRecursoGeral
+
+
+STATUS_RESERVAS_ATIVAS = [
+    StatusReserva.PENDENTE,
+    StatusReserva.CONFIRMADA,
+    StatusReserva.AGUARDANDO_TERMO,
+]
 
 
 def validar_disponibilidade(dados, excluir_reserva=None):
@@ -17,68 +20,23 @@ def validar_disponibilidade(dados, excluir_reserva=None):
             "recurso_geral": "O recurso não está disponível para reserva."
         })
 
-    if quantidade > recurso.quantidade_total:
+    if quantidade < 1:
         raise ValidationError({
-            "quantidades": "A quantidade solicitada ultrapassa o total do recurso."
+            "quantidades": "A quantidade deve ser maior que zero."
         })
 
-    inicio = datetime.combine(
-        dados["data"],
-        dados["horario_inicio"]
-    )
-
-    fim = datetime.combine(
-        dados["data_devolucao_prevista"],
-        dados["horario_fim"]
-    )
-
-    status_ativos = [
-        StatusReserva.PENDENTE,
-        StatusReserva.CONFIRMADA,
-        StatusReserva.AGUARDANDO_TERMO,
-    ]
-
-    reservas = ReservaRecursoGeral.objects.filter(
-        recurso_geral=recurso,
-        status__in=status_ativos,
-        data__lte=dados["data_devolucao_prevista"],
-        data_devolucao_prevista__gte=dados["data"],
-    )
+    disponiveis = recurso.quantidade_total - recurso.quantidade_reservada
 
     if excluir_reserva is not None:
-        reservas = reservas.exclude(pk=excluir_reserva)
+        reserva_atual = ReservaRecursoGeral.objects.get(pk=excluir_reserva)
 
-    periodos = []
-    instantes = {inicio}
+        if (
+            reserva_atual.recurso_geral_id == recurso.pk
+            and reserva_atual.status in STATUS_RESERVAS_ATIVAS
+        ):
+            disponiveis += reserva_atual.quantidades
 
-    for reserva in reservas:
-        inicio_reserva = datetime.combine(
-            reserva.data,
-            reserva.horario_inicio
-        )
-
-        fim_reserva = datetime.combine(
-            reserva.data_devolucao_prevista,
-            reserva.horario_fim
-        )
-
-        if inicio < fim_reserva and fim > inicio_reserva:
-            periodos.append((
-                inicio_reserva,
-                fim_reserva,
-                reserva.quantidades
-            ))
-
-            instantes.add(max(inicio, inicio_reserva))
-
-    for instante in instantes:
-        ocupadas = sum(
-            qtd
-            for inicio_reserva, fim_reserva, qtd in periodos
-            if inicio_reserva <= instante < fim_reserva
-        )
-
-        if ocupadas + quantidade > recurso.quantidade_total:
-            raise ValidationError({
-                "quantidades": "Não há quantidade suficiente disponível nesse período."
-            })
+    if quantidade > disponiveis:
+        raise ValidationError({
+            "quantidades": "Não há quantidade suficiente disponível para esse recurso."
+        })

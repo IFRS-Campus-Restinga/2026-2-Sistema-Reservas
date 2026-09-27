@@ -7,6 +7,7 @@ class RecursoGeralSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecursoGeral
         fields = "__all__"
+        read_only_fields = ["quantidade_reservada"]
         extra_kwargs = {"observacao": {"allow_blank": True, "required": False}}
 
     def validate_nome(self, value):
@@ -25,12 +26,9 @@ class RecursoGeralSerializer(serializers.ModelSerializer):
                 "A quantidade total não pode ser negativa."
             )
 
-        return value
-
-    def validate_quantidade_reservada(self, value):
-        if value < 0:
+        if self.instance and value < self.instance.quantidade_reservada:
             raise serializers.ValidationError(
-                "A quantidade reservada não pode ser negativa."
+                "A quantidade total não pode ser menor que a quantidade reservada."
             )
 
         return value

@@ -1,7 +1,7 @@
-
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -10,7 +10,10 @@ from api.enumerations.status_reserva import StatusReserva
 from api.models.recurso_geral_model import RecursoGeral
 from api.models.reserva_recurso_geral_model import ReservaRecursoGeral
 from api.serializers.reserva_recurso_geral_serializer import ReservaRecursoGeralSerializer
-from api.validators.reserva_recurso_geral_validator import validar_disponibilidade
+from api.validators.reserva_recurso_geral_validator import (
+    STATUS_RESERVAS_ATIVAS,
+    validar_disponibilidade,
+)
 
 
 STATUS_ALTERAVEIS = [
@@ -38,9 +41,7 @@ class ReservaRecursoGeralListCreateView(APIView):
             usuario=request.user
         ).order_by("-data", "-horario_inicio")
 
-        serializer = ReservaRecursoGeralSerializer(reservas, many=True)
-
-        return Response(serializer.data)
+        return Response(ReservaRecursoGeralSerializer(reservas, many=True).data)
 
     def post(self, request):
         serializer = ReservaRecursoGeralSerializer(data=request.data)
@@ -48,21 +49,19 @@ class ReservaRecursoGeralListCreateView(APIView):
 
         with transaction.atomic():
             dados = serializer.validated_data
-
             recurso = get_object_or_404(
                 RecursoGeral.objects.select_for_update(),
                 pk=dados["recurso_geral"].pk,
             )
 
             dados["recurso_geral"] = recurso
-
             validar_disponibilidade(dados)
             serializer.save(usuario=request.user)
 
-        return Response(
-            serializer.data,
-            status=status.HTTP_201_CREATED,
-        )
+            recurso.quantidade_reservada += dados["quantidades"]
+            recurso.save(update_fields=["quantidade_reservada"])
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class ReservaRecursoGeralDetailView(APIView):
@@ -75,44 +74,72 @@ class ReservaRecursoGeralDetailView(APIView):
             usuario=request.user,
         )
 
-        serializer = ReservaRecursoGeralSerializer(reserva)
-
-        return Response(serializer.data)
+        return Response(ReservaRecursoGeralSerializer(reserva).data)
 
     def patch(self, request, pk):
-        with transaction.atomic():
-            reserva = get_object_or_404(
-                ReservaRecursoGeral.objects.select_for_update(),
-                pk=pk,
-                usuario=request.user,
-            )
+        administrador = bool(
+            request.user.is_staff or getattr(request.user, "papel", None) == "admin"
+        )
+        alteracao_status = set(request.data) == {"status"}
+        novo_status = request.data.get("status") if alteracao_status else None
+        status_administrativos = {StatusReserva.CONCLUIDA, StatusReserva.REJEITADA}
 
-            if reserva.status not in STATUS_ALTERAVEIS:
-                return Response(
-                    {
-                        "detail": "Esta reserva não pode mais ser alterada ou cancelada."
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
+        if novo_status in status_administrativos and not administrador:
+            raise PermissionDenied("Somente um administrador pode finalizar a reserva.")
+
+        with transaction.atomic():
+            reservas = ReservaRecursoGeral.objects.select_for_update()
+
+            if not (
+                administrador
+                and novo_status in status_administrativos | {StatusReserva.CANCELADA}
+            ):
+                reservas = reservas.filter(usuario=request.user)
+
+            reserva = get_object_or_404(reservas, pk=pk)
+
+            if alteracao_status and novo_status in status_administrativos | {StatusReserva.CANCELADA}:
+                if reserva.status not in STATUS_RESERVAS_ATIVAS:
+                    raise ValidationError({
+                        "status": "Esta reserva já foi finalizada."
+                    })
+
+                if (
+                    novo_status == StatusReserva.CANCELADA
+                    and reserva.status not in STATUS_ALTERAVEIS
+                    and not administrador
+                ):
+                    raise ValidationError({
+                        "status": "Esta reserva não pode mais ser cancelada."
+                    })
+
+                recurso = get_object_or_404(
+                    RecursoGeral.objects.select_for_update(),
+                    pk=reserva.recurso_geral_id,
                 )
 
-            if (
-                set(request.data) == {"status"}
-                and request.data["status"] == StatusReserva.CANCELADA
-            ):
-                reserva.status = StatusReserva.CANCELADA
+                if recurso.quantidade_reservada < reserva.quantidades:
+                    raise ValidationError({
+                        "quantidades": "O estoque está inconsistente. Recalcule as reservas antes de continuar."
+                    })
+
+                recurso.quantidade_reservada -= reserva.quantidades
+                recurso.save(update_fields=["quantidade_reservada"])
+
+                reserva.status = novo_status
                 reserva.save(update_fields=["status"])
 
-                serializer = ReservaRecursoGeralSerializer(reserva)
+                return Response(ReservaRecursoGeralSerializer(reserva).data)
 
-                return Response(serializer.data)
+            if reserva.status not in STATUS_ALTERAVEIS:
+                raise ValidationError({
+                    "detail": "Esta reserva não pode mais ser alterada ou cancelada."
+                })
 
             if not request.data or set(request.data) - CAMPOS_EDICAO:
-                return Response(
-                    {
-                        "detail": "Informe apenas os campos permitidos para edição."
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+                raise ValidationError({
+                    "detail": "Informe apenas os campos permitidos para edição."
+                })
 
             serializer = ReservaRecursoGeralSerializer(
                 reserva,
@@ -132,14 +159,9 @@ class ReservaRecursoGeralDetailView(APIView):
                     "quantidades",
                 )
             }
-
             dados.update(serializer.validated_data)
 
-            ids = {
-                reserva.recurso_geral_id,
-                dados["recurso_geral"].pk,
-            }
-
+            ids = {reserva.recurso_geral_id, dados["recurso_geral"].pk}
             recursos = {
                 recurso.pk: recurso
                 for recurso in RecursoGeral.objects.select_for_update()
@@ -147,14 +169,30 @@ class ReservaRecursoGeralDetailView(APIView):
                 .order_by("pk")
             }
 
-            dados["recurso_geral"] = recursos[dados["recurso_geral"].pk]
+            recurso_anterior = recursos[reserva.recurso_geral_id]
+            recurso_novo = recursos[dados["recurso_geral"].pk]
+            quantidade_anterior = reserva.quantidades
 
-            validar_disponibilidade(
-                dados,
-                excluir_reserva=reserva.pk,
-            )
+            dados["recurso_geral"] = recurso_novo
+            validar_disponibilidade(dados, excluir_reserva=reserva.pk)
 
-            serializer.validated_data["recurso_geral"] = dados["recurso_geral"]
+            serializer.validated_data["recurso_geral"] = recurso_novo
             serializer.save()
+
+            if recurso_anterior.pk == recurso_novo.pk:
+                recurso_novo.quantidade_reservada += (
+                    dados["quantidades"] - quantidade_anterior
+                )
+                recurso_novo.save(update_fields=["quantidade_reservada"])
+            else:
+                if recurso_anterior.quantidade_reservada < quantidade_anterior:
+                    raise ValidationError({
+                        "quantidades": "O estoque está inconsistente. Recalcule as reservas antes de continuar."
+                    })
+
+                recurso_anterior.quantidade_reservada -= quantidade_anterior
+                recurso_novo.quantidade_reservada += dados["quantidades"]
+                recurso_anterior.save(update_fields=["quantidade_reservada"])
+                recurso_novo.save(update_fields=["quantidade_reservada"])
 
         return Response(serializer.data)
