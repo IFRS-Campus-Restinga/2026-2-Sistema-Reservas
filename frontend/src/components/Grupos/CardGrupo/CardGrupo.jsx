@@ -5,7 +5,7 @@ import ModalMembros from '../ModalMembros/ModalMembros';
 import { rotuloRecurso } from '../gruposUtils';
 import styles from './CardGrupo.module.css';
 
-function CardGrupo({ grupo, tiposRecurso, aoEditar, aoExcluir }) {
+function CardGrupo({ grupo, aoEditar, aoExcluir }) {
     const [modalMembrosAberto, setModalMembrosAberto] = useState(false);
 
     const rotuloTipoMembro = grupo.tipo_membro_permitido === 'servidor' ? 'Servidores' : 'Alunos';
@@ -37,7 +37,7 @@ function CardGrupo({ grupo, tiposRecurso, aoEditar, aoExcluir }) {
             </div>
 
             <div className={styles.tags}>
-                <span className={styles.tag}>{rotuloRecurso(grupo, tiposRecurso)}</span>
+                <span className={styles.tag}>{rotuloRecurso(grupo)}</span>
                 <span className={styles.tag} data-tipo={grupo.tipo_membro_permitido}>{rotuloTipoMembro}</span>
                 <span className={styles.criador}>Criado por {grupo.criador_nome}</span>
             </div>

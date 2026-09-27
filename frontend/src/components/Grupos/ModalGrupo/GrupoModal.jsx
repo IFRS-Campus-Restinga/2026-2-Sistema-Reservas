@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { listarTiposRecurso } from '../../../services';
 import Modal from '../../Administracao/Modal/Modal';
 import styles from './GrupoModal.module.css';
 
@@ -27,7 +28,6 @@ function montarFormulario(grupo, tipoInicial) {
 
 function GrupoModal({
     grupo,
-    tiposRecurso,
     ehAdmin,
     tipoInicial = 'aluno',
     aoFechar,
@@ -36,6 +36,16 @@ function GrupoModal({
     const [formulario, setFormulario] = useState(() => montarFormulario(grupo, ehAdmin ? tipoInicial : 'aluno'));
     const [salvando, setSalvando] = useState(false);
     const [erros, setErros] = useState({});
+    const [tiposRecurso, setTiposRecurso] = useState(null);
+
+    useEffect(() => {
+        listarTiposRecurso()
+            .then(setTiposRecurso)
+            .catch(() => {
+                setTiposRecurso([]);
+                setErros((anteriores) => ({ ...anteriores, tipo_recurso: 'Não foi possível carregar os tipos de recurso.' }));
+            });
+    }, []);
 
     function alterarCampo(evento) {
         const { name, value } = evento.target;
@@ -189,10 +199,12 @@ function GrupoModal({
                                 onChange={alterarCampo}
                                 required
                             >
-                                <option value="" disabled>Selecione</option>
-                                {tiposRecurso.map((tipo) => (
+                                <option value="" disabled>
+                                    {tiposRecurso === null ? 'Carregando...' : 'Selecione'}
+                                </option>
+                                {(tiposRecurso ?? []).map((tipo) => (
                                     <option key={tipo.id} value={tipo.id}>
-                                        {tipo.nome}
+                                        {tipo.descricao}
                                     </option>
                                 ))}
                             </select>

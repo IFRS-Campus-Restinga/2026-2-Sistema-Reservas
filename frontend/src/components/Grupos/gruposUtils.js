@@ -3,10 +3,9 @@ const ROTULO_RECURSO = {
     VEICULO: 'Veículos',
 };
 
-export function rotuloRecurso(grupo, tiposRecurso) {
+export function rotuloRecurso(grupo) {
     if (grupo.tipo_recurso_autorizado === 'RECURSO_GERAL') {
-        const tipo = tiposRecurso.find((t) => t.id === grupo.tipo_recurso);
-        return tipo ? tipo.nome : 'Recurso geral';
+        return grupo.tipo_recurso_descricao || 'Recurso geral';
     }
     return ROTULO_RECURSO[grupo.tipo_recurso_autorizado] || grupo.tipo_recurso_autorizado;
 }

@@ -6,7 +6,6 @@ import {
     criarGrupo,
     atualizarGrupo,
     excluirGrupo,
-    listarTiposRecurso,
 } from '../../../services';
 
 import Botao from '../../Botao/Botao';
@@ -22,7 +21,6 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
     const podeCriarGrupo = usuario.papel === 'admin' || usuario.papel === 'servidor';
 
     const [grupos, setGrupos] = useState([]);
-    const [tiposRecurso, setTiposRecurso] = useState([]);
     const [carregando, setCarregando] = useState(true);
     const [erro, setErro] = useState('');
 
@@ -34,9 +32,6 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
     const [grupoExcluindo, setGrupoExcluindo] = useState(null);
 
     useEffect(() => {
-        listarTiposRecurso()
-            .then(setTiposRecurso)
-            .catch((erro) => console.error(erro));
         carregarGrupos();
     }, []);
 
@@ -177,7 +172,6 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
                         <CardGrupo
                             key={grupo.id}
                             grupo={grupo}
-                            tiposRecurso={tiposRecurso}
                             aoEditar={abrirEdicao}
                             aoExcluir={solicitarExclusao}
                         />
@@ -188,7 +182,6 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
             {modalAberto && (
                 <GrupoModal
                     grupo={grupoEditando}
-                    tiposRecurso={tiposRecurso}
                     ehAdmin={ehAdmin}
                     tipoInicial={tipoAtivo}
                     aoFechar={fecharModal}
