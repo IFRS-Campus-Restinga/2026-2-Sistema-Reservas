@@ -1,5 +1,7 @@
+import uuid
+
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Case, IntegerField, Q, Value, When
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.response import Response
@@ -38,18 +40,50 @@ class MembroGrupoListCreateView(APIView):
 class MembroGrupoCandidatosView(APIView):
     permission_classes = [PodeGerenciarMembrosGrupo]
 
+    LIMITE_PADRAO = 10
+    LIMITE_MAXIMO = 50
+
     def get(self, request, grupo_pk):
         grupo = get_object_or_404(Grupo, pk=grupo_pk)
         busca = request.query_params.get('busca', '').strip()
-        candidatos = HubUser.objects.none()
-        if busca:
-            candidatos = (
-                HubUser.objects
-                .filter(Q(nome__icontains=busca) | Q(email__icontains=busca), is_active=True, papel=grupo.tipo_membro_permitido)
-                .exclude(autorizacoes_grupo__grupo=grupo)
-                .order_by('nome')
-            )
-        return listar(request, candidatos, CandidatoMembroSerializer)
+        if not busca:
+            return Response({'resultados': [], 'tem_mais': False})
+
+        limite = self.ler_limite(request.query_params.get('limite'))
+        candidatos = (
+            HubUser.objects
+            .filter(Q(nome__icontains=busca) | Q(email__icontains=busca), is_active=True, papel=grupo.tipo_membro_permitido)
+            .exclude(autorizacoes_grupo__grupo=grupo)
+            .exclude(id__in=self.ler_ids_excluidos(request.query_params.get('excluir', '')))
+            .annotate(relevancia=Case(
+                When(nome__istartswith=busca, then=Value(0)),
+                When(email__istartswith=busca, then=Value(1)),
+                default=Value(2),
+                output_field=IntegerField(),
+            ))
+            .order_by('relevancia', 'nome')
+        )
+        # Busca um a mais que o limite só para saber se há outros resultados além dos exibidos.
+        encontrados = list(candidatos[:limite + 1])
+        return Response({
+            'resultados': CandidatoMembroSerializer(encontrados[:limite], many=True).data,
+            'tem_mais': len(encontrados) > limite,
+        })
+
+    def ler_limite(self, valor):
+        try:
+            return min(max(int(valor), 1), self.LIMITE_MAXIMO)
+        except (TypeError, ValueError):
+            return self.LIMITE_PADRAO
+
+    def ler_ids_excluidos(self, valor):
+        ids = []
+        for item in valor.split(','):
+            try:
+                ids.append(uuid.UUID(item.strip()))
+            except ValueError:
+                continue
+        return ids
 
 
 class MembroGrupoDetailView(BuscarObjetoComPermissaoMixin, APIView):

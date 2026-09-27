@@ -1,42 +1,37 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { buscarCandidatos } from '../../../services';
 import useDebounce from '../../../hooks/useDebounce';
-import Paginacao from '../../Administracao/Paginacao/Paginacao';
 import styles from './BuscaUsuario.module.css';
 
-const TAMANHO_PAGINA = 10;
+const LIMITE_RESULTADOS = 10;
 
-function BuscaUsuario({ grupoId, idsIgnorados, aoSelecionar, placeholder = 'Nome ou e-mail...' }) {
+function BuscaUsuario({ grupoId, idsSelecionados, idsMembros, aoSelecionar, placeholder = 'Nome ou e-mail...' }) {
     const [termo, setTermo] = useState('');
-    const [pagina, setPagina] = useState(1);
     const [resultado, setResultado] = useState({ consulta: null, dados: null });
     const termoBuscado = useDebounce(termo.trim());
     const aberto = termo.trim().length >= 2 && termoBuscado.length >= 2;
-    const consulta = `${termoBuscado}|${pagina}`;
-    const carregando = resultado.consulta !== consulta;
+    const carregando = resultado.consulta !== termoBuscado;
     const dados = resultado.dados;
+
+    // Lê os selecionados do momento sem refazer a busca a cada seleção; eles são escondidos pelo filtro abaixo.
+    const lerIdsSelecionados = useEffectEvent(() => idsSelecionados);
 
     useEffect(() => {
         if (termoBuscado.length < 2) {
             return;
         }
         let cancelado = false;
-        buscarCandidatos(grupoId, { pagina, tamanhoPagina: TAMANHO_PAGINA, busca: termoBuscado })
-            .then((dados) => !cancelado && setResultado({ consulta, dados }))
-            .catch(() => !cancelado && setResultado({ consulta, dados: null }));
+        buscarCandidatos(grupoId, { limite: LIMITE_RESULTADOS, busca: termoBuscado, excluir: lerIdsSelecionados() })
+            .then((dados) => !cancelado && setResultado({ consulta: termoBuscado, dados }))
+            .catch(() => !cancelado && setResultado({ consulta: termoBuscado, dados: null }));
         return () => {
             cancelado = true;
         };
-    }, [grupoId, termoBuscado, pagina, consulta]);
+    }, [grupoId, termoBuscado]);
 
-    const totalPaginas = Math.ceil((dados?.count ?? 0) / TAMANHO_PAGINA);
-    const disponiveis = (dados?.results ?? []).filter((usuario) => !idsIgnorados.includes(usuario.id));
-
-    function alterarTermo(valor) {
-        setTermo(valor);
-        setPagina(1);
-    }
+    const idsIgnorados = [...idsSelecionados, ...idsMembros];
+    const disponiveis = (dados?.resultados ?? []).filter((usuario) => !idsIgnorados.includes(usuario.id));
 
     return (
         <div className={styles.container}>
@@ -46,7 +41,7 @@ function BuscaUsuario({ grupoId, idsIgnorados, aoSelecionar, placeholder = 'Nome
                     type="text"
                     className={styles.input}
                     value={termo}
-                    onChange={(evento) => alterarTermo(evento.target.value)}
+                    onChange={(evento) => setTermo(evento.target.value)}
                     placeholder={placeholder}
                     aria-label={placeholder}
                 />
@@ -54,7 +49,7 @@ function BuscaUsuario({ grupoId, idsIgnorados, aoSelecionar, placeholder = 'Nome
                     <button
                         type="button"
                         className={styles.limpar}
-                        onClick={() => alterarTermo('')}
+                        onClick={() => setTermo('')}
                         aria-label="Limpar busca"
                     >
                         <X size={14} />
@@ -85,14 +80,10 @@ function BuscaUsuario({ grupoId, idsIgnorados, aoSelecionar, placeholder = 'Nome
                         ))}
                     </ul>
 
-                    {!carregando && totalPaginas > 1 && (
-                        <div className={styles.paginacaoDropdown}>
-                            <Paginacao
-                                paginaAtual={pagina}
-                                totalPaginas={totalPaginas}
-                                aoMudarPagina={setPagina}
-                            />
-                        </div>
+                    {!carregando && dados?.tem_mais && (
+                        <p className={styles.dica}>
+                            Mostrando os primeiros {LIMITE_RESULTADOS} resultados. Refine a busca para encontrar outros usuários.
+                        </p>
                     )}
                 </div>
             )}

@@ -78,12 +78,12 @@ export const buscarMembros = async (grupoId) => {
     }
 };
 
-export const buscarCandidatos = async (grupoId, { pagina = 1, tamanhoPagina = 10, busca = '' } = {}) => {
+export const buscarCandidatos = async (grupoId, { limite = 10, busca = '', excluir = [] } = {}) => {
     try {
         const response = await axios.get(
             `${GRUPOS_URL}${grupoId}/candidatos/`,
             {
-                params: { page: pagina, page_size: tamanhoPagina, busca },
+                params: { limite, busca, excluir: excluir.join(',') },
                 withCredentials: true,
             }
         );

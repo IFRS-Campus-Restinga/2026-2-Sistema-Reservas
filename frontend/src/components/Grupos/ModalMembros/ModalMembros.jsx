@@ -40,7 +40,6 @@ function ModalMembros({ grupo, aoFechar }) {
     const totalPaginas = Math.ceil(filtrados.length / TAMANHO_PAGINA);
     const paginaAtual = Math.min(pagina, Math.max(1, totalPaginas));
     const membrosDaPagina = filtrados.slice((paginaAtual - 1) * TAMANHO_PAGINA, paginaAtual * TAMANHO_PAGINA);
-    const idsIgnorados = [...selecionados.map((usuario) => usuario.id), ...(membros ?? []).map((membro) => membro.usuario)];
 
     function alterarBusca(valor) {
         setBusca(valor);
@@ -170,7 +169,8 @@ function ModalMembros({ grupo, aoFechar }) {
                         <form className={styles.formAdicionar} onSubmit={(evento) => { evento.preventDefault(); setConfirmandoAdicao(true); }}>
                             <BuscaUsuario
                                 grupoId={grupo.id}
-                                idsIgnorados={idsIgnorados}
+                                idsSelecionados={selecionados.map((usuario) => usuario.id)}
+                                idsMembros={(membros ?? []).map((membro) => membro.usuario)}
                                 aoSelecionar={(usuario) => setSelecionados((anteriores) => [...anteriores, usuario])}
                                 placeholder="Buscar usuário para adicionar..."
                             />
