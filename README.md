@@ -4,6 +4,8 @@
 
 O login depende do HUB rodando localmente (via Docker/Dev Containers). Setup completo (variáveis de ambiente, credencial do Google, cadastro do sistema no HUB): [docs/HUB_SETUP.md](docs/HUB_SETUP.md).
 
+Ao criar APIs ou telas, siga o guia de permissões: [docs/PERMISSOES.md](docs/PERMISSOES.md).
+
 ## Rodando o backend
 
 ```powershell
