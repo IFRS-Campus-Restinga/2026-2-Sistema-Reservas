@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import MainLayout from '../layouts/MainLayout'
 import Home from '../pages/Home/Home'
 import Administracao from '../pages/Administracao/Administracao'
+import Grupos from '../pages/Grupos/Grupos'
 import NotFound from '../pages/NotFound/NotFound'
 
 function AppRoutes() {
@@ -11,6 +12,7 @@ function AppRoutes() {
       <Routes>
         <Route element={<MainLayout />}>
           <Route path="/" element={<Home />} />
+          <Route path="/grupos" element={<Grupos />} />
           <Route path="/admin" element={<Administracao />} />
           <Route path="*" element={<NotFound />} />
         </Route>

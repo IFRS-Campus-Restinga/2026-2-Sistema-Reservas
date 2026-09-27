@@ -1,6 +1,7 @@
 import {
   Home,
   Shield,
+  Users,
 } from "lucide-react";
 
 export const MENU = [
@@ -9,6 +10,13 @@ export const MENU = [
     titulo: "Home",
     icone: Home,
     url: '/',
+    permissoes: true,
+  },
+  {
+    id: "grupos",
+    titulo: "Grupos",
+    icone: Users,
+    url: '/grupos',
     permissoes: true,
   },
   {
