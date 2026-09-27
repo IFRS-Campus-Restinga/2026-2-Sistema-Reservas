@@ -4,9 +4,12 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from api.models.recurso_geral_model import RecursoGeral
 from api.serializers.recurso_geral_serializer import RecursoGeralSerializer
+from api.permissions.escrita_admin import EscritaAdmin
 
 
 class RecursoGeralListCreateView(APIView):
+    permission_classes = [EscritaAdmin]
+
     def get(self, request):
         recursos = RecursoGeral.objects.all()
         serializer = RecursoGeralSerializer(recursos, many=True)
@@ -21,6 +24,8 @@ class RecursoGeralListCreateView(APIView):
 
 
 class RecursoGeralDetailView(APIView):
+    permission_classes = [EscritaAdmin]
+
     def get(self, request, pk):
         recurso = get_object_or_404(RecursoGeral, pk=pk)
         serializer = RecursoGeralSerializer(recurso)
