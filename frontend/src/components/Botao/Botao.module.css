@@ -1,0 +1,42 @@
+.botao {
+  padding: 0.6em 1em;
+  gap: 0.5em;
+  transition: background-color 0.2s ease;
+}
+
+.botao:disabled {
+  cursor: not-allowed;
+}
+
+.botao[data-estilo="primario"] {
+  background-color: var(--cor-marca);
+  border: 0;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.botao[data-estilo="primario"]:hover:not(:disabled) {
+  background-color: var(--cor-marca-escura);
+}
+
+.botao[data-estilo="perigo"] {
+  background-color: #ef4444;
+  border: 0;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.botao[data-estilo="perigo"]:hover:not(:disabled) {
+  background-color: #dc2626;
+}
+
+.botao[data-estilo="secundario"] {
+  background-color: #ffffff;
+  border: 1px solid #dee2e6;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.botao[data-estilo="secundario"]:hover:not(:disabled) {
+  background-color: #f9fafb;
+}
