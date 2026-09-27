@@ -246,27 +246,22 @@ function ModalMembros({ grupo, aoFechar }) {
                 </div>
             </Modal>
 
-            <Modal
+            <ModalConfirmacao
                 aberto={confirmandoAdicao}
-                variante="confirmacao"
-                titulo="Adicionar membros?"
-                aoFechar={() => setConfirmandoAdicao(false)}
-                rodape={
-                    <>
-                        <Botao titulo="Cancelar" estilo="secundario" aoClicar={() => setConfirmandoAdicao(false)} />
-                        <Botao titulo="Adicionar" icone={UserPlus} aoClicar={handleAdicionar} />
-                    </>
-                }
-            >
-                <p className={styles.mensagem}>
-                    Tem certeza que deseja adicionar {selecionados.length === 1 ? selecionados[0].nome : `${selecionados.length} usuários`} ao grupo {grupo.nome}?
-                </p>
-            </Modal>
+                titulo={selecionados.length === 1 ? 'Adicionar membro?' : 'Adicionar membros?'}
+                mensagem={`Tem certeza que deseja adicionar ${selecionados.length === 1 ? selecionados[0].nome : `${selecionados.length} usuários`} ao grupo ${grupo.nome}?`}
+                icone={UserPlus}
+                textoConfirmar="Adicionar"
+                variante="primario"
+                aoCancelar={() => setConfirmandoAdicao(false)}
+                aoConfirmar={handleAdicionar}
+            />
 
             <ModalConfirmacao
                 aberto={Boolean(membroRemovendo)}
                 titulo="Remover membro?"
                 mensagem={membroRemovendo ? `Tem certeza que deseja remover ${membroRemovendo.usuario_nome} do grupo ${grupo.nome}?` : ''}
+                textoConfirmar="Remover"
                 aoCancelar={() => setMembroRemovendo(null)}
                 aoConfirmar={() => handleRemover(membroRemovendo)}
             />
