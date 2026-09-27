@@ -1,2 +1,3 @@
 from .recurso_geral_serializer import RecursoGeralSerializer
 from .tipo_recurso_serializer import TipoRecursoSerializer
+from .reserva_recurso_geral_serializer import ReservaRecursoGeralSerializer

@@ -19,14 +19,12 @@ import styles from "./CardRecurso.module.css";
  * - aoClicar: função chamada ao clicar no card. Não é chamada quando não há nenhum recurso disponível.
  */
 
-function CardRecurso({ categoria, recursos, aoClicar }) {
+function CardRecurso({ categoria, titulo, recursos, aoClicar }) {
   const IconeCategoria = CATEGORIA_RECURSO_ICONE[categoria] ?? ICONE_CATEGORIA_PADRAO;
   const rotuloCategoria = CATEGORIA_RECURSO_LABEL[categoria] ?? categoria;
 
-  const totalDisponivel = recursos.reduce(
-    (soma, recurso) => soma + Math.max(0, recurso.quantidade_total - recurso.quantidade_reservada),
-    0,
-  );
+  const ativos = recursos.filter((recurso) => recurso.status === 'ATIVO');
+  const totalDisponivel = recursos.reduce((soma, recurso) => soma + Math.max(0, recurso.quantidade_total - recurso.quantidade_reservada), 0);
   const totalGeral = recursos.reduce((soma, recurso) => soma + recurso.quantidade_total, 0);
   const anyTermo = recursos.some((recurso) => recurso.tem_termo_de_responsabilidade);
   const desabilitado = totalDisponivel === 0;
@@ -53,7 +51,7 @@ function CardRecurso({ categoria, recursos, aoClicar }) {
         </div>
 
         <Card.Title className={`fs-6 fw-bold ${styles.nome}`}>
-          {rotuloCategoria}
+          {titulo || rotuloCategoria}
         </Card.Title>
         <Card.Text className={`mt-1 mb-0 ${styles.subtitulo}`}>
           {prazos}

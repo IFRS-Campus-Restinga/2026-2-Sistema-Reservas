@@ -28,3 +28,8 @@ export {
     atualizarArea,
     excluirArea,
 } from './areas';
+export {
+  listarReservasRecursosGerais,
+  criarReservaRecursoGeral,
+  cancelarReservaRecursoGeral,
+} from './reservasRecursosGerais';

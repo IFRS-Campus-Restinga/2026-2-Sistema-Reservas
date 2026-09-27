@@ -1,13 +1,10 @@
-from datetime import time, timedelta
-
+from datetime import time, datetime
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxLengthValidator, MinLengthValidator
 from django.db import models
-
 from api.enumerations import StatusReserva, TipoReserva
 from .base_model import BaseModel
-
 
 class Reserva(BaseModel):
     nome = models.CharField(max_length=50, validators=[MinLengthValidator(5)], verbose_name="Nome")
@@ -38,24 +35,16 @@ class Reserva(BaseModel):
             return
         if not isinstance(self.horario_fim, time):
             return
-
-        if self.horario_fim <= self.horario_inicio:
+        data_fim = getattr(self, "data_devolucao_prevista", None) or self.data
+        if not self.data or not data_fim:
+            return
+        retirada = datetime.combine(self.data, self.horario_inicio)
+        devolucao = datetime.combine(data_fim, self.horario_fim)
+        if devolucao <= retirada:
             raise ValidationError({
-                "horario_fim": "O horário de fim deve ser posterior ao horário de início."
+                "horario_fim": "A devolução deve ser posterior à retirada."
             })
-        inicio = timedelta(
-            hours=self.horario_inicio.hour,
-            minutes=self.horario_inicio.minute,
-            seconds=self.horario_inicio.second,
-            microseconds=self.horario_inicio.microsecond,
-        )
-        fim = timedelta(
-            hours=self.horario_fim.hour,
-            minutes=self.horario_fim.minute,
-            seconds=self.horario_fim.second,
-            microseconds=self.horario_fim.microsecond,
-        )
-        self.duracao = fim - inicio
+        self.duracao = devolucao - retirada
 
     def save(self, *args, **kwargs):
         campos_para_salvar = kwargs.get("update_fields")
