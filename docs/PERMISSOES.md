@@ -52,6 +52,7 @@ Permissões que já existem:
 | `PodeCriarGrupo` | Leitura: qualquer usuário logado. Criar: admin e servidor, conforme o tipo do grupo |
 | `PodeGerenciarGrupo` | O criador do grupo ou admin |
 | `PodeGerenciarMembrosGrupo` | O criador do grupo ou admin |
+| `PodeGerenciarReserva` | O responsável pela reserva ou admin |
 
 > ⚠️ **Nunca deixe uma view sem `permission_classes`.** Sem esse atributo, qualquer usuário logado consegue criar, editar e excluir.
 
@@ -90,7 +91,7 @@ class AprovarReservaView(APIView):
 
 Para saber se alguém é admin, use **sempre** `usuario_e_admin(user)`. Não compare `user.papel == 'admin'`, porque isso ignora o `is_staff`.
 
-> A regra depende do registro (ex.: "só o dono da reserva pode editar")? Veja `PodeGerenciarGrupo`, em `grupo_permissions.py`, e como a `GrupoDetailView` a usa.
+> A regra depende do registro (ex.: "só o dono da reserva pode editar")? Veja `PodeGerenciarReserva`, em `reserva_permissions.py`, e como a `ReservaRecursoGeralDetailView` a usa.
 
 ### 3. Reservas: chame `pode_reservar` ao criar e ao editar
 
@@ -99,8 +100,8 @@ from rest_framework.exceptions import PermissionDenied
 from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
 from api.permissions.regras_reserva import pode_reservar
 
-if not pode_reservar(request.user, TipoRecursoReservavel.RECURSO_GERAL, recurso.tipo_recurso_id, data):
-    raise PermissionDenied("Você não tem autorização para reservar este recurso.")
+if not pode_reservar(request.user, TipoRecursoReservavel.RECURSO_GERAL, recurso.tipo_recurso_id, data, data_devolucao):
+    raise PermissionDenied("Você não tem autorização para reservar este recurso nesse período.")
 ```
 
 | Reserva de | Tipo | `tipo_recurso_id` |
@@ -109,7 +110,9 @@ if not pode_reservar(request.user, TipoRecursoReservavel.RECURSO_GERAL, recurso.
 | Veículo | `TipoRecursoReservavel.VEICULO` | não precisa |
 | Área / espaço | `TipoRecursoReservavel.ESPACO` | não precisa |
 
-Passe em `data` o **dia da reserva**. A autorização precisa estar valendo nesse dia, não só hoje.
+- Passe em `data` o **dia da retirada** e em `data_fim` o **dia da devolução**. A autorização precisa valer no período da reserva, não só hoje. Em reservas de um dia só, basta a `data`.
+- **Ao editar**, confira a autorização do **dono da reserva** (`reserva.usuario`), não de quem está editando. Um admin pode editar a reserva de um aluno, mas o que importa é se o aluno pode reservar aquilo.
+- Exemplo pronto: `validar_autorizacao` em `api/validators/reserva_recurso_geral_validator.py`.
 
 ## Frontend
 

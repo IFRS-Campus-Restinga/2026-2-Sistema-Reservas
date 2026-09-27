@@ -34,11 +34,18 @@ def autorizacoes_vigentes(usuario, data=None):
     )
 
 
-def pode_reservar(usuario, tipo_recurso_autorizado, tipo_recurso_id=None, data=None):
+def pode_reservar(usuario, tipo_recurso_autorizado, tipo_recurso_id=None, data=None, data_fim=None):
     if not (usuario and usuario.is_authenticated):
         return False
     if tipo_recurso_autorizado in tipos_reserva_livre(usuario):
         return True
+    return all(
+        _tem_autorizacao(usuario, tipo_recurso_autorizado, tipo_recurso_id, dia)
+        for dia in {data, data_fim or data}
+    )
+
+
+def _tem_autorizacao(usuario, tipo_recurso_autorizado, tipo_recurso_id, data):
     autorizacoes = autorizacoes_vigentes(usuario, data).filter(grupo__tipo_recurso_autorizado=tipo_recurso_autorizado)
     if tipo_recurso_autorizado == TipoRecursoReservavel.RECURSO_GERAL:
         autorizacoes = autorizacoes.filter(grupo__tipo_recurso_id=tipo_recurso_id)

@@ -1,9 +1,11 @@
 from datetime import datetime
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from django.db.models import Q
 from api.enumerations.status_recurso import StatusRecurso
 from api.enumerations.status_reserva import StatusReserva
+from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
 from api.models.reserva_recurso_geral_model import ReservaRecursoGeral
+from api.permissions.regras_reserva import pode_reservar
 
 
 STATUS_RESERVAS_ATIVAS = [
@@ -63,6 +65,18 @@ def quantidade_disponivel(dados, excluir_reserva=None):
             recurso, inicio, fim, excluir_reserva
         ),
     )
+
+def validar_autorizacao(usuario, dados):
+    autorizado = pode_reservar(
+        usuario,
+        TipoRecursoReservavel.RECURSO_GERAL,
+        dados["recurso_geral"].tipo_recurso_id,
+        dados["data"],
+        dados["data_devolucao_prevista"],
+    )
+    if not autorizado:
+        raise PermissionDenied("Você não tem autorização para reservar este recurso nesse período.")
+
 
 def validar_disponibilidade(dados, excluir_reserva=None):
     recurso = dados["recurso_geral"]
