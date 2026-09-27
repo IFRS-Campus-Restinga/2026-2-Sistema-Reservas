@@ -39,3 +39,8 @@ export {
     atualizarMembro,
     removerMembro,
 } from './grupos';
+export {
+  listarReservasRecursosGerais,
+  criarReservaRecursoGeral,
+  cancelarReservaRecursoGeral,
+} from './reservasRecursosGerais';

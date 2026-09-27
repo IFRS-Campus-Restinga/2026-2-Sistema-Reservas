@@ -1,5 +1,7 @@
 import {
   Home,
+  Package,
+  ClipboardList,
   Shield,
   Users,
 } from "lucide-react";
@@ -10,6 +12,20 @@ export const MENU = [
     titulo: "Home",
     icone: Home,
     url: '/',
+    permissoes: true,
+  },
+  {
+    id: "recursos",
+    titulo: "Recursos",
+    icone: Package,
+    url: "/recursos",
+    permissoes: true,
+  },
+  {
+    id: 'minhas-reservas',
+    titulo: 'Minhas Reservas',
+    icone: ClipboardList,
+    url: '/minhas-reservas',
     permissoes: true,
   },
   {
