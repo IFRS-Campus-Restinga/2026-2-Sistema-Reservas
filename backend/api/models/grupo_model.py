@@ -86,6 +86,13 @@ class Grupo(BaseModel):
             raise ValidationError(
                 {"data_fim_validade": "A data de fim de validade não pode ser anterior à data de início."}
             )
+        from api.permissions.regras_reserva import tipos_autorizaveis_por_grupo
+        tipos_autorizaveis = tipos_autorizaveis_por_grupo(self.tipo_membro_permitido)
+        if self.tipo_recurso_autorizado and self.tipo_recurso_autorizado not in tipos_autorizaveis:
+            rotulos = ', '.join(TipoRecursoReservavel(tipo).label for tipo in tipos_autorizaveis)
+            raise ValidationError(
+                {"tipo_recurso_autorizado": f"Grupos de {self.get_tipo_membro_permitido_display().lower()} só podem autorizar: {rotulos}. Os demais já são reservados sem grupo."}
+            )
         if self.tipo_recurso_autorizado == TipoRecursoReservavel.RECURSO_GERAL and not self.tipo_recurso_id:
             raise ValidationError(
                 {"tipo_recurso": "É obrigatório informar o tipo de recurso geral autorizado (por exemplo, bola)."}

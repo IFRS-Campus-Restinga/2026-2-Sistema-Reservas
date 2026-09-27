@@ -1,12 +1,10 @@
 from rest_framework import permissions
 
-from .regras_comuns import usuario_e_admin
+from .regras_comuns import UsuarioAutenticado, usuario_e_admin
 
 
-class EscritaAdmin(permissions.BasePermission):
+class EscritaAdmin(UsuarioAutenticado):
     message = "Você não tem permissão para realizar esta ação."
 
-    def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return usuario_e_admin(request.user)
+    def tem_permissao(self, request, view):
+        return request.method in permissions.SAFE_METHODS or usuario_e_admin(request.user)

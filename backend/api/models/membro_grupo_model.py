@@ -41,6 +41,8 @@ class MembroGrupo(BaseModel):
     def clean(self):
         super().clean()
         if self.grupo_id and self.usuario_id:
+            if not self.pk and not self.usuario.is_active:
+                raise ValidationError({"usuario": "Não é possível adicionar um usuário inativo ao grupo."})
             papel = getattr(self.usuario, 'papel', None)
             if papel != self.grupo.tipo_membro_permitido:
                 raise ValidationError(
