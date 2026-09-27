@@ -5,6 +5,11 @@ from api.views.bloco_view import BlocoListCreateView, BlocoDetailView
 from api.views.area_view import AreaDetailView, AreaListCreateView
 
 from api.views.veiculo_view import VeiculoCreateView, VeiculoDetailView
+from api.views.reserva_area_view import (
+    ReservaAreaListCreateView,
+    MinhasReservasAreaListView,
+    ReservaAreaDetailView,
+)
 
 urlpatterns = [
     path('recursos-gerais/', RecursoGeralListCreateView.as_view(), name='recurso-geral-list-create'),
@@ -16,4 +21,8 @@ urlpatterns = [
     path('areas/<int:pk>/', AreaDetailView.as_view(), name='area-detail'),
     path("veiculos/", VeiculoCreateView.as_view(), name="veiculo-list"),
     path("veiculos/<int:pk>/", VeiculoDetailView.as_view(), name="veiculo-detail"),
+    path("reservas/areas/", ReservaAreaListCreateView.as_view(), name="reserva-area-list-create"),
+    path("reservas/areas/minhas/", MinhasReservasAreaListView.as_view(), name="reserva-area-minhas"),
+    path("reservas/areas/<int:pk>/", ReservaAreaDetailView.as_view(), name="reserva-area-detail"),
+
 ]
