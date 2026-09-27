@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { CalendarClock, Download, FileWarning, Info, Package, Pencil, Trash2, Upload, UserRound, X } from 'lucide-react';
 import { STATUS_RESERVA_LABEL } from '../../utils/reserva';
 import styles from './ModalDetalheReserva.module.css';
+import ModalConfirmacao from '../Administracao/ModalConfirmacao/ModalConfirmacao';
 
 function dataFormatada(data) {
   if (!data) return 'Não informada';
@@ -68,6 +69,24 @@ function ModalDetalheReserva({
       evento.target.value = '';
     }
   }
+
+  if (confirmando) {
+  return (
+    <ModalConfirmacao
+      aberto
+      titulo="Cancelar reserva?"
+      mensagem={`Tem certeza que deseja cancelar a reserva ${reserva.nome}?`}
+      aviso={erro}
+      textoConfirmar="Confirmar cancelamento"
+      processando={processando}
+      aoCancelar={() => {
+        setConfirmando(false);
+        setErro('');
+      }}
+      aoConfirmar={cancelar}
+    />
+  );
+}
 
   return (
     <div className={styles.fundo} onMouseDown={processando ? undefined : aoFechar}>
@@ -147,14 +166,23 @@ function ModalDetalheReserva({
           {erro && <p className={styles.erro} role="alert">{erro}</p>}
 
           {confirmando ? (
-            <div className={styles.confirmacao}>
-              <p>Deseja realmente cancelar esta reserva?</p>
-              <div className={styles.acoes}>
-                <button type="button" onClick={() => setConfirmando(false)} disabled={processando}>Voltar</button>
-                <button type="button" className={styles.cancelar} onClick={cancelar} disabled={processando}>
-                  <Trash2 size={16} /> {processando ? 'Cancelando...' : 'Confirmar cancelamento'}
-                </button>
-              </div>
+            <div className={styles.acoes}>
+              <button
+                type="button"
+                disabled={!aoEditar || processando}
+                onClick={aoEditar}
+              >
+                <Pencil size={16} /> Editar
+              </button>
+
+              <button
+                type="button"
+                className={styles.cancelar}
+                disabled={!podeCancelar || processando}
+                onClick={() => setConfirmando(true)}
+              >
+                <Trash2 size={16} /> Cancelar
+              </button>
             </div>
           ) : (
             <div className={styles.acoes}>

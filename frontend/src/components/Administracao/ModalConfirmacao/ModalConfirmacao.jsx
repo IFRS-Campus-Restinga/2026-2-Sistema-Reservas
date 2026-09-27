@@ -38,7 +38,7 @@ function ModalConfirmacao({
                         className={styles.excluir}
                         onClick={aoConfirmar}
                     >
-                        Excluir
+                        Cancelar
                     </button>
                 </>
             }

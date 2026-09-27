@@ -1,9 +1,6 @@
-
 from django.utils import timezone
 from rest_framework import serializers
-
 from api.models.reserva_recurso_geral_model import ReservaRecursoGeral
-
 
 class ReservaRecursoGeralSerializer(serializers.ModelSerializer):
     class Meta:
@@ -53,6 +50,11 @@ class ReservaRecursoGeralSerializer(serializers.ModelSerializer):
         if devolucao < data:
             raise serializers.ValidationError({
                 "data_devolucao_prevista": "A devolução não pode ser anterior à reserva."
+            })
+
+        if devolucao == data and fim <= inicio:
+            raise serializers.ValidationError({
+                "horario_fim": "A devolução deve ser posterior à retirada."
             })
 
         return dados

@@ -65,3 +65,14 @@ export async function atualizarReservaRecursoGeral(id, dados) {
 
   return tratarResposta(resposta);
 }
+
+export async function consultarDisponibilidadeRecursoGeral(dados) {
+  const parametros = new URLSearchParams(dados);
+
+  const resposta = await fetch(
+    `${URL}disponibilidade/?${parametros}`,
+    { credentials: 'include' }
+  );
+
+  return tratarResposta(resposta);
+}

@@ -23,10 +23,8 @@ function CardRecurso({ categoria, titulo, recursos, aoClicar }) {
   const IconeCategoria = CATEGORIA_RECURSO_ICONE[categoria] ?? ICONE_CATEGORIA_PADRAO;
   const rotuloCategoria = CATEGORIA_RECURSO_LABEL[categoria] ?? categoria;
 
-  const totalDisponivel = recursos.reduce(
-    (soma, recurso) => soma + Math.max(0, recurso.quantidade_total - recurso.quantidade_reservada),
-    0,
-  );
+  const ativos = recursos.filter((recurso) => recurso.status === 'ATIVO');
+  const totalDisponivel = recursos.reduce((soma, recurso) => soma + Math.max(0, recurso.quantidade_total - recurso.quantidade_reservada), 0);
   const totalGeral = recursos.reduce((soma, recurso) => soma + recurso.quantidade_total, 0);
   const anyTermo = recursos.some((recurso) => recurso.tem_termo_de_responsabilidade);
   const desabilitado = totalDisponivel === 0;

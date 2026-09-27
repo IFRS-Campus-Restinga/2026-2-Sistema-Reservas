@@ -8,16 +8,10 @@ import CalendarioReserva from '../CalendarioReserva/CalendarioReserva';
 import {
   criarReservaRecursoGeral,
   atualizarReservaRecursoGeral,
+  consultarDisponibilidadeRecursoGeral,
 } from '../../services/reservasRecursosGerais';
 import { TIPO_PRAZO_LABEL } from '../../utils/tipoPrazo';
 import styles from './ReservaRecursoGeralModal.module.css';
-
-function quantidadeDisponivel(recurso) {
-  return Math.max(
-    0,
-    Number(recurso.quantidade_total) - Number(recurso.quantidade_reservada)
-  );
-}
 
 const HORARIOS = Array.from({ length: 29 }, (_, indice) => {
   const total = 7 * 60 + indice * 30;
@@ -48,6 +42,8 @@ function ReservaRecursoGeralModal({
   const [dataDevolucao, setDataDevolucao] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState('');
+  const [disponiveisPeriodo, setDisponiveisPeriodo] = useState(null);
+  const [verificando, setVerificando] = useState(false);
 
   useEffect(() => {
     if (!aberto || !recursoInicial) return;
@@ -70,13 +66,55 @@ function ReservaRecursoGeralModal({
     setErro('');
   }, [aberto, recursoInicial, reservaEdicao]);
 
+  const recursoEscolhido = tipo?.recursos.find(
+    (item) => String(item.id) === recursoId
+  ) || recursoInicial;
+  const prazoLongo = recursoEscolhido?.tipo_prazo === 'LONGO_PRAZO';
+  const devolucaoEscolhida = prazoLongo ? dataDevolucao : data;
+  const periodoValido = Boolean(
+    aberto && recursoEscolhido && data && devolucaoEscolhida &&
+    devolucaoEscolhida >= data &&
+    (devolucaoEscolhida > data || horarioFim > horarioInicio)
+  );
+
+  useEffect(() => {
+    if (!periodoValido) {
+      setDisponiveisPeriodo(null);
+      setVerificando(false);
+      return;
+    }
+
+    let ativo = true;
+    setVerificando(true);
+    setDisponiveisPeriodo(null);
+    consultarDisponibilidadeRecursoGeral({
+      recurso_geral: recursoEscolhido.id,
+      data,
+      horario_inicio: horarioInicio,
+      horario_fim: horarioFim,
+      data_devolucao_prevista: devolucaoEscolhida,
+      ...(reservaEdicao ? { excluir_reserva: reservaEdicao.id } : {}),
+    })
+      .then((resultado) => {
+        if (ativo) setDisponiveisPeriodo(resultado.disponiveis);
+      })
+      .catch((falha) => {
+        if (ativo) setErro(falha.message || 'Não foi possível consultar a disponibilidade.');
+      })
+      .finally(() => {
+        if (ativo) setVerificando(false);
+      });
+    return () => { ativo = false; };
+  }, [periodoValido, recursoEscolhido?.id, data, horarioInicio, horarioFim,
+      devolucaoEscolhida, reservaEdicao?.id]);
+
   if (!tipo || !recursoInicial) return null;
 
   const opcoes = tipo.recursos.filter(
     (recurso) =>
       recurso.status === 'ATIVO' &&
       (
-        quantidadeDisponivel(recurso) > 0 ||
+        Number(recurso.quantidade_total) > 0 ||
         (
           reservaEdicao &&
           String(recurso.id) === String(recursoInicial.id)
@@ -84,21 +122,14 @@ function ReservaRecursoGeralModal({
       )
   );
 
+
   const recurso =
     opcoes.find((item) => String(item.id) === recursoId) || recursoInicial;
 
-  const unidadesDaReserva =
-    reservaEdicao &&
-    String(recurso.id) === String(reservaEdicao.recurso_geral)
-      ? Number(reservaEdicao.quantidades)
-      : 0;
-
-  const limite = Math.min(
-    Number(recurso.quantidade_total),
-    quantidadeDisponivel(recurso) + unidadesDaReserva
-  );
+  const limite = disponiveisPeriodo ?? Number(recurso.quantidade_total);
 
   const longoPrazo = recurso.tipo_prazo === 'LONGO_PRAZO';
+
 
   function selecionarRecurso(id) {
     const escolhido = opcoes.find((item) => String(item.id) === id);
@@ -120,18 +151,18 @@ function ReservaRecursoGeralModal({
       return;
     }
 
-    if (horarioFim <= horarioInicio) {
-      setErro('O horário de devolução deve ser posterior ao de retirada.');
+    if (longoPrazo && (!dataDevolucao || dataDevolucao < data)) {
+      setErro('Informe uma data de devolução igual ou posterior à retirada.');
+      return;
+    }
+
+    if ((longoPrazo ? dataDevolucao === data : true) && horarioFim <= horarioInicio) {
+      setErro('O horário de devolução deve ser posterior ao de retirada no mesmo dia.');
       return;
     }
 
     if (quantidade < 1 || quantidade > limite) {
       setErro('A quantidade solicitada não está disponível.');
-      return;
-    }
-
-    if (longoPrazo && (!dataDevolucao || dataDevolucao < data)) {
-      setErro('Informe uma data de devolução igual ou posterior à retirada.');
       return;
     }
 
@@ -209,7 +240,7 @@ function ReservaRecursoGeralModal({
           >
             {opcoes.map((item) => (
               <option key={item.id} value={String(item.id)}>
-                {item.nome} · {quantidadeDisponivel(item)} disponível(is)
+                {item.nome} · {item.quantidade_total} unidade(s)
               </option>
             ))}
           </select>

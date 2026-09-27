@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useOutletContext } from 'react-router-dom';
+import { useLocation, useOutletContext } from 'react-router-dom';
 import { CalendarCheck, ClipboardList } from 'lucide-react';
 import CartaoReserva from '../../components/CartaoReserva/CartaoReserva';
 import ModalDetalheReserva from '../../components/ModalDetalheReserva/ModalDetalheReserva';
@@ -163,10 +163,6 @@ function MinhasReservas() {
           <h2>Minhas reservas</h2>
           <p>Consulte os detalhes das suas reservas em um só lugar.</p>
         </div>
-
-        <Link to="/recursos" className={styles.nova}>
-          Nova reserva
-        </Link>
       </div>
 
       {aviso && (

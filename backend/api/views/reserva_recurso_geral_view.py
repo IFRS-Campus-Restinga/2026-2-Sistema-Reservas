@@ -1,20 +1,16 @@
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from django.utils.dateparse import parse_date, parse_time
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from api.enumerations.status_reserva import StatusReserva
 from api.models.recurso_geral_model import RecursoGeral
 from api.models.reserva_recurso_geral_model import ReservaRecursoGeral
 from api.serializers.reserva_recurso_geral_serializer import ReservaRecursoGeralSerializer
-from api.validators.reserva_recurso_geral_validator import (
-    STATUS_RESERVAS_ATIVAS,
-    validar_disponibilidade,
-)
-
+from api.validators.reserva_recurso_geral_validator import STATUS_RESERVAS_ATIVAS, validar_disponibilidade,quantidade_disponivel
 
 STATUS_ALTERAVEIS = [
     StatusReserva.PENDENTE,
@@ -58,11 +54,43 @@ class ReservaRecursoGeralListCreateView(APIView):
             validar_disponibilidade(dados)
             serializer.save(usuario=request.user)
 
-            recurso.quantidade_reservada += dados["quantidades"]
-            recurso.save(update_fields=["quantidade_reservada"])
-
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+class DisponibilidadeRecursoGeralView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        parametros = request.query_params
+        recurso = get_object_or_404(RecursoGeral, pk=parametros.get("recurso_geral"))
+        data = parse_date(parametros.get("data", ""))
+        inicio = parse_time(parametros.get("horario_inicio", ""))
+        fim = parse_time(parametros.get("horario_fim", ""))
+        devolucao = parse_date(parametros.get("data_devolucao_prevista", ""))
+        if not all([data, inicio, fim, devolucao]):
+            raise ValidationError({"detail": "Informe datas e horários válidos."})
+        if devolucao < data or (devolucao == data and fim <= inicio):
+            raise ValidationError({"detail": "A devolução deve ser posterior à retirada."})
+
+        excluir_reserva = parametros.get("excluir_reserva")
+        if excluir_reserva:
+            get_object_or_404(
+                ReservaRecursoGeral,
+                pk=excluir_reserva,
+                usuario=request.user,
+            )
+
+        dados = {
+            "recurso_geral": recurso,
+            "data": data,
+            "horario_inicio": inicio,
+            "horario_fim": fim,
+            "data_devolucao_prevista": devolucao,
+        }
+        disponiveis = quantidade_disponivel(dados, excluir_reserva)
+        return Response({
+            "disponiveis": disponiveis if recurso.status == "ATIVO" else 0,
+            "quantidade_total": recurso.quantidade_total,
+        })
 
 class ReservaRecursoGeralDetailView(APIView):
     permission_classes = [IsAuthenticated]
@@ -113,19 +141,6 @@ class ReservaRecursoGeralDetailView(APIView):
                         "status": "Esta reserva não pode mais ser cancelada."
                     })
 
-                recurso = get_object_or_404(
-                    RecursoGeral.objects.select_for_update(),
-                    pk=reserva.recurso_geral_id,
-                )
-
-                if recurso.quantidade_reservada < reserva.quantidades:
-                    raise ValidationError({
-                        "quantidades": "O estoque está inconsistente. Recalcule as reservas antes de continuar."
-                    })
-
-                recurso.quantidade_reservada -= reserva.quantidades
-                recurso.save(update_fields=["quantidade_reservada"])
-
                 reserva.status = novo_status
                 reserva.save(update_fields=["status"])
 
@@ -161,38 +176,15 @@ class ReservaRecursoGeralDetailView(APIView):
             }
             dados.update(serializer.validated_data)
 
-            ids = {reserva.recurso_geral_id, dados["recurso_geral"].pk}
-            recursos = {
-                recurso.pk: recurso
-                for recurso in RecursoGeral.objects.select_for_update()
-                .filter(pk__in=ids)
-                .order_by("pk")
-            }
+            recurso = get_object_or_404(
+                RecursoGeral.objects.select_for_update(),
+                pk=dados["recurso_geral"].pk,
+            )
 
-            recurso_anterior = recursos[reserva.recurso_geral_id]
-            recurso_novo = recursos[dados["recurso_geral"].pk]
-            quantidade_anterior = reserva.quantidades
-
-            dados["recurso_geral"] = recurso_novo
+            dados["recurso_geral"] = recurso
             validar_disponibilidade(dados, excluir_reserva=reserva.pk)
 
-            serializer.validated_data["recurso_geral"] = recurso_novo
+            serializer.validated_data["recurso_geral"] = recurso
             serializer.save()
-
-            if recurso_anterior.pk == recurso_novo.pk:
-                recurso_novo.quantidade_reservada += (
-                    dados["quantidades"] - quantidade_anterior
-                )
-                recurso_novo.save(update_fields=["quantidade_reservada"])
-            else:
-                if recurso_anterior.quantidade_reservada < quantidade_anterior:
-                    raise ValidationError({
-                        "quantidades": "O estoque está inconsistente. Recalcule as reservas antes de continuar."
-                    })
-
-                recurso_anterior.quantidade_reservada -= quantidade_anterior
-                recurso_novo.quantidade_reservada += dados["quantidades"]
-                recurso_anterior.save(update_fields=["quantidade_reservada"])
-                recurso_novo.save(update_fields=["quantidade_reservada"])
 
         return Response(serializer.data)

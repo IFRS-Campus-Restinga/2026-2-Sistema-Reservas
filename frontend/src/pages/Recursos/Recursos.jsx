@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PackageSearch } from 'lucide-react';
-
 import CardRecurso from '../../components/CardRecurso/CardRecurso';
 import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/ReservaRecursoGeralModal';
 import { listarRecursosGerais, listarTiposRecurso } from '../../services';
@@ -46,13 +45,6 @@ function categoriaDoTipo(tipo) {
   return CATEGORIAS_ANTIGAS[tipo.categoria] || 'OUTROS';
 }
 
-function quantidadeDisponivel(recurso) {
-  return Math.max(
-    0,
-    Number(recurso.quantidade_total) - Number(recurso.quantidade_reservada)
-  );
-}
-
 function Recursos() {
   const navigate = useNavigate();
 
@@ -85,7 +77,7 @@ function Recursos() {
       tipo.recursos.some(
         (recurso) =>
           recurso.status === 'ATIVO' &&
-          quantidadeDisponivel(recurso) > 0
+          Number(recurso.quantidade_total) > 0
       )
     );
 
@@ -101,7 +93,7 @@ function Recursos() {
     const recurso = tipo.recursos.find(
       (item) =>
         item.status === 'ATIVO' &&
-        quantidadeDisponivel(item) > 0
+        Number(item.quantidade_total) > 0
     );
 
     if (recurso) {
