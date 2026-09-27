@@ -1,5 +1,9 @@
+import uuid
+
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from accounts.enumerations import Papel
+from accounts.models.hub_user import HubUser
 from api.enumerations import StatusRecurso
 from api.models.veiculo_model import Veiculo
 from api.enumerations.status_recurso import StatusRecurso
@@ -7,6 +11,42 @@ from api.enumerations.tipo_prazo import TipoPrazo
 from api.models.recurso_geral_model import RecursoGeral
 from api.models.tipo_recurso_model import TipoRecurso
 
+
+ALUNOS = [
+    {'nome': 'Carlos Mendes', 'email': 'carlos.mendes@aluno.ifrs.edu.br'},
+    {'nome': 'Beatriz Rocha', 'email': 'beatriz.rocha@aluno.ifrs.edu.br'},
+    {'nome': 'Lucas Fernandes', 'email': 'lucas.fernandes@aluno.ifrs.edu.br'},
+    {'nome': 'Mariana Alves', 'email': 'mariana.alves@aluno.ifrs.edu.br'},
+    {'nome': 'Pedro Henrique Souza', 'email': 'pedro.souza@aluno.ifrs.edu.br'},
+    {'nome': 'Júlia Martins', 'email': 'julia.martins@aluno.ifrs.edu.br'},
+    {'nome': 'Gabriel Oliveira', 'email': 'gabriel.oliveira@aluno.ifrs.edu.br'},
+    {'nome': 'Larissa Costa', 'email': 'larissa.costa@aluno.ifrs.edu.br'},
+    {'nome': 'Rafael Santos', 'email': 'rafael.santos@aluno.ifrs.edu.br'},
+    {'nome': 'Camila Barbosa', 'email': 'camila.barbosa@aluno.ifrs.edu.br'},
+    {'nome': 'Fernando Azevedo', 'email': 'fernando.azevedo@aluno.ifrs.edu.br'},
+    {'nome': 'Isabela Cunha', 'email': 'isabela.cunha@aluno.ifrs.edu.br'},
+    {'nome': 'Thiago Moraes', 'email': 'thiago.moraes@aluno.ifrs.edu.br'},
+    {'nome': 'Amanda Ribeiro', 'email': 'amanda.ribeiro@aluno.ifrs.edu.br'},
+    {'nome': 'Vinícius Teixeira', 'email': 'vinicius.teixeira@aluno.ifrs.edu.br'},
+]
+
+SERVIDORES = [
+    {'nome': 'João Silva', 'email': 'joao.silva@ifrs.edu.br'},
+    {'nome': 'Ana Costa', 'email': 'ana.costa@ifrs.edu.br'},
+    {'nome': 'Marcos Pereira', 'email': 'marcos.pereira@ifrs.edu.br'},
+    {'nome': 'Fernanda Lima', 'email': 'fernanda.lima@ifrs.edu.br'},
+    {'nome': 'Ricardo Nunes', 'email': 'ricardo.nunes@ifrs.edu.br'},
+    {'nome': 'Patrícia Gomes', 'email': 'patricia.gomes@ifrs.edu.br'},
+    {'nome': 'Eduardo Ramos', 'email': 'eduardo.ramos@ifrs.edu.br'},
+    {'nome': 'Sandra Lima', 'email': 'sandra.lima@ifrs.edu.br'},
+    {'nome': 'Tiago Cardoso', 'email': 'tiago.cardoso@ifrs.edu.br'},
+    {'nome': 'Renata Dias', 'email': 'renata.dias@ifrs.edu.br'},
+    {'nome': 'Cristina Borges', 'email': 'cristina.borges@ifrs.edu.br'},
+    {'nome': 'Rodrigo Farias', 'email': 'rodrigo.farias@ifrs.edu.br'},
+    {'nome': 'Vanessa Correia', 'email': 'vanessa.correia@ifrs.edu.br'},
+    {'nome': 'Leonardo Machado', 'email': 'leonardo.machado@ifrs.edu.br'},
+    {'nome': 'Simone Castro', 'email': 'simone.castro@ifrs.edu.br'},
+]
 
 VEICULOS = [
     {
@@ -279,6 +319,17 @@ RECURSOS_GERAIS = [
     },
 ]
 
+def popular_usuarios():
+    criados = 0
+    for lista, papel in ((ALUNOS, Papel.ALUNO), (SERVIDORES, Papel.SERVIDOR)):
+        for dados in lista:
+            _, criado = HubUser.objects.get_or_create(
+                email=dados['email'],
+                defaults={'id': uuid.uuid4(), 'nome': dados['nome'], 'papel': papel, 'is_active': True},
+            )
+            criados += criado
+    return criados
+
 def popular_veiculos():
     criados = 0
     for dados in VEICULOS:
@@ -328,6 +379,7 @@ def popular_recursos_gerais():
 # Acrescente aqui as próximas funções, na ordem das dependências:
 # popular_blocos antes de popular_areas, por exemplo.
 POPULADORES = [
+    ('Usuários (alunos e servidores)', popular_usuarios),
     ('Veículos', popular_veiculos),
     ('Tipos de recurso', popular_tipos_recurso),
     ('Recursos gerais', popular_recursos_gerais),

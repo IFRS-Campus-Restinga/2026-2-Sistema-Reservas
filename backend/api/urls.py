@@ -4,7 +4,7 @@ from api.views.tipo_recurso_view import TipoRecursoCreateView
 from api.views.bloco_view import BlocoListCreateView, BlocoDetailView
 from api.views.area_view import AreaDetailView, AreaListCreateView
 from api.views.grupo_view import GrupoListCreateView, GrupoDetailView
-from api.views.membro_grupo_view import MembroGrupoListCreateView, MembroGrupoDetailView
+from api.views.membro_grupo_view import MembroGrupoListCreateView, MembroGrupoCandidatosView, MembroGrupoDetailView
 
 from api.views.veiculo_view import VeiculoCreateView, VeiculoDetailView
 
@@ -21,5 +21,6 @@ urlpatterns = [
     path('grupos/', GrupoListCreateView.as_view(), name='grupo-list-create'),
     path('grupos/<int:pk>/', GrupoDetailView.as_view(), name='grupo-detail'),
     path('grupos/<int:grupo_pk>/membros/', MembroGrupoListCreateView.as_view(), name='membro-grupo-list-create'),
+    path('grupos/<int:grupo_pk>/candidatos/', MembroGrupoCandidatosView.as_view(), name='membro-grupo-candidatos'),
     path('grupos/<int:grupo_pk>/membros/<int:pk>/', MembroGrupoDetailView.as_view(), name='membro-grupo-detail'),
 ]
