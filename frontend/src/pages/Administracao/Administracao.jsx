@@ -7,6 +7,7 @@ import VeiculosAdmin from "../../components/Administracao/Veiculos/VeiculosAdmin
 import RecursosAdmin from "../../components/Administracao/Recursos/RecursosAdmin";
 import BlocosAdmin from "../../components/Administracao/Blocos/BlocosAdmin";
 import AreasAdmin from "../../components/Administracao/Areas/AreasAdmin";
+import GruposGerenciador from "../../components/Grupos/GruposGerenciador/GruposGerenciador";
 
 const abas = [
   {
@@ -28,6 +29,10 @@ const abas = [
   {
     id: "areas",
     rotulo: "Áreas",
+  },
+  {
+    id: "grupos",
+    rotulo: "Grupos",
   }
 ];
 
@@ -68,6 +73,10 @@ function Administracao() {
 
         {abaAtiva === "areas" && (
           <AreasAdmin />
+        )}
+
+        {abaAtiva === "grupos" && (
+          <GruposGerenciador />
         )}
       </div>
     </div>

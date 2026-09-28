@@ -5,9 +5,12 @@ from rest_framework.views import APIView
 
 from api.models.veiculo_model import Veiculo
 from api.serializers.veiculo_serializer import VeiculoSerializer
+from api.permissions.escrita_admin import EscritaAdmin
 
 
 class VeiculoCreateView(APIView):
+    permission_classes = [EscritaAdmin]
+
     def get(self, request):
         veiculos = Veiculo.objects.all().order_by("id")
         serializer = VeiculoSerializer(veiculos, many=True)
@@ -22,6 +25,8 @@ class VeiculoCreateView(APIView):
 
 
 class VeiculoDetailView(APIView):
+    permission_classes = [EscritaAdmin]
+
     def get(self, request, pk):
         veiculo = get_object_or_404(Veiculo, pk=pk)
         serializer = VeiculoSerializer(veiculo)

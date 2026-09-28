@@ -157,7 +157,7 @@ function RecursoModal({
 
                 <div className={styles.linhaDupla}>
                     <div className={styles.campo}>
-                        <label htmlFor="tipo_recurso">Categoria *</label>
+                        <label htmlFor="tipo_recurso">Tipo de recurso *</label>
                         <select
                             id="tipo_recurso"
                             name="tipo_recurso"

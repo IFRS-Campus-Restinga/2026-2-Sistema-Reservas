@@ -28,3 +28,19 @@ export {
     atualizarArea,
     excluirArea,
 } from './areas';
+export {
+    buscarGrupos,
+    criarGrupo,
+    atualizarGrupo,
+    excluirGrupo,
+    buscarMembros,
+    buscarCandidatos,
+    adicionarMembros,
+    atualizarMembro,
+    removerMembro,
+} from './grupos';
+export {
+  listarReservasRecursosGerais,
+  criarReservaRecursoGeral,
+  cancelarReservaRecursoGeral,
+} from './reservasRecursosGerais';

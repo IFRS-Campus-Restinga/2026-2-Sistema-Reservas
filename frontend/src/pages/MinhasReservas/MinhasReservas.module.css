@@ -1,0 +1,81 @@
+
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+}
+
+.cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cabecalho h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 5px;
+}
+
+.cabecalho p {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.nova {
+  padding: 10px 15px;
+  border-radius: 9px;
+  background: #009a44;
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aviso,
+.erro {
+  border-radius: 9px;
+  padding: 12px;
+  font-size: 13px;
+}
+
+.aviso {
+  background: #e9f8f0;
+  color: #08763b;
+}
+
+.erro {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.vazio {
+  padding: 34px;
+  text-align: center;
+  background: white;
+  border: 1px solid #edf0f3;
+  border-radius: 14px;
+  color: #64748b;
+}
+
+@media (max-width: 650px) {
+  .pagina {
+    padding: 14px;
+  }
+
+  .cabecalho {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

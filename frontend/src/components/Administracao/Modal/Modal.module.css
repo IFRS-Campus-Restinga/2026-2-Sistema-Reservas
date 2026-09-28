@@ -81,6 +81,10 @@
     max-width: 384px;
 }
 
+.largo .modal {
+    max-width: 720px;
+}
+
 .confirmacao .cabecalho {
     position: relative;
     justify-content: center;
