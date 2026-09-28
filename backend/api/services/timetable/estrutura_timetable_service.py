@@ -8,48 +8,61 @@ class EstruturaTimetableService:
     def __init__(self):
         self.api_service = EdupageService()
 
-    def criar_horarios(self):
+    def criar_horarios(self, dados_periods=None):
         """
-        Verifica se a tabela HorarioTimetable está vazia.
-        Se estiver, insere os 15 horários padrão do IFRS.
+        Sincroniza os horários da tabela HorarioTimetable com os períodos do EduPage (IDs 1 a 16).
+        Se vier dados_periods do JSON, utiliza diretamente.
+        Caso contrário, utiliza a grade padrão de 16 períodos com fallback.
         """
-        if HorarioTimetable.objects.exists():
-            return  # Já existem horários, não faz nada
-            
-        # Lista com o De-Para de (edupage_id, hora_inicio, hora_fim)
+        if dados_periods:
+            for p in dados_periods:
+                try:
+                    p_id = int(p.get("id"))
+                    start_str = p.get("starttime")
+                    end_str = p.get("endtime")
+                    if start_str and end_str:
+                        h_ini, m_ini = map(int, start_str.split(":"))
+                        h_fim, m_fim = map(int, end_str.split(":"))
+                        HorarioTimetable.objects.update_or_create(
+                            edupage_id=p_id,
+                            defaults={
+                                'horario_inicio': time(h_ini, m_ini),
+                                'horario_fim': time(h_fim, m_fim),
+                            }
+                        )
+                except Exception:
+                    continue
+            return
+
+        # Grade padrão com os 16 períodos reais do EduPage (incluindo o Entre Turnos no ID 6)
         grade_padrao = [
             # MANHÃ
             (1, time(7, 30), time(8, 20)),
             (2, time(8, 20), time(9, 10)),
-            (3, time(9, 10), time(10, 00)),
+            (3, time(9, 10), time(10, 0)),
             (4, time(10, 20), time(11, 10)),
-            (5, time(11, 10), time(12, 00)),
+            (5, time(11, 10), time(12, 0)),
+            # ENTRE TURNOS
+            (6, time(12, 0), time(13, 30)),
             # TARDE
-            (6, time(13, 30), time(14, 20)),
-            (7, time(14, 20), time(15, 10)),
-            (8, time(15, 10), time(16, 00)),
-            (9, time(16, 20), time(17, 10)),
-            (10, time(17, 10), time(18, 00)),
+            (7, time(13, 30), time(14, 20)),
+            (8, time(14, 20), time(15, 10)),
+            (9, time(15, 10), time(16, 0)),
+            (10, time(16, 20), time(17, 10)),
+            (11, time(17, 10), time(18, 0)),
             # NOITE
-            (11, time(18, 10), time(19, 00)),
-            (12, time(19, 00), time(19, 50)),
-            (13, time(19, 50), time(20, 40)),
-            (14, time(20, 50), time(21, 40)),
-            (15, time(21, 40), time(22, 30)),
+            (12, time(18, 10), time(19, 0)),
+            (13, time(19, 0), time(19, 50)),
+            (14, time(19, 50), time(20, 40)),
+            (15, time(20, 50), time(21, 40)),
+            (16, time(21, 40), time(22, 30)),
         ]
 
-        horarios_para_salvar = []
         for edupage_id, inicio, fim in grade_padrao:
-            horarios_para_salvar.append(
-                HorarioTimetable(
-                    edupage_id=edupage_id, 
-                    horario_inicio=inicio, 
-                    horario_fim=fim
-                )
+            HorarioTimetable.objects.update_or_create(
+                edupage_id=edupage_id,
+                defaults={'horario_inicio': inicio, 'horario_fim': fim}
             )
-            
-        # bulk_create salva a lista toda de uma vez no banco (mais rápido)
-        HorarioTimetable.objects.bulk_create(horarios_para_salvar)
 
     def sincronizar_salas(self, dados_salas):
         """
@@ -76,23 +89,14 @@ class EstruturaTimetableService:
                 area.edupage_id = sala_id
                 area.save()
             else:
-                """
-                Se a sala não existir no banco (o que irá ocorrer em sua primeira execução),
-                 devemos criá-la automaticamente e também seus blocos. Pela lógica da estrutura
-                 com IF - Restinga, os números das salas sempre começam com o número do bloco.
-                 OBS: a sala 701 se encontra no bloco 5, portanto criamos uma exceção no algoritmo
-                 para este caso
-                """
                 primeiro_digito = sala_numero[0] if sala_numero[0].isdigit() else "1"
                 numero_bloco = "5" if sala_numero == "701" else primeiro_digito 
 
-                # Captura do bloco (caso já exista) ou criação (em caso de primeira execução)
                 bloco, _ = Bloco.objects.get_or_create(
                     numero=numero_bloco,
                     defaults={'nome': f"Bloco {numero_bloco}"}
                 )
                 
-                # Cria a área com os valores default automáticos ou resgata se já existir
                 area_obj, created = Area.objects.get_or_create(
                     nome=sala_numero,
                     bloco=bloco,
@@ -103,15 +107,15 @@ class EstruturaTimetableService:
                     area_obj.save()
 
     def preparar_estrutura(self):
-            """
-            Orquestra a preparação do banco de dados (Task 2).
-            """
-            self.criar_horarios()
-            
-            tabelas = self.api_service.obter_tabelas_brutas()
-            dados_salas = next((t["data_rows"] for t in tabelas if t["id"] == "classrooms"), [])
-            
-            self.sincronizar_salas(dados_salas)
-            
-            # O método retorna as tabelas originais para que a Task 3 possa usá-las depois
-            return tabelas
+        """
+        Orquestra a preparação do banco de dados (Task 2).
+        """
+        tabelas = self.api_service.obter_tabelas_brutas()
+        dados_periods = next((t["data_rows"] for t in tabelas if t["id"] == "periods"), [])
+        dados_salas = next((t["data_rows"] for t in tabelas if t["id"] == "classrooms"), [])
+        
+        self.criar_horarios(dados_periods)
+        self.sincronizar_salas(dados_salas)
+        
+        # O método retorna as tabelas originais para que a Task 3 possa usá-las depois
+        return tabelas

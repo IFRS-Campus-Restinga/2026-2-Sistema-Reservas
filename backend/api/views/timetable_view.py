@@ -1,5 +1,6 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 from api.models.timetable.celula_timetable_model import CelulaTimetable
 from api.services.timetable.estrutura_timetable_service import EstruturaTimetableService
 from api.services.timetable.celulas_service import CelulasService
@@ -9,6 +10,8 @@ class TimetableView(APIView):
     Retorna a grade horária completa agrupada por Salas e Dias da Semana.
     Implementa Lazy Loading: Se o banco estiver vazio, aciona a sincronização com Edupage primeiro.
     """
+    permission_classes = [AllowAny]
+
     
     def get(self, request):
         # 1. Verifica se existem células cadastradas
