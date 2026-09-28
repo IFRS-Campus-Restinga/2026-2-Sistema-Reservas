@@ -7,7 +7,7 @@ from api.models.membro_grupo_model import MembroGrupo
 from .regras_comuns import usuario_e_admin
 
 TIPOS_RESERVA_LIVRE_POR_PAPEL = {
-    Papel.SERVIDOR: (TipoRecursoReservavel.ESPACO, TipoRecursoReservavel.RECURSO_GERAL),
+    Papel.SERVIDOR: (TipoRecursoReservavel.AREA, TipoRecursoReservavel.RECURSO_GERAL),
 }
 
 

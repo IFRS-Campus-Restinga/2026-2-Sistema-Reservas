@@ -1,5 +1,5 @@
 const ROTULO_RECURSO = {
-    ESPACO: 'Espaços',
+    AREA: 'Áreas',
     VEICULO: 'Veículos',
 };
 

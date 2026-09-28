@@ -2,6 +2,6 @@ from django.db import models
 
 
 class TipoRecursoReservavel(models.TextChoices):
-    ESPACO = "ESPACO", "Espaço"
+    AREA = "AREA", "Área"
     VEICULO = "VEICULO", "Veículo"
     RECURSO_GERAL = "RECURSO_GERAL", "Recurso Geral"

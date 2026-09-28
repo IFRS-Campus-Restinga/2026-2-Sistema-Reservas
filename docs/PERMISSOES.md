@@ -108,7 +108,7 @@ if not pode_reservar(request.user, TipoRecursoReservavel.RECURSO_GERAL, recurso.
 |---|---|---|
 | Recurso geral | `TipoRecursoReservavel.RECURSO_GERAL` | `recurso.tipo_recurso_id` |
 | Veículo | `TipoRecursoReservavel.VEICULO` | não precisa |
-| Área / espaço | `TipoRecursoReservavel.ESPACO` | não precisa |
+| Área | `TipoRecursoReservavel.AREA` | não precisa |
 
 - Passe em `data` o **dia da retirada** e em `data_fim` o **dia da devolução**. A autorização precisa valer no período da reserva, não só hoje. Em reservas de um dia só, basta a `data`.
 - **Ao editar**, confira a autorização do **dono da reserva** (`reserva.usuario`), não de quem está editando. Um admin pode editar a reserva de um aluno, mas o que importa é se o aluno pode reservar aquilo.
@@ -128,7 +128,7 @@ const { usuario } = useOutletContext();
   "permissoes": {
     "administrador": false,
     "criar_grupos_de": ["aluno"],
-    "reservar_sem_grupo": ["ESPACO", "RECURSO_GERAL"]
+    "reservar_sem_grupo": ["AREA", "RECURSO_GERAL"]
   },
   "autorizacoes": [
     { "grupo": 12, "grupo_nome": "...", "tipo_recurso_autorizado": "VEICULO", "tipo_recurso": null, "valido_ate": "2026-12-31" }

@@ -6,7 +6,7 @@ import styles from './GrupoModal.module.css';
 const formularioInicial = {
     nome: '',
     tipo_membro_permitido: 'aluno',
-    tipo_recurso_autorizado: 'ESPACO',
+    tipo_recurso_autorizado: 'AREA',
     tipo_recurso: '',
     data_inicio_validade: '',
     data_fim_validade: '',
@@ -19,7 +19,7 @@ function montarFormulario(grupo, tipoInicial) {
     return {
         nome: grupo.nome || '',
         tipo_membro_permitido: grupo.tipo_membro_permitido || 'aluno',
-        tipo_recurso_autorizado: grupo.tipo_recurso_autorizado || 'ESPACO',
+        tipo_recurso_autorizado: grupo.tipo_recurso_autorizado || 'AREA',
         tipo_recurso: grupo.tipo_recurso?.id ?? grupo.tipo_recurso ?? '',
         data_inicio_validade: grupo.data_inicio_validade || '',
         data_fim_validade: grupo.data_fim_validade || '',
@@ -182,7 +182,7 @@ function GrupoModal({
                             onChange={alterarCampo}
                             required
                         >
-                            <option value="ESPACO">Espaços</option>
+                            <option value="AREA">Áreas</option>
                             <option value="VEICULO">Veículos</option>
                             <option value="RECURSO_GERAL">Recurso geral</option>
                         </select>
