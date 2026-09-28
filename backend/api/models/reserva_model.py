@@ -1,4 +1,4 @@
-from datetime import time, datetime
+from datetime import date, time, datetime
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxLengthValidator, MinLengthValidator
@@ -36,7 +36,7 @@ class Reserva(BaseModel):
         if not isinstance(self.horario_fim, time):
             return
         data_fim = getattr(self, "data_devolucao_prevista", None) or self.data
-        if not self.data or not data_fim:
+        if not isinstance(self.data, date) or not isinstance(data_fim, date):
             return
         retirada = datetime.combine(self.data, self.horario_inicio)
         devolucao = datetime.combine(data_fim, self.horario_fim)
@@ -52,14 +52,15 @@ class Reserva(BaseModel):
             campos_para_salvar = set(campos_para_salvar)
             if not campos_para_salvar:
                 return
-            atualizar_inicio = "horario_inicio" in campos_para_salvar
-            atualizar_fim = "horario_fim" in campos_para_salvar
-            if self.pk and (not atualizar_inicio or not atualizar_fim):
+            campos_intervalo = ("data", "data_devolucao_prevista", "horario_inicio", "horario_fim")
+            campos_preservados = [
+                campo for campo in campos_intervalo
+                if hasattr(self, campo) and campo not in campos_para_salvar
+            ]
+            if self.pk and campos_preservados:
                 reserva_salva = type(self).objects.get(pk=self.pk)
-                if not atualizar_inicio:
-                    self.horario_inicio = reserva_salva.horario_inicio
-                if not atualizar_fim:
-                    self.horario_fim = reserva_salva.horario_fim
+                for campo in campos_preservados:
+                    setattr(self, campo, getattr(reserva_salva, campo))
 
             campos_para_salvar.add("duracao")
             kwargs["update_fields"] = campos_para_salvar
