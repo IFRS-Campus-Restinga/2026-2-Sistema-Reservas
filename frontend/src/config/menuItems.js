@@ -3,6 +3,7 @@ import {
   Package,
   ClipboardList,
   Shield,
+  Users,
 } from "lucide-react";
 
 export const MENU = [
@@ -21,12 +22,19 @@ export const MENU = [
     permissoes: true,
   },
   {
-  id: 'minhas-reservas',
-  titulo: 'Minhas Reservas',
-  icone: ClipboardList,
-  url: '/minhas-reservas',
-  permissoes: true,
-},
+    id: 'minhas-reservas',
+    titulo: 'Minhas Reservas',
+    icone: ClipboardList,
+    url: '/minhas-reservas',
+    permissoes: true,
+  },
+  {
+    id: "grupos",
+    titulo: "Grupos",
+    icone: Users,
+    url: '/grupos',
+    permissoes: true,
+  },
   {
     id: "admin",
     titulo: "Administração",

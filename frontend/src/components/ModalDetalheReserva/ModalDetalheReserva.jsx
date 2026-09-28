@@ -77,7 +77,7 @@ function ModalDetalheReserva({
       titulo="Cancelar reserva?"
       mensagem={`Tem certeza que deseja cancelar a reserva ${reserva.nome}?`}
       aviso={erro}
-      textoConfirmar="Confirmar cancelamento"
+      textoConfirmar="Confirmar"
       processando={processando}
       aoCancelar={() => {
         setConfirmando(false);

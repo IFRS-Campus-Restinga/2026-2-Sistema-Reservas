@@ -3,14 +3,16 @@ from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_date, parse_time
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied, ValidationError
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from api.enumerations.status_reserva import StatusReserva
 from api.models.recurso_geral_model import RecursoGeral
 from api.models.reserva_recurso_geral_model import ReservaRecursoGeral
+from api.permissions.regras_comuns import UsuarioAutenticado, usuario_e_admin
+from api.permissions.reserva_permissions import PodeGerenciarReserva
 from api.serializers.reserva_recurso_geral_serializer import ReservaRecursoGeralSerializer
-from api.validators.reserva_recurso_geral_validator import STATUS_RESERVAS_ATIVAS, validar_disponibilidade,quantidade_disponivel
+from api.validators.reserva_recurso_geral_validator import STATUS_RESERVAS_ATIVAS, validar_autorizacao, validar_disponibilidade, quantidade_disponivel
+from .view_helpers import BuscarObjetoComPermissaoMixin
 
 STATUS_ALTERAVEIS = [
     StatusReserva.PENDENTE,
@@ -30,7 +32,7 @@ CAMPOS_EDICAO = {
 
 
 class ReservaRecursoGeralListCreateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [UsuarioAutenticado]
 
     def get(self, request):
         reservas = ReservaRecursoGeral.objects.filter(
@@ -51,13 +53,14 @@ class ReservaRecursoGeralListCreateView(APIView):
             )
 
             dados["recurso_geral"] = recurso
+            validar_autorizacao(request.user, dados)
             validar_disponibilidade(dados)
             serializer.save(usuario=request.user)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class DisponibilidadeRecursoGeralView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [PodeGerenciarReserva]
 
     def get(self, request):
         parametros = request.query_params
@@ -73,10 +76,9 @@ class DisponibilidadeRecursoGeralView(APIView):
 
         excluir_reserva = parametros.get("excluir_reserva")
         if excluir_reserva:
-            get_object_or_404(
-                ReservaRecursoGeral,
-                pk=excluir_reserva,
-                usuario=request.user,
+            self.check_object_permissions(
+                request,
+                get_object_or_404(ReservaRecursoGeral, pk=excluir_reserva),
             )
 
         dados = {
@@ -92,22 +94,15 @@ class DisponibilidadeRecursoGeralView(APIView):
             "quantidade_total": recurso.quantidade_total,
         })
 
-class ReservaRecursoGeralDetailView(APIView):
-    permission_classes = [IsAuthenticated]
+class ReservaRecursoGeralDetailView(BuscarObjetoComPermissaoMixin, APIView):
+    permission_classes = [PodeGerenciarReserva]
+    queryset = ReservaRecursoGeral.objects.all()
 
     def get(self, request, pk):
-        reserva = get_object_or_404(
-            ReservaRecursoGeral,
-            pk=pk,
-            usuario=request.user,
-        )
-
-        return Response(ReservaRecursoGeralSerializer(reserva).data)
+        return Response(ReservaRecursoGeralSerializer(self.get_object(pk)).data)
 
     def patch(self, request, pk):
-        administrador = bool(
-            request.user.is_staff or getattr(request.user, "papel", None) == "admin"
-        )
+        administrador = usuario_e_admin(request.user)
         alteracao_status = set(request.data) == {"status"}
         novo_status = request.data.get("status") if alteracao_status else None
         status_administrativos = {StatusReserva.CONCLUIDA, StatusReserva.REJEITADA}
@@ -116,15 +111,8 @@ class ReservaRecursoGeralDetailView(APIView):
             raise PermissionDenied("Somente um administrador pode finalizar a reserva.")
 
         with transaction.atomic():
-            reservas = ReservaRecursoGeral.objects.select_for_update()
-
-            if not (
-                administrador
-                and novo_status in status_administrativos | {StatusReserva.CANCELADA}
-            ):
-                reservas = reservas.filter(usuario=request.user)
-
-            reserva = get_object_or_404(reservas, pk=pk)
+            reserva = get_object_or_404(ReservaRecursoGeral.objects.select_for_update(), pk=pk)
+            self.check_object_permissions(request, reserva)
 
             if alteracao_status and novo_status in status_administrativos | {StatusReserva.CANCELADA}:
                 if reserva.status not in STATUS_RESERVAS_ATIVAS:
@@ -182,6 +170,7 @@ class ReservaRecursoGeralDetailView(APIView):
             )
 
             dados["recurso_geral"] = recurso
+            validar_autorizacao(reserva.usuario, dados)
             validar_disponibilidade(dados, excluir_reserva=reserva.pk)
 
             serializer.validated_data["recurso_geral"] = recurso
