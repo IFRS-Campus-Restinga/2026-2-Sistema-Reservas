@@ -16,12 +16,14 @@ function ModalDetalheReserva({
   modalidade,
   item,
   responsavel,
+  periodo,
   detalhes = [],
   exigeTermo = false,
   urlTermo,
   aoEnviarTermo,
   aoEditar,
   aoCancelar,
+  motivoAcoesIndisponiveis,
   aoFechar,
 }) {
   const [confirmando, setConfirmando] = useState(false);
@@ -119,7 +121,7 @@ function ModalDetalheReserva({
             <span className={styles.icone}><CalendarClock size={17} /></span>
             <div>
               <span className={styles.rotulo}>Data e horário</span>
-              <strong>{dataFormatada(reserva.data)} · {reserva.horario_inicio} às {reserva.horario_fim}</strong>
+              <strong>{periodo || `${dataFormatada(reserva.data)} · ${reserva.horario_inicio} às ${reserva.horario_fim}`}</strong>
             </div>
           </div>
           <div className={styles.linha}>
@@ -164,6 +166,9 @@ function ModalDetalheReserva({
           )}
 
           {erro && <p className={styles.erro} role="alert">{erro}</p>}
+          {!erro && motivoAcoesIndisponiveis && (
+            <p className={styles.erro}>{motivoAcoesIndisponiveis}</p>
+          )}
 
           {confirmando ? (
             <div className={styles.acoes}>

@@ -7,6 +7,7 @@ import CartaoReserva from '../../components/CartaoReserva/CartaoReserva';
 import ModalDetalheReserva from '../../components/ModalDetalheReserva/ModalDetalheReserva';
 import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/ReservaRecursoGeralModal';
 import ReservaAreaModal from '../../components/ReservaArea/ReservaAreaModal';
+import ReservaVeiculoModal from '../../components/ReservaVeiculo/ReservaVeiculoModal';
 import Select from '../../components/Select/Select';
 import {
   listarRecursosGerais,
@@ -15,17 +16,23 @@ import {
   cancelarReservaArea,
   buscarAreas,
   buscarBlocos,
+  buscarVeiculos,
+  listarReservasVeiculos,
+  cancelarReservaVeiculo,
 } from '../../services';
 import {
   listarReservasRecursosGerais,
   cancelarReservaRecursoGeral,
 } from '../../services/reservasRecursosGerais';
 import { STATUS_RESERVA_LABEL } from '../../utils/reserva';
+import { STATUS_RECURSO_LABEL } from '../../utils/statusRecurso';
+import { ehAdministrador } from '../../utils/permissoes';
 import styles from './MinhasReservas.module.css';
 
 const STATUS_ALTERAVEIS = {
   recurso_geral: ['PENDENTE', 'AGUARDANDO_TERMO'],
   area: ['PENDENTE', 'CONFIRMADA'],
+  veiculo: ['PENDENTE', 'AGUARDANDO_TERMO', 'CONFIRMADA'],
 };
 
 const MODALIDADES = {
@@ -71,15 +78,19 @@ function MinhasReservas() {
   const [tipos, setTipos] = useState([]);
   const [areas, setAreas] = useState([]);
   const [blocos, setBlocos] = useState([]);
+  const [veiculos, setVeiculos] = useState([]);
   const [editando, setEditando] = useState(null);
   const [editandoArea, setEditandoArea] = useState(null);
+  const [editandoVeiculo, setEditandoVeiculo] = useState(null);
   const [selecionada, setSelecionada] = useState(null);
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [erro, setErro] = useState('');
   const [aviso, setAviso] = useState(
     location.state?.criada
-      ? 'Reserva enviada! Acompanhe sua reserva abaixo.'
+      ? location.state?.tipo === 'veiculo'
+        ? 'Reserva registrada — aguardando termo.'
+        : 'Reserva enviada! Acompanhe sua reserva abaixo.'
       : ''
   );
 
@@ -91,8 +102,10 @@ function MinhasReservas() {
       listarMinhasReservasAreas(),
       buscarAreas(),
       buscarBlocos(),
+      listarReservasVeiculos(),
+      buscarVeiculos(),
     ])
-      .then(([listaReservasRecurso, listaRecursos, listaTipos, listaReservasArea, listaAreas, listaBlocos]) => {
+      .then(([listaReservasRecurso, listaRecursos, listaTipos, listaReservasArea, listaAreas, listaBlocos, listaReservasVeiculo, listaVeiculos]) => {
         setErro('');
 
         setReservas([
@@ -104,12 +117,17 @@ function MinhasReservas() {
             ...reserva,
             modalidade: 'area',
           })),
+          ...listaReservasVeiculo.map((reserva) => ({
+            ...reserva,
+            modalidade: 'veiculo',
+          })),
         ]);
 
         setRecursos(listaRecursos);
         setTipos(listaTipos);
         setAreas(listaAreas);
         setBlocos(listaBlocos);
+        setVeiculos(listaVeiculos);
       })
       .catch((falha) => setErro(falha.message));
   }, []);
@@ -127,6 +145,11 @@ function MinhasReservas() {
 
     if (reserva.modalidade === 'area') {
       return reserva.area_detalhe?.nome || `Área #${reserva.area}`;
+    }
+
+    if (reserva.modalidade === 'veiculo') {
+      const veiculo = veiculos.find((item) => String(item.id) === String(reserva.veiculo));
+      return veiculo ? `${veiculo.nome} · ${veiculo.placa}` : `Veículo #${reserva.veiculo}`;
     }
 
     return reserva.item || reserva.descricao || 'Não informado';
@@ -171,11 +194,44 @@ function MinhasReservas() {
       ];
     }
 
+    if (reserva.modalidade === 'veiculo') {
+      const veiculo = veiculos.find((item) => String(item.id) === String(reserva.veiculo));
+      return [
+        { rotulo: 'Destino', valor: reserva.destino },
+        { rotulo: 'Finalidade', valor: reserva.finalidade, icone: ClipboardList },
+        {
+          rotulo: 'Ocupantes, incluindo motorista',
+          valor: reserva.quantidade_passageiros,
+          icone: ClipboardList,
+        },
+        { rotulo: 'Observações', valor: reserva.descricao || 'Nenhuma' },
+        {
+          rotulo: 'Situação do veículo',
+          valor: veiculo ? STATUS_RECURSO_LABEL[veiculo.status] : 'Não informada',
+        },
+      ];
+    }
+
     return reserva.detalhes || [];
   }
 
   function podeAlterar(reserva) {
-    return (STATUS_ALTERAVEIS[reserva?.modalidade] || []).includes(reserva?.status);
+    const statusAberto = (STATUS_ALTERAVEIS[reserva?.modalidade] || []).includes(reserva?.status);
+    if (!statusAberto || reserva?.modalidade !== 'veiculo') return statusAberto;
+    if (ehAdministrador(usuario)) return true;
+
+    const inicio = new Date(`${reserva.data}T${reserva.horario_inicio}`);
+    return new Date() <= new Date(inicio.getTime() - 60 * 60 * 1000);
+  }
+
+  function motivoIndisponivel(reserva) {
+    if (!reserva || reserva.modalidade !== 'veiculo') return '';
+    const statusAberto = STATUS_ALTERAVEIS.veiculo.includes(reserva.status);
+    if (!statusAberto) return 'Esta reserva está em um estado final e não pode mais ser alterada.';
+    if (!ehAdministrador(usuario) && !podeAlterar(reserva)) {
+      return 'O prazo para editar ou cancelar encerrou uma hora antes da retirada.';
+    }
+    return '';
   }
 
   function nomeResponsavel(reserva) {
@@ -190,7 +246,9 @@ function MinhasReservas() {
     const modalidade = selecionada.modalidade;
     const atualizada = modalidade === 'area'
       ? await cancelarReservaArea(selecionada.id)
-      : await cancelarReservaRecursoGeral(selecionada.id);
+      : modalidade === 'veiculo'
+        ? await cancelarReservaVeiculo(selecionada.id)
+        : await cancelarReservaRecursoGeral(selecionada.id);
 
     setReservas((atuais) =>
       atuais.map((reserva) =>
@@ -209,6 +267,17 @@ function MinhasReservas() {
     if (reserva.modalidade === 'area') {
       setSelecionada(null);
       setEditandoArea(reserva);
+      return;
+    }
+
+    if (reserva.modalidade === 'veiculo') {
+      const veiculo = veiculos.find((item) => String(item.id) === String(reserva.veiculo));
+      if (!veiculo) {
+        setErro('Não foi possível encontrar o veículo desta reserva.');
+        return;
+      }
+      setSelecionada(null);
+      setEditandoVeiculo({ reserva, veiculo });
       return;
     }
 
@@ -263,6 +332,21 @@ function MinhasReservas() {
 
     setEditandoArea(null);
     setAviso('Reserva atualizada.');
+  }
+
+  function salvarEdicaoVeiculo(atualizada) {
+    setReservas((atuais) => atuais.map((reserva) =>
+      reserva.modalidade === 'veiculo' && String(reserva.id) === String(atualizada.id)
+        ? { ...atualizada, modalidade: 'veiculo' }
+        : reserva
+    ));
+    setEditandoVeiculo(null);
+    setAviso('Reserva atualizada.');
+  }
+
+  function periodoVeiculo(reserva) {
+    if (reserva?.modalidade !== 'veiculo') return undefined;
+    return `${formatarData(reserva.data)} · ${String(reserva.horario_inicio).slice(0, 5)} até ${formatarData(reserva.data_devolucao_prevista)} · ${String(reserva.horario_fim).slice(0, 5)}`;
   }
 
   const reservasDoTipo = filtroTipo === 'todos'
@@ -358,6 +442,7 @@ function MinhasReservas() {
               descricao: nomeItem(reserva),
             }}
             modalidade={MODALIDADES[reserva.modalidade] || 'Reserva'}
+            periodo={periodoVeiculo(reserva)}
             mostrarStatus={true}
             aoClicar={() => setSelecionada(reserva)}
           />
@@ -370,6 +455,7 @@ function MinhasReservas() {
           modalidade={MODALIDADES[selecionada.modalidade] || 'Reserva'}
           item={nomeItem(selecionada)}
           responsavel={nomeResponsavel(selecionada)}
+          periodo={periodoVeiculo(selecionada)}
           exigeTermo={
             ehRecurso
               ? Boolean(recurso?.tem_termo_de_responsabilidade)
@@ -378,6 +464,7 @@ function MinhasReservas() {
           detalhes={detalhesDaReserva(selecionada)}
           aoEditar={podeAlterar(selecionada) ? () => abrirEdicao(selecionada) : undefined}
           aoCancelar={podeAlterar(selecionada) ? cancelarSelecionada : undefined}
+          motivoAcoesIndisponiveis={motivoIndisponivel(selecionada)}
           aoFechar={() => setSelecionada(null)}
         />
       )}
@@ -403,6 +490,17 @@ function MinhasReservas() {
           reservaEdicao={editandoArea}
           aoFechar={() => setEditandoArea(null)}
           aoReservar={salvarEdicaoArea}
+        />
+      )}
+
+      {editandoVeiculo && (
+        <ReservaVeiculoModal
+          aberto
+          veiculoInicial={editandoVeiculo.veiculo}
+          veiculos={veiculos}
+          reservaEdicao={editandoVeiculo.reserva}
+          aoFechar={() => setEditandoVeiculo(null)}
+          aoReservar={salvarEdicaoVeiculo}
         />
       )}
     </div>
