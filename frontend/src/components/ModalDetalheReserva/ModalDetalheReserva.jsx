@@ -41,7 +41,7 @@ function ModalDetalheReserva({
 
   const tipo = String(reserva.tipo_reserva || '').toLowerCase();
   const status = String(reserva.status || '').toLowerCase();
-  const podeCancelar = Boolean(aoCancelar) && ['pendente', 'aguardando_termo'].includes(status);
+  const podeCancelar = Boolean(aoCancelar);
 
   async function cancelar() {
     try {
