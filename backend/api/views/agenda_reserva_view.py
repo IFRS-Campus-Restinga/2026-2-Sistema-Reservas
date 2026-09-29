@@ -4,6 +4,8 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from api.models.area_model import Area
+from api.models.reserva_area_model import ReservaArea
 from api.models.reserva_veiculo_model import ReservaVeiculo
 from api.models.veiculo_model import Veiculo
 from api.permissions.regras_comuns import UsuarioAutenticado
@@ -32,21 +34,41 @@ class AgendaReservasView(APIView):
                 .exclude(status__in=STATUS_RESERVAS_FINAIS)
                 .select_related("usuario")
             )
+            response = [
+                {
+                    "id": reserva.pk,
+                    "nome": reserva.nome,
+                    "data": reserva.data,
+                    "horario_inicio": reserva.horario_inicio,
+                    "data_devolucao_prevista": reserva.data_devolucao_prevista,
+                    "horario_fim": reserva.horario_fim,
+                    "usuario_nome": reserva.usuario.nome,
+                    "destino": reserva.destino,
+                }
+                for reserva in reservas.order_by("data", "horario_inicio")
+            ]
+        elif tipo == "AREA":
+            recurso = get_object_or_404(Area, pk=recurso_id)
+            reservas = (
+                ReservaArea.objects
+                .filter(area=recurso, data=data)
+                .exclude(status__in=STATUS_RESERVAS_FINAIS)
+                .select_related("usuario")
+            )
+            response = [
+                {
+                    "id": reserva.pk,
+                    "nome": reserva.nome,
+                    "data": reserva.data,
+                    "horario_inicio": reserva.horario_inicio,
+                    "horario_fim": reserva.horario_fim,
+                    "usuario_nome": reserva.usuario.nome,
+                }
+                for reserva in reservas.order_by("horario_inicio")
+            ]
         else:
             raise ValidationError({
-                "tipo": "Informe um tipo de agenda válido: VEICULO."
+                "tipo": "Informe um tipo de agenda válido: VEICULO ou AREA."
             })
 
-        return Response([
-            {
-                "id": reserva.pk,
-                "nome": reserva.nome,
-                "data": reserva.data,
-                "horario_inicio": reserva.horario_inicio,
-                "data_devolucao_prevista": reserva.data_devolucao_prevista,
-                "horario_fim": reserva.horario_fim,
-                "usuario_nome": reserva.usuario.nome,
-                "destino": reserva.destino,
-            }
-            for reserva in reservas.order_by("data", "horario_inicio")
-        ])
+        return Response(response)

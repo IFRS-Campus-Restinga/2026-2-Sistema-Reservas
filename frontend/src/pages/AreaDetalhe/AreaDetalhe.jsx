@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { ArrowLeft, CheckCircle, Users } from "lucide-react";
-import { buscarArea, buscarAreas, buscarBlocos } from "../../services";
+import { buscarAgendaArea, buscarArea, buscarAreas, buscarBlocos } from "../../services";
 import ReservaAreaModal from "../../components/ReservaArea/ReservaAreaModal";
 import { ICONE_AREA_PADRAO, TIPO_AREA_ICONE, TIPO_AREA_LABEL } from "../../utils/tipoArea";
 import { EQUIPAMENTO_LABELS } from "../../utils/equipamentoArea";
 import { ACESSIBILIDADE_LABELS } from "../../utils/acessibilidadeBloco";
 import styles from "./AreaDetalhe.module.css";
+
+function formatarIntervalo(reserva) {
+  return `${reserva.horario_inicio.slice(0, 5)}–${reserva.horario_fim.slice(0, 5)}`;
+}
 
 function AreaDetalhe() {
   const { id } = useParams();
@@ -16,6 +20,7 @@ function AreaDetalhe() {
   const [area, setArea] = useState(null);
   const [areas, setAreas] = useState([]);
   const [blocos, setBlocos] = useState([]);
+  const [agenda, setAgenda] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
   const [mostrarReserva, setMostrarReserva] = useState(false);
@@ -26,15 +31,17 @@ function AreaDetalhe() {
         setCarregando(true);
         setErro("");
 
-        const [dadosArea, dadosAreas, dadosBlocos] = await Promise.all([
+        const [dadosArea, dadosAreas, dadosBlocos, dadosAgenda] = await Promise.all([
           buscarArea(id),
           buscarAreas(),
           buscarBlocos(),
+          buscarAgendaArea(id),
         ]);
 
         setArea(dadosArea);
         setAreas(dadosAreas);
         setBlocos(dadosBlocos);
+        setAgenda(dadosAgenda);
       } catch (erro) {
         console.error(erro);
         setErro("Área não encontrada.");
@@ -125,12 +132,26 @@ function AreaDetalhe() {
           <div className="col-md-6">
             <h3 className="fs-6 fw-semibold mb-2">Agenda de hoje</h3>
 
-            {/* implementar endpoint que retorne as reservas do usuário por area/dataa atual */}
-
-            <div className="bg-success-subtle rounded-3 p-3 text-center">
-              <CheckCircle size={20} className="text-success d-block mx-auto mb-1" />
-              <p className="small text-success-emphasis fw-medium mb-0">Disponível o dia todo</p>
-            </div>
+            {agenda.length === 0 ? (
+              <div className="bg-success-subtle rounded-3 p-3 text-center">
+                <CheckCircle size={20} className="text-success d-block mx-auto mb-1" />
+                <p className="small text-success-emphasis fw-medium mb-0">Disponível o dia todo</p>
+              </div>
+            ) : (
+              <div className="d-flex flex-column gap-2">
+                {agenda.map((reserva) => (
+                  <div className={styles.itemAgenda} key={reserva.id}>
+                    <span className={styles.barra} />
+                    <div>
+                      <strong className="small d-block">{reserva.nome}</strong>
+                      <span className="text-muted d-block">
+                        {formatarIntervalo(reserva)} · <span className={styles.nomeUsuario}>{reserva.usuario_nome}</span>
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

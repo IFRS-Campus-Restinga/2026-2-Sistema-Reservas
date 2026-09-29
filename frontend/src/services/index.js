@@ -48,6 +48,7 @@ export {
   listarMinhasReservasAreas,
   criarReservaArea,
   cancelarReservaArea,
+  buscarAgendaArea,
 } from './reservasAreas';
 export {
   listarReservasVeiculos,
