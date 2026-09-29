@@ -1,4 +1,4 @@
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
 
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -109,23 +109,3 @@ def validar_reserva(usuario, dados, reserva=None, agora=None):
         raise ValidationError({'quantidade_passageiros': 'A quantidade de ocupantes, incluindo o motorista, não pode exceder a capacidade do veículo.'})
     validar_autorizacao(reserva.usuario if reserva is not None else usuario, dados)
     _validar_ocupacao(dados['veiculo'], inicio, fim, reserva)
-
-
-def opcoes_calendario(data_inicio, data_fim, retirada=None, agora=None):
-    
-    if data_fim < data_inicio:
-        raise ValidationError({'data_fim': 'O fim do calendário não pode ser anterior ao início.'})
-    agora = agora or timezone.now()
-    dia = max(data_inicio, timezone.localtime(agora).date())
-    dias = []
-    while dia <= data_fim:
-        horarios = [instante(dia, time(hora, minuto)) for hora in range(24) for minuto in (0, 30)]
-        futuros = [horario for horario in horarios if horario > agora]
-        dias.append({
-            'data': dia.isoformat(),
-            'horarios_retirada': [horario.time().isoformat() for horario in futuros],
-            'horarios_retorno': [horario.time().isoformat() for horario in futuros
-                                 if retirada is not None and horario > retirada],
-        })
-        dia += timedelta(days=1)
-    return {'dias': dias}
