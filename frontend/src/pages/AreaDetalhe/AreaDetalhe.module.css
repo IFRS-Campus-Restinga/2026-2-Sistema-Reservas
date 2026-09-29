@@ -1,0 +1,11 @@
+.cabecalho {
+  background: linear-gradient(135deg, var(--cor-marca), var(--cor-marca-escura));
+}
+
+.voltar {
+  color: var(--cor-marca);
+}
+
+.voltar:hover {
+  color: var(--cor-marca-escura);
+}

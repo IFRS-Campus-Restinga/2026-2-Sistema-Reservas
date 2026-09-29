@@ -7,6 +7,8 @@ import Administracao from '../pages/Administracao/Administracao'
 import Grupos from '../pages/Grupos/Grupos'
 import NotFound from '../pages/NotFound/NotFound'
 import MinhasReservas from '../pages/MinhasReservas/MinhasReservas';
+import Areas from  '../pages/Areas/Areas'
+import AreaDetalhe from '../pages/AreaDetalhe/AreaDetalhe'
 
 function AppRoutes() {
   return (
@@ -15,6 +17,8 @@ function AppRoutes() {
         <Route element={<MainLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/recursos" element={<Recursos />} />
+          <Route path="/areas" element={<Areas />} />
+          <Route path="/areas/:id" element={<AreaDetalhe />} />
           <Route path="/minhas-reservas" element={<MinhasReservas />}/>
           <Route path="/grupos" element={<Grupos />} />
           <Route path="/admin" element={<Administracao />} />

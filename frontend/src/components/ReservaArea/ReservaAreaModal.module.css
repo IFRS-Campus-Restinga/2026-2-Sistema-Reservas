@@ -1,0 +1,5 @@
+.turnoAtivo {
+  background-color: var(--cor-marca);
+  border-color: var(--cor-marca);
+  color: #ffffff;
+}

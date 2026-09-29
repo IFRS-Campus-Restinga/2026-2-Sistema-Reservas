@@ -6,26 +6,6 @@
   padding: 24px;
 }
 
-.cabecalho {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.cabecalho h2 {
-  font-size: 20px;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0 0 5px;
-}
-
-.cabecalho p {
-  font-size: 13px;
-  color: #64748b;
-  margin: 0;
-}
-
 .nova {
   padding: 10px 15px;
   border-radius: 9px;

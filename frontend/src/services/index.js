@@ -44,3 +44,8 @@ export {
   criarReservaRecursoGeral,
   cancelarReservaRecursoGeral,
 } from './reservasRecursosGerais';
+export {
+  listarMinhasReservasAreas,
+  criarReservaArea,
+  cancelarReservaArea,
+} from './reservasAreas';
