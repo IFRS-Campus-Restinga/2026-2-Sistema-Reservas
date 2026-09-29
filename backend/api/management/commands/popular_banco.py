@@ -596,7 +596,11 @@ def popular_grupo_veiculos():
     )
 
     membros_criados = 0
-    for usuario in HubUser.objects.filter(papel=Papel.SERVIDOR, is_active=True):
+    servidores = HubUser.objects.filter(
+        papel=Papel.SERVIDOR,
+        is_active=True,
+    ).order_by('email')[:3]
+    for usuario in servidores:
         _, membro_criado = MembroGrupo.objects.get_or_create(
             grupo=grupo,
             usuario=usuario,
@@ -659,21 +663,19 @@ def popular_reservas_veiculos():
         return 0
 
     hoje = timezone.localdate()
+    usuario = (
+        HubUser.objects.filter(email='juliarosa.sb@gmail.com', is_active=True).first()
+        or usuarios[0]
+    )
     dados_reservas = [
-        ('Viagem administrativa', 'ABC1D23', 0, time(8), 1, time(8), 'Campus Porto Alegre', 'Reunião institucional', 8, StatusReserva.CONFIRMADA),
-        ('Visita técnica', 'DEF4567', 2, time(8), 2, time(18), 'Parque Tecnológico', 'Visita técnica com servidores', 4, StatusReserva.AGUARDANDO_TERMO),
-        ('Atividade de campo', 'JKL8901', 3, time(7), 4, time(19), 'Estação Experimental', 'Coleta de dados de pesquisa', 5, StatusReserva.PENDENTE),
-        ('Transporte para evento', 'MNO3P45', 5, time(6, 30), 5, time(22), 'Centro de Eventos', 'Participação em evento acadêmico', 18, StatusReserva.AGUARDANDO_TERMO),
-        ('Reunião da direção', 'STU4V56', 7, time(9), 7, time(17), 'Reitoria', 'Reunião da equipe diretiva', 4, StatusReserva.CANCELADA),
-        ('Entrega de documentos', 'DEF4567', 9, time(13), 9, time(17), 'Reitoria', 'Entrega de documentação institucional', 2, StatusReserva.REJEITADA),
-        ('Viagem acadêmica concluída', 'MNO3P45', -8, time(7), -7, time(20), 'Universidade Federal', 'Participação em seminário', 16, StatusReserva.CONCLUIDA),
+        ('Viagem administrativa', 'ABC1D23', 1, time(8), 1, time(12), 'Campus Porto Alegre', 'Reunião institucional', 8, StatusReserva.AGUARDANDO_TERMO),
+        ('Visita técnica', 'DEF4567', 3, time(14), 3, time(18), 'Parque Tecnológico', 'Visita técnica institucional', 4, StatusReserva.AGUARDANDO_TERMO),
     ]
 
     criados = 0
-    for indice, dados in enumerate(dados_reservas):
+    for dados in dados_reservas:
         (nome, placa, dia_saida, inicio, dia_retorno, fim, destino,
          finalidade, ocupantes, status) = dados
-        usuario = usuarios[indice % len(usuarios)]
         veiculo = Veiculo.objects.get(placa=placa)
         reserva, criada = ReservaVeiculo.objects.get_or_create(
             nome=nome,
