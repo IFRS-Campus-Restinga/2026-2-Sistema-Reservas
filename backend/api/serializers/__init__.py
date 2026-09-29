@@ -3,3 +3,4 @@ from .tipo_recurso_serializer import TipoRecursoSerializer
 from .grupo_serializer import GrupoSerializer
 from .membro_grupo_serializer import MembroGrupoSerializer
 from .reserva_recurso_geral_serializer import ReservaRecursoGeralSerializer
+from .reserva_veiculo_serializer import ReservaVeiculoSerializer
