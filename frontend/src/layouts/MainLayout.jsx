@@ -13,7 +13,10 @@ function MainLayout() {
   const [carregando, setCarregando] = useState(true)
 
   const location = useLocation();
-  const paginaAtual = MENU.find((item) => item.url === location.pathname)?.titulo || 'Página não encontrada';
+  const paginaAtual = MENU.find((item) =>
+    item.url === location.pathname ||
+    (item.url !== '/' && location.pathname.startsWith(`${item.url}/`))
+  )?.titulo || 'Página não encontrada';
 
   useEffect(() => {
     buscarUsuarioLogado()

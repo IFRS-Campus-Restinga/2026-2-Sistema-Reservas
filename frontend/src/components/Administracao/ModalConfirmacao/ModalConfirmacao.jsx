@@ -7,6 +7,9 @@ function ModalConfirmacao({
     titulo = 'Excluir item?',
     mensagem,
     aviso,
+    icone: Icone = Trash2,
+    textoConfirmar = 'Excluir',
+    variante = 'perigo',
     aoCancelar,
     aoConfirmar,
 }) {
@@ -16,8 +19,8 @@ function ModalConfirmacao({
             variante="confirmacao"
             titulo={
                 <span className={styles.titulo}>
-                    <span className={styles.icone}>
-                        <Trash2 size={20} aria-hidden="true" />
+                    <span className={styles.icone} data-variante={variante}>
+                        <Icone size={20} aria-hidden="true" />
                     </span>
                     {titulo}
                 </span>
@@ -35,10 +38,11 @@ function ModalConfirmacao({
 
                     <button
                         type="button"
-                        className={styles.excluir}
+                        className={styles.confirmar}
+                        data-variante={variante}
                         onClick={aoConfirmar}
                     >
-                        Excluir
+                        {textoConfirmar}
                     </button>
                 </>
             }

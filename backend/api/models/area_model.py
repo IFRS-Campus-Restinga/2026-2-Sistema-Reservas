@@ -20,13 +20,14 @@ class Area(BaseModel):
         unique_together = ['nome', 'bloco'] # unique constraint
 
     nome = models.CharField(
-        max_length=50,
-        validators=[MinLengthValidator(4)],
+        max_length=100,
+        validators=[MinLengthValidator(3)],
         null=False,
         blank=False,
-        help_text="Nome da área contendo entre 4 e 50 caracteres."
+        help_text="Nome da área contendo entre 3 e 100 caracteres."
     )
     capacidade = models.IntegerField(
+        default=20,
         null=False,
         blank=False,
         help_text="Capacidade total de ocupação da área."
@@ -38,6 +39,7 @@ class Area(BaseModel):
         help_text="Descrição complementar ou características da área (opcional)."
     )
     disponibilidade = models.BooleanField(
+        default=True,
         null=False,
         blank=False,
         help_text="Indica se a área está disponível para reserva."
@@ -45,6 +47,7 @@ class Area(BaseModel):
     status = models.CharField(
         max_length=10,
         choices=StatusRecurso.choices,
+        default=StatusRecurso.ATIVO,
         null=False,
         blank=False,
         help_text="Estado operacional da área"
@@ -52,6 +55,7 @@ class Area(BaseModel):
     tipo = models.CharField(
         max_length=100,
         choices=TipoArea.choices,
+        default=TipoArea.SALA,
         null=False,
         blank=False,
         help_text="Tipo de área"
@@ -62,6 +66,13 @@ class Area(BaseModel):
         blank=True,
         validators=[validar_equipamentos_area],
         help_text="Equipamentos encontrados na área"
+    )
+    edupage_id = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        unique=True,
+        help_text="ID interno da sala no JSON do EduPage (ex: '-61')"
     )
     bloco = models.ForeignKey(
         Bloco,
@@ -76,11 +87,12 @@ class Area(BaseModel):
         return f"{self.nome} - {self.bloco.nome}"  
 
     def clean(self):
-        super().clean()
+        
         if self.nome:
             self.nome = self.nome.strip()
         if self.caracteristica:
             self.caracteristica = self.caracteristica.strip()
+        super().clean()
 
     def save(self, *args, **kwargs):
         self.full_clean()

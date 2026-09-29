@@ -1,0 +1,224 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 10px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: white;
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+.filtros select {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+  margin-left: 10px;
+}
+
+.gridContainer {
+  display: grid;
+  grid-template-columns: 80px repeat(5, 1fr);
+  /* 1 linha pro header, 5 para manhã, 1 divisor, 5 para tarde, 5 para noite */
+  grid-template-rows: 50px repeat(5, minmax(80px, auto)) 40px repeat(5, minmax(80px, auto)) repeat(5, minmax(80px, auto));
+  gap: 10px;
+}
+
+/* Cabecalho Vazio no canto esquerdo */
+.gridHeaderVazio {
+  background-color: transparent;
+}
+
+/* Cabecalho dos Dias (SEG, TER...) */
+.gridHeaderDia {
+  background-color: #4a5568;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 6px;
+}
+
+/* Coluna Lateral de Períodos */
+.gridLateral {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+.lateralNum {
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.lateralTime {
+  font-size: 0.75rem;
+  color: #718096;
+  margin-top: 2px;
+}
+
+/* Divisor de Turnos */
+.gridTurnoDivisor {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-top: 1px dashed #cbd5e0;
+  border-bottom: 1px dashed #cbd5e0;
+  margin: 1px;
+  color: #718096;
+}
+
+.turnoLabel {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.turnoTime {
+  font-size: 0.75rem;
+}
+
+/* Bloco de Aula */
+.cardAula {
+  background-color: white;
+  border-left: 4px solid #3182ce;
+  border-radius: 6px;
+  padding: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.tempoTop {
+  color: #2b6cb0;
+  font-weight: bold;
+  font-size: 0.85rem;
+  margin-bottom: 5px;
+}
+
+.disciplinaCentro {
+  color: #2b6cb0;
+  font-size: 0.95rem;
+  margin-bottom: auto; /* Empurra o rodapé pro fundo */
+  padding-bottom: 10px;
+}
+
+.rodape {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.turmaBottom {
+  font-size: 0.8rem;
+  color: #718096;
+}
+
+.professorBottom {
+  font-size: 0.8rem;
+  color: #718096;
+  text-align: right;
+}
+
+/* Bloco Livre (Igual ao screenshot 3) */
+.cardLivre {
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8fa0b5;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.loading, .error, .empty {
+  padding: 20px;
+  text-align: center;
+  background-color: white;
+  border-radius: 8px;
+  color: #4a5568;
+}
+
+.emptyContainer, .errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  padding: 30px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.filtros {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.botaoSincronizar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 6px;
+  background-color: var(--cor-marca, #16a34a);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 150ms ease, background-color 150ms ease;
+}
+
+.botaoSincronizar:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.botaoSincronizar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.girando {
+  animation: girar 1s linear infinite;
+}
+
+@keyframes girar {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.alertaSucesso {
+  background-color: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}

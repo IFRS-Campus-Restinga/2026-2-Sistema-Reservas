@@ -1,30 +1,46 @@
-import styles from "./CartaoReserva.module.css";
-import { formatarDataCurta } from "../../utils/data";
-import { STATUS_RESERVA_LABEL } from "../../utils/reserva";
-import { TIPO_RESERVA_LABEL } from "../../utils/reserva";
+import styles from './CartaoReserva.module.css';
+import { formatarDataCurta } from '../../utils/data';
+import { STATUS_RESERVA_LABEL, TIPO_RESERVA_LABEL } from '../../utils/reserva';
 
-function CartaoReserva({ reserva }) {
+function CartaoReserva({ reserva, modalidade, periodo, mostrarStatus = true, aoClicar }) {
+  const tipo = String(reserva.tipo_reserva || '').toLowerCase();
+  const status = String(reserva.status || '').toLowerCase();
+  const nomeTipo = modalidade || TIPO_RESERVA_LABEL[tipo] || tipo;
+  const Componente = aoClicar ? 'button' : 'div';
+
   return (
-    <div className={styles.cartao}>
-      <div className={styles.barraStatus} data-status={reserva.status} />
+    <Componente
+      {...(aoClicar ? { type: 'button', onClick: aoClicar } : {})}
+      className={`${styles.cartao} ${modalidade ? styles.porModalidade : ''} ${aoClicar ? styles.clicavel : ''}`}
+      data-tipo={tipo}
+      aria-label={aoClicar ? `Ver detalhes da reserva ${reserva.nome}` : undefined}
+    >
+      <span
+        className={styles.barraStatus}
+        data-status={status}
+        data-tipo={modalidade ? tipo : undefined}
+        aria-hidden="true"
+      />
 
-      <div className={styles.conteudo}>
-        <div className={styles.linhaTitulo}>
-          <span className={styles.tagTipo} data-tipo={reserva.tipo_reserva}>
-            {TIPO_RESERVA_LABEL[reserva.tipo_reserva] ?? reserva.tipo_reserva}
+      <span className={styles.conteudo}>
+        <span className={styles.linhaTitulo}>
+          <span className={styles.tagTipo} data-tipo={modalidade ? 'modalidade' : tipo}>
+            {nomeTipo}
           </span>
-          <p className={styles.nome}>{reserva.nome}</p>
-        </div>
-        <p className={styles.descricao}>{reserva.descricao}</p>
-        <p className={styles.horario}>
-          {formatarDataCurta(reserva.data)} · {reserva.horario_inicio}–{reserva.horario_fim}
-        </p>
-      </div>
-
-      <span className={styles.badgeStatus} data-status={reserva.status}>
-        {STATUS_RESERVA_LABEL[reserva.status] ?? reserva.status}
+          <span className={styles.nome}>{reserva.nome}</span>
+        </span>
+        <span className={styles.descricao}>{reserva.descricao}</span>
+        <span className={styles.horario}>
+          {periodo || `${formatarDataCurta(reserva.data)} · ${reserva.horario_inicio}–${reserva.horario_fim}`}
+        </span>
       </span>
-    </div>
+
+      {mostrarStatus && (
+        <span className={styles.badgeStatus} data-status={status}>
+          {STATUS_RESERVA_LABEL[status] || reserva.status}
+        </span>
+      )}
+    </Componente>
   );
 }
 

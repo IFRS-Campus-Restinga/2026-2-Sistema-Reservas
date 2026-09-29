@@ -7,19 +7,10 @@ from django.db import models
 from api.enumerations.bloco_enumerations.acessibilidade import Acessibilidade
 from api.validators.bloco_validator import validar_acessibilidade_bloco
 from .base_model import BaseModel
-
+def acessibilidade_default():
+    return [Acessibilidade.PISO_TATIL, Acessibilidade.BANHEIRO]
 
 class Bloco(BaseModel):
-    """
-    Representa a entidade de um Bloco físico do campus
-
-    Atributos:
-        numero (CharField): Código numérico de identificação do bloco (no máximo 2 dígitos).
-        nome (CharField): Nome descritivo do bloco (máximo 100 caracteres).
-        banheiro (BooleanField): Indica a presença de estrutura sanitária (padrão: True).
-        acessibilidade (JSONField): Lista com as opções de acessibilidade disponíveis (padrão: lista vazia).
-    """
-
     class Meta:
         db_table = 'bloco'
         verbose_name = 'Bloco'
@@ -51,7 +42,7 @@ class Bloco(BaseModel):
     )
     acessibilidade = models.JSONField(
         models.CharField(max_length=50),
-        default=list,
+        default=acessibilidade_default,
         blank=True,
         validators=[validar_acessibilidade_bloco],
         help_text="Opções de acessibilidade disponíveis no bloco."
@@ -61,11 +52,12 @@ class Bloco(BaseModel):
         return f"Bloco {self.numero} - {self.nome}"
 
     def clean(self):
-        super().clean()
+        
         if self.nome:
             self.nome = self.nome.strip()
         if self.numero:
             self.numero = self.numero.strip()
+        super().clean()
         
     def save(self, *args, **kwargs):
         self.full_clean()

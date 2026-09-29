@@ -1,0 +1,91 @@
+
+.calendario {
+  border: 1px solid #dfe5ee;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.navegacao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.navegacao strong {
+  font-size: 13px;
+  text-transform: capitalize;
+  color: #1f2937;
+}
+
+.navegacao button {
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  padding: 5px;
+  display: flex;
+  cursor: pointer;
+}
+
+.navegacao button:disabled {
+  opacity: .25;
+  cursor: default;
+}
+
+.grade {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
+  text-align: center;
+}
+
+.semana {
+  padding: 4px 0;
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.grade button {
+  height: 36px;
+  border: 0;
+  border-radius: 9px;
+  background: white;
+  font-size: 12px;
+  color: #334155;
+  cursor: pointer;
+}
+
+.grade button:disabled {
+  color: #cbd5e1;
+  cursor: default;
+}
+
+.grade button:not(:disabled):hover {
+  background: #edf8f2;
+}
+
+.grade button.selecionado {
+  background: #009a44;
+  color: white;
+  font-weight: 700;
+}
+
+.grade button.noPeriodo {
+  background: #d9f4e5;
+  color: #08763b;
+  border-radius: 4px;
+}
+
+.grade button.limitePeriodo {
+  background: #009a44;
+  color: white;
+  font-weight: 700;
+}
+
+.nota {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid #eef2f7;
+  font-size: 11px;
+  color: #64748b;
+}

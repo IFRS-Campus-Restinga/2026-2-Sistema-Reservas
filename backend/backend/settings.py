@@ -143,6 +143,8 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_PAGINATION_CLASS': 'api.pagination.PaginacaoPadrao',
+    'PAGE_SIZE': 20,
 }
 
 
@@ -165,6 +167,8 @@ STATIC_URL = 'static/'
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
+    'http://localhost:5174',
     'http://127.0.0.1:5173',
- ]
+    'http://127.0.0.1:5174',
+]
 CORS_ALLOW_CREDENTIALS = True
