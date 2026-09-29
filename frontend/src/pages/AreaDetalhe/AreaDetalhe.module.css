@@ -9,3 +9,25 @@
 .voltar:hover {
   color: var(--cor-marca-escura);
 }
+
+.itemAgenda {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 9px;
+  background: #f8fafc;
+  font-size: 12px;
+}
+
+.nomeUsuario {
+  text-transform: capitalize;
+}
+
+.barra {
+  width: 3px;
+  min-height: 42px;
+  align-self: stretch;
+  border-radius: 999px;
+  background: var(--cor-marca);
+}

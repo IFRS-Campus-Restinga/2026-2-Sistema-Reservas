@@ -33,6 +33,15 @@ export async function listarMinhasReservasAreas() {
   return tratarResposta(resposta);
 }
 
+export async function buscarAgendaArea(id) {
+  const parametros = new URLSearchParams({ tipo: 'AREA', recurso: id });
+  const resposta = await fetch(`/api/reservas/agenda/?${parametros}`, {
+    credentials: 'include',
+  });
+
+  return tratarResposta(resposta);
+}
+
 export async function criarReservaArea(dados) {
   const resposta = await fetch(URL, {
     method: 'POST',
