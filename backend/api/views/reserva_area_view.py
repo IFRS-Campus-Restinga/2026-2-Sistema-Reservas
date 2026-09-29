@@ -1,16 +1,16 @@
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from api.enumerations.status_reserva import StatusReserva
 from api.models.area_model import Area
 from api.models.reserva_area_model import ReservaArea
-from api.permissions.is_owner_or_admin import IsOwnerOrAdmin
+from api.permissions.regras_comuns import UsuarioAutenticado
+from api.permissions.reserva_permissions import PodeGerenciarReserva
 from api.serializers.reserva_area_serializer import ReservaAreaSerializer
-from api.validators.reserva_area_validator import validar_disponibilidade_area
+from api.validators.reserva_area_validator import validar_autorizacao, validar_disponibilidade_area
 
 
 STATUS_ALTERAVEIS = [
@@ -30,7 +30,7 @@ CAMPOS_EDICAO = {
 
 
 class ReservaAreaListCreateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [UsuarioAutenticado]
 
     def get(self, request):
         reservas = ReservaArea.objects.filter(
@@ -55,6 +55,7 @@ class ReservaAreaListCreateView(APIView):
 
             dados["area"] = area
 
+            validar_autorizacao(request.user, dados)
             validar_disponibilidade_area(dados)
             serializer.save(usuario=request.user, status=StatusReserva.CONFIRMADA)
 
@@ -65,7 +66,7 @@ class ReservaAreaListCreateView(APIView):
 
 
 class MinhasReservasAreaListView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [UsuarioAutenticado]
 
     def get(self, request):
         reservas = ReservaArea.objects.filter(
@@ -78,7 +79,7 @@ class MinhasReservasAreaListView(APIView):
 
 
 class ReservaAreaDetailView(APIView):
-    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
+    permission_classes = [PodeGerenciarReserva]
 
     def get(self, request, pk):
         reserva = get_object_or_404(ReservaArea, pk=pk)
@@ -147,6 +148,7 @@ class ReservaAreaDetailView(APIView):
 
             dados["area"] = areas[dados["area"].pk]
 
+            validar_autorizacao(reserva.usuario, dados)
             validar_disponibilidade_area(dados, excluir_reserva=reserva.pk)
 
             serializer.validated_data["area"] = dados["area"]

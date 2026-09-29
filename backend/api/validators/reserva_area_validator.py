@@ -1,8 +1,22 @@
 from datetime import datetime
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from api.enumerations import StatusReserva
 from api.enumerations.area_enumerations.area_enums import StatusRecurso
+from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
 from api.models.reserva_area_model import ReservaArea
+from api.permissions.regras_reserva import pode_reservar
+
+
+def validar_autorizacao(usuario, dados):
+    autorizado = pode_reservar(
+        usuario,
+        TipoRecursoReservavel.AREA,
+        data=dados["data"],
+    )
+    if not autorizado:
+        raise PermissionDenied(
+            "Você não tem autorização para reservar essa área nesse período."
+        )
 
 
 def validar_disponibilidade_area(dados, excluir_reserva=None):
