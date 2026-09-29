@@ -4,6 +4,7 @@ import {
   ClipboardList,
   Shield,
   Users,
+  DoorOpen
 } from "lucide-react";
 
 export const MENU = [
@@ -12,6 +13,13 @@ export const MENU = [
     titulo: "Home",
     icone: Home,
     url: '/',
+    permissoes: true,
+  },
+  {
+    id: "areas",
+    titulo: "Áreas",
+    icone: DoorOpen,
+    url: "/areas",
     permissoes: true,
   },
   {
