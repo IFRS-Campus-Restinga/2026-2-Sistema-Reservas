@@ -14,7 +14,11 @@ const formularioInicial = {
 
 function montarFormulario(grupo, tipoInicial) {
     if (!grupo) {
-        return { ...formularioInicial, tipo_membro_permitido: tipoInicial };
+        return {
+            ...formularioInicial,
+            tipo_membro_permitido: tipoInicial,
+            tipo_recurso_autorizado: tipoInicial === 'servidor' ? 'VEICULO' : 'AREA',
+        };
     }
     return {
         nome: grupo.nome || '',
@@ -49,7 +53,14 @@ function GrupoModal({
 
     function alterarCampo(evento) {
         const { name, value } = evento.target;
-        setFormulario((anterior) => ({ ...anterior, [name]: value }));
+        setFormulario((anterior) => ({
+            ...anterior,
+            [name]: value,
+            ...(name === 'tipo_membro_permitido' ? {
+                tipo_recurso_autorizado: value === 'servidor' ? 'VEICULO' : 'AREA',
+                tipo_recurso: '',
+            } : {}),
+        }));
         setErros((anteriores) => ({ ...anteriores, [name]: '', geral: '' }));
     }
 
@@ -182,9 +193,17 @@ function GrupoModal({
                             onChange={alterarCampo}
                             required
                         >
-                            <option value="AREA">Áreas</option>
-                            <option value="VEICULO">Veículos</option>
-                            <option value="RECURSO_GERAL">Recurso geral</option>
+                            {formulario.tipo_membro_permitido === 'servidor' ? (
+                                <option value="VEICULO">Veículos</option>
+                            ) : (
+                                <>
+                                    <option value="AREA">Áreas</option>
+                                    <option value="RECURSO_GERAL">Recurso geral</option>
+                                    {formulario.tipo_recurso_autorizado === 'VEICULO' && (
+                                        <option value="VEICULO" disabled>Veículos (não permitido para alunos)</option>
+                                    )}
+                                </>
+                            )}
                         </select>
                         {mensagemErro('tipo_recurso_autorizado')}
                     </div>

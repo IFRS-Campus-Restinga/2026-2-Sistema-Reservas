@@ -1,0 +1,13 @@
+.formulario { display: flex; flex-direction: column; gap: 16px; }
+.formulario label, .campo { display: flex; flex-direction: column; gap: 7px; font-size: 13px; font-weight: 600; color: #334155; }
+.formulario input, .formulario select, .formulario textarea { width: 100%; border: 1px solid #dce2eb; border-radius: 9px; padding: 9px 12px; font-size: 14px; background: #fff; color: #1f2937; font-weight: 400; }
+.formulario textarea { resize: vertical; }
+.formulario small { font-size: 11px; font-weight: 400; color: #64748b; }
+.aviso { display: flex; align-items: center; gap: 8px; padding: 10px; border-radius: 9px; background: #e9f8f0; color: #08763b; font-size: 12px; }
+.horarios { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.disponibilidade { display: flex; align-items: center; gap: 7px; margin: 0; padding: 9px 10px; border-radius: 8px; color: #08763b; background: #e9f8f0; font-size: 12px; }
+.indisponivel { color: #b91c1c; background: #fef2f2; }
+.erro { margin: 0; padding: 10px; border-radius: 8px; color: #b91c1c; background: #fef2f2; font-size: 12px; }
+.acoes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.acoes button { width: 100%; }
+@media (max-width: 720px) { .horarios { grid-template-columns: 1fr; } }
