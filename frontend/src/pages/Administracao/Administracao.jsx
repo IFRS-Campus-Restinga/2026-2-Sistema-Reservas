@@ -7,6 +7,7 @@ import VeiculosAdmin from "../../components/Administracao/Veiculos/VeiculosAdmin
 import RecursosAdmin from "../../components/Administracao/Recursos/RecursosAdmin";
 import BlocosAdmin from "../../components/Administracao/Blocos/BlocosAdmin";
 import AreasAdmin from "../../components/Administracao/Areas/AreasAdmin";
+import TimetableAdmin from "../../components/Administracao/Timetable/TimetableAdmin";
 import GruposGerenciador from "../../components/Grupos/GruposGerenciador/GruposGerenciador";
 
 const abas = [
@@ -33,6 +34,10 @@ const abas = [
   {
     id: "grupos",
     rotulo: "Grupos",
+  },
+  {
+    id: "timetable",
+    rotulo: "Timetable",
   }
 ];
 
@@ -78,6 +83,9 @@ function Administracao() {
         {abaAtiva === "grupos" && (
           <GruposGerenciador />
         )}
+        
+        {abaAtiva === "timetable" && (
+          <TimetableAdmin />)}
       </div>
     </div>
   );
