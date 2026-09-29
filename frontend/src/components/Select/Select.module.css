@@ -1,0 +1,8 @@
+.select {
+  width: auto;
+}
+
+.select:focus {
+  border-color: var(--cor-marca);
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--cor-marca) 25%, transparent);
+}
