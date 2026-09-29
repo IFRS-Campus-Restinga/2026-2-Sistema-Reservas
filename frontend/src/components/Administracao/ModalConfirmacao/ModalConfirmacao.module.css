@@ -16,6 +16,11 @@
   color: #ef4444;
 }
 
+.icone[data-variante="primario"] {
+  background-color: var(--cor-marca-clara);
+  color: var(--cor-marca);
+}
+
 .conteudo {
   display: flex;
   flex-direction: column;
@@ -41,7 +46,7 @@
 }
 
 .cancelar,
-.excluir {
+.confirmar {
   flex: 1;
   padding: 10px 16px;
   border: 1px solid transparent;
@@ -62,12 +67,20 @@
   background-color: #f9fafb;
 }
 
-.excluir {
+.confirmar {
   background-color: #ef4444;
   color: #ffffff;
   font-weight: 600;
 }
 
-.excluir:hover {
+.confirmar:hover {
   background-color: #dc2626;
+}
+
+.confirmar[data-variante="primario"] {
+  background-color: var(--cor-marca);
+}
+
+.confirmar[data-variante="primario"]:hover {
+  background-color: var(--cor-marca-escura);
 }

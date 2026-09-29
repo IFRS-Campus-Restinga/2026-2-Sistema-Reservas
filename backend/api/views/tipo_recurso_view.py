@@ -3,8 +3,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from api.models.tipo_recurso_model import TipoRecurso
 from api.serializers.tipo_recurso_serializer import TipoRecursoSerializer
+from api.permissions.escrita_admin import EscritaAdmin
 
 class TipoRecursoCreateView(APIView):
+    permission_classes = [EscritaAdmin]
+
     def get(self, request):
         tipos = TipoRecurso.objects.all()
         serializer = TipoRecursoSerializer(tipos, many=True)

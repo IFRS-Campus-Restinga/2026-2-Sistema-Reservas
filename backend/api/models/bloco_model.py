@@ -11,16 +11,6 @@ def acessibilidade_default():
     return [Acessibilidade.PISO_TATIL, Acessibilidade.BANHEIRO]
 
 class Bloco(BaseModel):
-    """
-    Representa a entidade de um Bloco físico do campus
-
-    Atributos:
-        numero (CharField): Código numérico de identificação do bloco (no máximo 2 dígitos).
-        nome (CharField): Nome descritivo do bloco (máximo 100 caracteres).
-        banheiro (BooleanField): Indica a presença de estrutura sanitária (padrão: True).
-        acessibilidade (JSONField): Lista com as opções de acessibilidade disponíveis (padrão: lista vazia).
-    """
-
     class Meta:
         db_table = 'bloco'
         verbose_name = 'Bloco'

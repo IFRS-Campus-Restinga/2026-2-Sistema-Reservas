@@ -1,0 +1,205 @@
+.conteudo {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.secao {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.secao + .secao {
+  border-top: 1px solid #f3f4f6;
+  padding-top: 16px;
+}
+
+.cabecalhoSecao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tituloSecao {
+  margin: 0;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.formAdicionar {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.campoData {
+  flex-shrink: 0;
+  width: 150px;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #374151;
+  font-size: 13px;
+}
+
+.campoData:focus {
+  outline: 2px solid var(--cor-marca);
+  outline-offset: 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background-color: var(--cor-marca-clara);
+  color: #1f2937;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.chip[data-erro='true'] {
+  border-color: #dc2626;
+  background-color: #fef2f2;
+}
+
+.removerChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  color: #4b5563;
+}
+
+.removerChip:hover {
+  background-color: #ffffff;
+  color: #ef4444;
+}
+
+.erro {
+  margin: 0;
+  color: #dc2626;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.nomeMembro {
+  margin: 0;
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.emailMembro {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.celulaValidade {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inputValidade {
+  padding: 6px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #374151;
+  font-size: 13px;
+}
+
+.inputValidade:focus {
+  outline: 2px solid var(--cor-marca);
+  outline-offset: 0;
+}
+
+.inputValidade:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dicaValidade {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.removerMembro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 4px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #9ca3af;
+}
+
+.removerMembro:hover:not(:disabled) {
+  background-color: #fef2f2;
+  color: #ef4444;
+}
+
+.removerMembro:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mensagem {
+  padding: 16px 4px;
+  color: #9ca3af;
+  font-size: 13px;
+  text-align: center;
+}
+
+.fechar {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.fechar:hover {
+  background-color: #f9fafb;
+}
+
+@media (max-width: 479px) {
+  .cabecalhoSecao {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .formAdicionar {
+    flex-wrap: wrap;
+  }
+
+  .campoData {
+    width: 100%;
+  }
+}
