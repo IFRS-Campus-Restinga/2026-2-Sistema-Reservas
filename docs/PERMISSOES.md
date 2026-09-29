@@ -114,6 +114,8 @@ if not pode_reservar(request.user, TipoRecursoReservavel.RECURSO_GERAL, recurso.
 - **Ao editar**, confira a autorização do **dono da reserva** (`reserva.usuario`), não de quem está editando. Um admin pode editar a reserva de um aluno, mas o que importa é se o aluno pode reservar aquilo.
 - Exemplo pronto: `validar_autorizacao` em `api/validators/reserva_recurso_geral_validator.py`.
 
+Para veículos, somente administradores e servidores autorizados podem reservar. `pode_reservar` exige cobertura contínua de grupo/vínculo em todos os dias da viagem; alunos não recebem essa autorização, inclusive por configurações antigas. Na edição, revalide o dono. No cancelamento, use `validar_cancelamento` de `services/reserva_veiculo_service.py`, que não exige autorização de grupo vigente. Veja [as regras de veículos](RESERVAS_VEICULOS.md).
+
 ## Frontend
 
 O `/session/me/` já traz as permissões calculadas, e elas ficam disponíveis em qualquer página:
