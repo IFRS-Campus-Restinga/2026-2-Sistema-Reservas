@@ -1,14 +1,26 @@
 import uuid
+from datetime import time, timedelta
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.utils import timezone
 
 from accounts.enumerations import Papel
 from accounts.models.hub_user import HubUser
+from api.enumerations import StatusReserva, TipoReserva
+from api.enumerations.area_enumerations.area_enums import EquipamentoArea, TipoArea
+from api.enumerations.bloco_enumerations.acessibilidade import Acessibilidade
 from api.enumerations.categoria_recurso import CategoriaRecurso
 from api.enumerations.status_recurso import StatusRecurso
+from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
 from api.enumerations.tipo_prazo import TipoPrazo
+from api.models.area_model import Area
+from api.models.bloco_model import Bloco
+from api.models.grupo_model import Grupo
+from api.models.membro_grupo_model import MembroGrupo
 from api.models.recurso_geral_model import RecursoGeral
+from api.models.reserva_area_model import ReservaArea
+from api.models.reserva_veiculo_model import ReservaVeiculo
 from api.models.tipo_recurso_model import TipoRecurso
 from api.models.veiculo_model import Veiculo
 
@@ -389,6 +401,65 @@ RECURSOS_GERAIS = [
     },
 ]
 
+BLOCOS = [
+    {
+        'numero': f'{numero:02d}',
+        'nome': f'Bloco {numero:02d}',
+        'banheiro': True,
+        'acessibilidade': [Acessibilidade.PISO_TATIL, Acessibilidade.BANHEIRO],
+    }
+    for numero in range(1, 6)
+] + [
+    {
+        'numero': '06',
+        'nome': 'Bloco Área de Convivência',
+        'banheiro': True,
+        'acessibilidade': [
+            Acessibilidade.PISO_TATIL,
+            Acessibilidade.BANHEIRO,
+            Acessibilidade.BEBEDOURO,
+        ],
+    },
+]
+
+AREAS = [
+    {'nome': 'Sala 101', 'bloco': '01', 'capacidade': 35, 'tipo': TipoArea.CONVENCIONAL,
+     'caracteristica': 'Sala para aulas e reuniões.',
+     'equipamento': [EquipamentoArea.PROJETOR, EquipamentoArea.QUADRO_BRANCO]},
+    {'nome': 'Laboratório de Informática 102', 'bloco': '01', 'capacidade': 30, 'tipo': TipoArea.INFORMATICA,
+     'caracteristica': 'Laboratório com computadores para atividades acadêmicas.',
+     'equipamento': [EquipamentoArea.COMPUTADOR, EquipamentoArea.PROJETOR, EquipamentoArea.AR_CONDICIONADO]},
+    {'nome': 'Sala 201', 'bloco': '02', 'capacidade': 40, 'tipo': TipoArea.CONVENCIONAL,
+     'caracteristica': 'Sala de aula convencional.',
+     'equipamento': [EquipamentoArea.PROJETOR, EquipamentoArea.QUADRO_BRANCO]},
+    {'nome': 'Laboratório de Ciências 202', 'bloco': '02', 'capacidade': 24, 'tipo': TipoArea.LABORATORIO,
+     'caracteristica': 'Laboratório para aulas práticas.',
+     'equipamento': [EquipamentoArea.TV, EquipamentoArea.AR_CONDICIONADO]},
+    {'nome': 'Sala de Música 301', 'bloco': '03', 'capacidade': 20, 'tipo': TipoArea.MUSICA,
+     'caracteristica': 'Sala com tratamento acústico.',
+     'equipamento': [EquipamentoArea.SISTEMA_DE_SOM, EquipamentoArea.AR_CONDICIONADO]},
+    {'nome': 'Auditório 302', 'bloco': '03', 'capacidade': 120, 'tipo': TipoArea.AUDITORIO,
+     'caracteristica': 'Auditório para palestras e eventos.',
+     'equipamento': [EquipamentoArea.PROJETOR, EquipamentoArea.SISTEMA_DE_SOM, EquipamentoArea.AR_CONDICIONADO]},
+    {'nome': 'Quadra Poliesportiva', 'bloco': '04', 'capacidade': 80, 'tipo': TipoArea.QUADRA,
+     'caracteristica': 'Espaço coberto para práticas esportivas.', 'equipamento': []},
+    {'nome': 'Sala 401', 'bloco': '04', 'capacidade': 30, 'tipo': TipoArea.CONVENCIONAL,
+     'caracteristica': 'Sala para atividades acadêmicas.',
+     'equipamento': [EquipamentoArea.QUADRO_BRANCO, EquipamentoArea.TV]},
+    {'nome': 'Sala 501', 'bloco': '05', 'capacidade': 35, 'tipo': TipoArea.CONVENCIONAL,
+     'caracteristica': 'Sala de aula com recursos multimídia.',
+     'equipamento': [EquipamentoArea.PROJETOR, EquipamentoArea.AR_CONDICIONADO]},
+    {'nome': 'Laboratório de Eletrônica 502', 'bloco': '05', 'capacidade': 25, 'tipo': TipoArea.LABORATORIO,
+     'caracteristica': 'Laboratório para projetos e aulas práticas.',
+     'equipamento': [EquipamentoArea.COMPUTADOR, EquipamentoArea.QUADRO_BRANCO]},
+    {'nome': 'Espaço de Convivência', 'bloco': '06', 'capacidade': 100, 'tipo': TipoArea.CONVENCIONAL,
+     'caracteristica': 'Espaço aberto para integração e eventos.',
+     'equipamento': [EquipamentoArea.SISTEMA_DE_SOM]},
+    {'nome': 'Churrasqueira', 'bloco': '06', 'capacidade': 50, 'tipo': TipoArea.CHURRASQUEIRA,
+     'caracteristica': 'Área coberta para confraternizações.', 'equipamento': []},
+]
+
+
 def popular_usuarios():
     criados = 0
     for lista, papel in ((ALUNOS, Papel.ALUNO), (SERVIDORES, Papel.SERVIDOR)):
@@ -468,6 +539,163 @@ def reclassificar_recursos_gerais():
 
     return reclassificados
 
+
+def popular_blocos():
+    criados = 0
+    for dados in BLOCOS:
+        _, criado = Bloco.objects.get_or_create(
+            numero=dados['numero'],
+            defaults={
+                'nome': dados['nome'],
+                'banheiro': dados['banheiro'],
+                'acessibilidade': dados['acessibilidade'],
+            },
+        )
+        criados += criado
+    return criados
+
+
+def popular_areas():
+    criados = 0
+    for dados in AREAS:
+        bloco = Bloco.objects.get(numero=dados['bloco'])
+        _, criado = Area.objects.get_or_create(
+            nome=dados['nome'],
+            bloco=bloco,
+            defaults={
+                'capacidade': dados['capacidade'],
+                'caracteristica': dados['caracteristica'],
+                'disponibilidade': True,
+                'status': StatusRecurso.ATIVO,
+                'tipo': dados['tipo'],
+                'equipamento': dados['equipamento'],
+            },
+        )
+        criados += criado
+    return criados
+
+
+def popular_grupo_veiculos():
+    servidor = HubUser.objects.filter(
+        papel=Papel.SERVIDOR,
+        is_active=True,
+    ).order_by('email').first()
+    if not servidor:
+        return 0
+
+    hoje = timezone.localdate()
+    grupo, criado = Grupo.objects.get_or_create(
+        nome='Servidores autorizados para veículos',
+        defaults={
+            'tipo_membro_permitido': Papel.SERVIDOR,
+            'tipo_recurso_autorizado': TipoRecursoReservavel.VEICULO,
+            'data_inicio_validade': hoje - timedelta(days=365),
+            'data_fim_validade': hoje + timedelta(days=365),
+            'criador': servidor,
+        },
+    )
+
+    membros_criados = 0
+    for usuario in HubUser.objects.filter(papel=Papel.SERVIDOR, is_active=True):
+        _, membro_criado = MembroGrupo.objects.get_or_create(
+            grupo=grupo,
+            usuario=usuario,
+        )
+        membros_criados += membro_criado
+    return int(criado) + membros_criados
+
+
+def usuarios_para_reservas():
+    return list(
+        HubUser.objects.filter(
+            papel__in=[Papel.ADMIN, Papel.SERVIDOR],
+            is_active=True,
+        ).order_by('papel', 'email')
+    )
+
+
+def popular_reservas_areas():
+    usuarios = usuarios_para_reservas()
+    if not usuarios:
+        return 0
+
+    hoje = timezone.localdate()
+    dados_reservas = [
+        ('Reunião de planejamento', 'Sala 101', 0, time(16), time(18), False, StatusReserva.CONFIRMADA),
+        ('Aula de programação', 'Laboratório de Informática 102', 1, time(8), time(11), True, StatusReserva.CONFIRMADA),
+        ('Ensaio do grupo musical', 'Sala de Música 301', 2, time(14), time(17), False, StatusReserva.PENDENTE),
+        ('Palestra institucional', 'Auditório 302', 3, time(9), time(12), False, StatusReserva.CONFIRMADA),
+        ('Treino esportivo', 'Quadra Poliesportiva', 4, time(18), time(21), True, StatusReserva.CONFIRMADA),
+        ('Confraternização da equipe', 'Churrasqueira', 6, time(11), time(16), False, StatusReserva.CANCELADA),
+        ('Oficina de eletrônica', 'Laboratório de Eletrônica 502', -7, time(9), time(12), True, StatusReserva.CONCLUIDA),
+        ('Evento de integração', 'Espaço de Convivência', 8, time(13), time(18), False, StatusReserva.REJEITADA),
+    ]
+
+    criados = 0
+    for indice, (nome, area_nome, deslocamento, inicio, fim, aula, status) in enumerate(dados_reservas):
+        usuario = usuarios[indice % len(usuarios)]
+        area = Area.objects.get(nome=area_nome)
+        _, criado = ReservaArea.objects.get_or_create(
+            nome=nome,
+            usuario=usuario,
+            area=area,
+            data=hoje + timedelta(days=deslocamento),
+            defaults={
+                'descricao': 'Reserva fictícia criada pelo popular_banco.',
+                'horario_inicio': inicio,
+                'horario_fim': fim,
+                'tipo_reserva': TipoReserva.INTERNA,
+                'status': status,
+                'aula': aula,
+            },
+        )
+        criados += criado
+    return criados
+
+
+def popular_reservas_veiculos():
+    usuarios = usuarios_para_reservas()
+    if not usuarios:
+        return 0
+
+    hoje = timezone.localdate()
+    dados_reservas = [
+        ('Viagem administrativa', 'ABC1D23', 0, time(8), 1, time(8), 'Campus Porto Alegre', 'Reunião institucional', 8, StatusReserva.CONFIRMADA),
+        ('Visita técnica', 'DEF4567', 2, time(8), 2, time(18), 'Parque Tecnológico', 'Visita técnica com servidores', 4, StatusReserva.AGUARDANDO_TERMO),
+        ('Atividade de campo', 'JKL8901', 3, time(7), 4, time(19), 'Estação Experimental', 'Coleta de dados de pesquisa', 5, StatusReserva.PENDENTE),
+        ('Transporte para evento', 'MNO3P45', 5, time(6, 30), 5, time(22), 'Centro de Eventos', 'Participação em evento acadêmico', 18, StatusReserva.AGUARDANDO_TERMO),
+        ('Reunião da direção', 'STU4V56', 7, time(9), 7, time(17), 'Reitoria', 'Reunião da equipe diretiva', 4, StatusReserva.CANCELADA),
+        ('Entrega de documentos', 'DEF4567', 9, time(13), 9, time(17), 'Reitoria', 'Entrega de documentação institucional', 2, StatusReserva.REJEITADA),
+        ('Viagem acadêmica concluída', 'MNO3P45', -8, time(7), -7, time(20), 'Universidade Federal', 'Participação em seminário', 16, StatusReserva.CONCLUIDA),
+    ]
+
+    criados = 0
+    for indice, dados in enumerate(dados_reservas):
+        (nome, placa, dia_saida, inicio, dia_retorno, fim, destino,
+         finalidade, ocupantes, status) = dados
+        usuario = usuarios[indice % len(usuarios)]
+        veiculo = Veiculo.objects.get(placa=placa)
+        reserva, criada = ReservaVeiculo.objects.get_or_create(
+            nome=nome,
+            usuario=usuario,
+            veiculo=veiculo,
+            data=hoje + timedelta(days=dia_saida),
+            defaults={
+                'descricao': 'Reserva fictícia criada pelo popular_banco.',
+                'horario_inicio': inicio,
+                'horario_fim': fim,
+                'data_devolucao_prevista': hoje + timedelta(days=dia_retorno),
+                'destino': destino,
+                'finalidade': finalidade,
+                'quantidade_passageiros': ocupantes,
+            },
+        )
+        if criada and reserva.status != status:
+            reserva.status = status
+            reserva.save(update_fields=['status'])
+        criados += criada
+    return criados
+
 # Acrescente aqui as próximas funções, na ordem das dependências:
 # popular_blocos antes de popular_areas, por exemplo.
 POPULADORES = [
@@ -475,6 +703,11 @@ POPULADORES = [
     ('Veículos', popular_veiculos),
     ('Tipos de recurso', popular_tipos_recurso),
     ('Recursos gerais', popular_recursos_gerais),
+    ('Blocos', popular_blocos),
+    ('Áreas', popular_areas),
+    ('Autorizações de veículos', popular_grupo_veiculos),
+    ('Reservas de áreas', popular_reservas_areas),
+    ('Reservas de veículos', popular_reservas_veiculos),
 ]
 
 
