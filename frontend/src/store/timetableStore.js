@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import axios from 'axios';
 
 const api = axios.create({
-  // Atualize isso depois caso a URL do Django mude no deploy
-  baseURL: 'http://localhost:8000/api'
+  baseURL: '/api',
+  withCredentials: true,
 });
 
 export const useTimetableStore = create((set, get) => ({
@@ -21,7 +21,21 @@ export const useTimetableStore = create((set, get) => ({
       const response = await api.get('/timetable/');
       set({ timetableData: response.data, isLoading: false });
     } catch (error) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.response?.data?.erro || error.message, isLoading: false });
+    }
+  },
+
+  // Função para sincronizar a timetable via POST (restrito a Admin)
+  syncTimetable: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.post('/timetable/');
+      const response = await api.get('/timetable/');
+      set({ timetableData: response.data, isLoading: false });
+    } catch (error) {
+      const msg = error.response?.data?.erro || error.response?.data?.detail || error.message;
+      set({ error: msg, isLoading: false });
+      throw error;
     }
   },
 }));

@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { useTimetableStore } from '../../../store/timetableStore';
 import styles from './TimetableAdmin.module.css';
 
@@ -28,8 +29,10 @@ const DIAS_ROTULOS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex']; // Exatamente como na 
 const getGridRowStart = (id) => id + 1;
 
 function TimetableAdmin() {
-  const { timetableData, isLoading, error, fetchTimetable } = useTimetableStore();
+  const { timetableData, isLoading, error, fetchTimetable, syncTimetable } = useTimetableStore();
   const [salaSelecionada, setSalaSelecionada] = useState('');
+  const [sincronizando, setSincronizando] = useState(false);
+  const [mensagemSucesso, setMensagemSucesso] = useState('');
 
   useEffect(() => {
     fetchTimetable();
@@ -39,10 +42,51 @@ function TimetableAdmin() {
   const salaAtual = salaSelecionada || (salas.length > 0 ? salas[0] : '');
   const dadosSala = timetableData?.[salaAtual] || {};
 
-  if (isLoading) return <div className={styles.loading}>Carregando grade horária...</div>;
-  if (error) return <div className={styles.error}>Erro ao carregar grade: {error}</div>;
+  const handleSincronizar = async () => {
+    try {
+      setSincronizando(true);
+      setMensagemSucesso('');
+      await syncTimetable();
+      setMensagemSucesso('Grade horária sincronizada com sucesso com o EduPage!');
+      setTimeout(() => setMensagemSucesso(''), 4000);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSincronizando(false);
+    }
+  };
+
+  if (isLoading && !timetableData) return <div className={styles.loading}>Carregando grade horária...</div>;
+  if (error && !timetableData) {
+    return (
+      <div className={styles.errorContainer}>
+        <div className={styles.error}>Erro ao carregar grade: {error}</div>
+        <button 
+          className={styles.botaoSincronizar} 
+          onClick={handleSincronizar}
+          disabled={sincronizando}
+        >
+          <RefreshCw size={16} className={sincronizando ? styles.girando : ''} />
+          {sincronizando ? 'Tentando sincronizar...' : 'Tentar sincronizar agora'}
+        </button>
+      </div>
+    );
+  }
+
   if (!timetableData || Object.keys(timetableData).length === 0) {
-    return <div className={styles.empty}>Nenhuma aula encontrada no sistema.</div>;
+    return (
+      <div className={styles.emptyContainer}>
+        <p className={styles.empty}>Nenhuma aula cadastrada no banco de dados.</p>
+        <button 
+          className={styles.botaoSincronizar} 
+          onClick={handleSincronizar}
+          disabled={sincronizando}
+        >
+          <RefreshCw size={16} className={sincronizando ? styles.girando : ''} />
+          {sincronizando ? 'Sincronizando com EduPage...' : 'Sincronizar com EduPage agora'}
+        </button>
+      </div>
+    );
   }
 
   // Prepara os cartões de aulas e slots livres
@@ -124,8 +168,24 @@ function TimetableAdmin() {
           <select value={salaAtual} onChange={(e) => setSalaSelecionada(e.target.value)}>
             {salas.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
+          <button 
+            type="button"
+            className={styles.botaoSincronizar} 
+            onClick={handleSincronizar}
+            disabled={sincronizando}
+            title="Sincronizar grade com o EduPage"
+          >
+            <RefreshCw size={15} className={sincronizando ? styles.girando : ''} />
+            {sincronizando ? 'Sincronizando...' : 'Sincronizar'}
+          </button>
         </div>
       </div>
+
+      {mensagemSucesso && (
+        <div className={styles.alertaSucesso}>
+          {mensagemSucesso}
+        </div>
+      )}
 
       <div className={styles.gridContainer}>
         {/* Cabeçalho da Grade */}

@@ -155,8 +155,8 @@ function AreaModal({
                             value={formulario.nome}
                             onChange={alterarCampo}
                             placeholder="Ex.: Sala 101"
-                            minLength={4}
-                            maxLength={50}
+                            minLength={3}
+                            maxLength={100}
                             pattern={'.*\\S.*'}
                             aria-invalid={Boolean(erros.nome)}
                             aria-describedby="erro-nome"
