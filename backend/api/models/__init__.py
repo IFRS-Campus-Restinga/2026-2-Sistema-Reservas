@@ -8,4 +8,6 @@ from .grupo_model import Grupo
 from .membro_grupo_model import MembroGrupo
 from .reserva_model import Reserva
 from .reserva_recurso_geral_model import *
+from .reserva_veiculo_model import ReservaVeiculo
+
 from .reserva_area_model import ReservaArea

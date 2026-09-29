@@ -70,6 +70,18 @@
   font-weight: 700;
 }
 
+.grade button.noPeriodo {
+  background: #d9f4e5;
+  color: #08763b;
+  border-radius: 4px;
+}
+
+.grade button.limitePeriodo {
+  background: #009a44;
+  color: white;
+  font-weight: 700;
+}
+
 .nota {
   margin: 12px 0 0;
   padding-top: 10px;

@@ -91,7 +91,7 @@ class Grupo(BaseModel):
         if self.tipo_recurso_autorizado and self.tipo_recurso_autorizado not in tipos_autorizaveis:
             rotulos = ', '.join(TipoRecursoReservavel(tipo).label for tipo in tipos_autorizaveis)
             raise ValidationError(
-                {"tipo_recurso_autorizado": f"Grupos de {self.get_tipo_membro_permitido_display().lower()} só podem autorizar: {rotulos}. Os demais já são reservados sem grupo."}
+                {"tipo_recurso_autorizado": f"Grupos de {self.get_tipo_membro_permitido_display().lower()} só podem autorizar: {rotulos}."}
             )
         if self.tipo_recurso_autorizado == TipoRecursoReservavel.RECURSO_GERAL and not self.tipo_recurso_id:
             raise ValidationError(

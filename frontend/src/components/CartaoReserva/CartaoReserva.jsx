@@ -2,7 +2,7 @@ import styles from './CartaoReserva.module.css';
 import { formatarDataCurta } from '../../utils/data';
 import { STATUS_RESERVA_LABEL, TIPO_RESERVA_LABEL } from '../../utils/reserva';
 
-function CartaoReserva({ reserva, modalidade, mostrarStatus = true, aoClicar }) {
+function CartaoReserva({ reserva, modalidade, periodo, mostrarStatus = true, aoClicar }) {
   const tipo = String(reserva.tipo_reserva || '').toLowerCase();
   const status = String(reserva.status || '').toLowerCase();
   const nomeTipo = modalidade || TIPO_RESERVA_LABEL[tipo] || tipo;
@@ -31,7 +31,7 @@ function CartaoReserva({ reserva, modalidade, mostrarStatus = true, aoClicar }) 
         </span>
         <span className={styles.descricao}>{reserva.descricao}</span>
         <span className={styles.horario}>
-          {formatarDataCurta(reserva.data)} · {reserva.horario_inicio}–{reserva.horario_fim}
+          {periodo || `${formatarDataCurta(reserva.data)} · ${reserva.horario_inicio}–${reserva.horario_fim}`}
         </span>
       </span>
 

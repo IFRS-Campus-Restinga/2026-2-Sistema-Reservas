@@ -10,8 +10,17 @@ function dataISO(data) {
   return `${ano}-${mes}-${dia}`;
 }
 
-function CalendarioReserva({ mes, alterarMes, selecionada, selecionar }) {
+function CalendarioReserva({
+  mes,
+  alterarMes,
+  selecionada,
+  selecionar,
+  dataMinima,
+  inicioPeriodo,
+  fimPeriodo,
+}) {
   const hoje = dataISO(new Date());
+  const primeiraData = dataMinima && dataMinima > hoje ? dataMinima : hoje;
   const primeiroDia = new Date(mes.getFullYear(), mes.getMonth(), 1);
   const diasDoMes = new Date(mes.getFullYear(), mes.getMonth() + 1, 0).getDate();
   const deslocamento = primeiroDia.getDay();
@@ -71,13 +80,23 @@ function CalendarioReserva({ mes, alterarMes, selecionada, selecionar }) {
           const valor = dataISO(
             new Date(mes.getFullYear(), mes.getMonth(), dia)
           );
+          const dentroDoPeriodo = Boolean(
+            inicioPeriodo && fimPeriodo &&
+            valor > inicioPeriodo && valor < fimPeriodo
+          );
+          const limiteDoPeriodo = valor === inicioPeriodo || valor === fimPeriodo;
+          const classes = [
+            valor === selecionada ? styles.selecionado : '',
+            dentroDoPeriodo ? styles.noPeriodo : '',
+            limiteDoPeriodo ? styles.limitePeriodo : '',
+          ].filter(Boolean).join(' ');
 
           return (
             <button
               type="button"
               key={valor}
-              disabled={valor < hoje}
-              className={valor === selecionada ? styles.selecionado : ''}
+              disabled={valor < primeiraData}
+              className={classes}
               aria-pressed={valor === selecionada}
               onClick={() => selecionar(valor)}
             >

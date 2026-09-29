@@ -49,3 +49,11 @@ export {
   criarReservaArea,
   cancelarReservaArea,
 } from './reservasAreas';
+export {
+  listarReservasVeiculos,
+  criarReservaVeiculo,
+  atualizarReservaVeiculo,
+  cancelarReservaVeiculo,
+  consultarDisponibilidadeVeiculo,
+  buscarAgendaVeiculo,
+} from './reservasVeiculos';
