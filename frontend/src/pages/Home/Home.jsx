@@ -90,7 +90,6 @@ const reservas = [
 
 function Home() {
   const usuario = useUsuario();
-  console.error('usuario home', usuario)
 
   const hoje = new Date();
   const hojeISO = formatarDataISO(hoje);
