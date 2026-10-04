@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react'
 import Sidebar from '../components/SideBar/SideBar'
 import Header from '../components/Header/Header'
 import NaoAutenticado from '../pages/NaoAutenticado/NaoAutenticado'
-import { MENU } from '../config/menuItems'
+import { ITENS_MENU } from '../config/rotas'
+import { UsuarioContext } from '../contexts/UsuarioContext'
 import { buscarUsuarioLogado } from '../services'
 import styles from './MainLayout.module.css'
 
@@ -13,10 +14,10 @@ function MainLayout() {
   const [carregando, setCarregando] = useState(true)
 
   const location = useLocation();
-  const paginaAtual = MENU.find((item) =>
-    item.url === location.pathname ||
-    (item.url !== '/' && location.pathname.startsWith(`${item.url}/`))
-  )?.titulo || 'Página não encontrada';
+  const paginaAtual = ITENS_MENU.find((item) =>
+    item.path === location.pathname ||
+    (item.path !== '/' && location.pathname.startsWith(`${item.path}/`))
+  )?.menu.titulo || 'Página não encontrada';
 
   useEffect(() => {
     buscarUsuarioLogado()
@@ -34,6 +35,7 @@ function MainLayout() {
   }
 
   return (
+    <UsuarioContext value={usuario}>
     <div className={styles.app}>
       <Sidebar
         menuRecolhido={menuRecolhido}
@@ -48,10 +50,11 @@ function MainLayout() {
         />
 
         <main className={styles.content}>
-          <Outlet context={{ usuario }} />
+          <Outlet />
         </main>
       </div>
     </div>
+    </UsuarioContext>
   )
 }
 

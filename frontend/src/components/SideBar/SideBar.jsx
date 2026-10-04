@@ -4,7 +4,9 @@ import {
     ChevronLeft,
     ChevronRight,
 } from "lucide-react";
-import { MENU } from "../../config/menuItems";
+import { ITENS_MENU } from "../../config/rotas";
+import { useUsuario } from "../../hooks/useUsuario";
+import { temPermissao } from "../../utils/permissoes";
 import styles from "./SideBar.module.css";
 
 export default function Sidebar({
@@ -13,7 +15,8 @@ export default function Sidebar({
     recolherMenu
 }) {
     const navigate = useNavigate();
-    const itens = MENU.filter((item) => item.permissoes == true);
+    const usuario = useUsuario();
+    const itens = ITENS_MENU.filter((item) => temPermissao(usuario, item.permissao));
 
     return (
         <aside
@@ -44,14 +47,14 @@ export default function Sidebar({
                 )}
 
                 <div className={styles.itensNavegacao}>
-                    {itens.map(({ id, titulo, icone: Icon, url }) => {
+                    {itens.map(({ id, path, menu: { titulo, icone: Icon } }) => {
                         const ativo = paginaAtual == titulo;
 
                         return (
                             <button
                                 key={id}
                                 type="button"
-                                onClick={() => navigate(url)}
+                                onClick={() => navigate(path)}
                                 title={menuRecolhido ? titulo : undefined}
                                 className={`${styles.item} ${menuRecolhido ? styles.itemRecolhido : ""
                                     } ${ativo ? styles.itemAtivo : ""}`}

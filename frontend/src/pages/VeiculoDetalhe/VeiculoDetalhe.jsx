@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useUsuario } from '../../hooks/useUsuario';
 import { ArrowLeft, Car, CheckCircle, Clock, Fuel, Gauge, Users } from 'lucide-react';
 
 import ReservaVeiculoModal from '../../components/ReservaVeiculo/ReservaVeiculoModal';
 import { buscarVeiculo, buscarVeiculos } from '../../services';
 import { buscarAgendaVeiculo } from '../../services/reservasVeiculos';
 import { STATUS_RECURSO_LABEL } from '../../utils/statusRecurso';
+import { podeReservarVeiculo } from '../../utils/permissoes';
 import styles from './VeiculoDetalhe.module.css';
 
 function dataHora(data, horario) {
@@ -24,7 +26,7 @@ function formatarIntervalo(reserva) {
 function VeiculoDetalhe() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { usuario } = useOutletContext();
+  const usuario = useUsuario();
   const [veiculo, setVeiculo] = useState(null);
   const [veiculos, setVeiculos] = useState([]);
   const [agenda, setAgenda] = useState([]);
@@ -47,7 +49,7 @@ function VeiculoDetalhe() {
   if (carregando) return <p className="text-muted p-4" role="status">Carregando veículo...</p>;
   if (erro || !veiculo) return <p className="text-danger p-4" role="alert">{erro}</p>;
 
-  const podeSolicitar = usuario?.papel === 'servidor' || usuario?.papel === 'admin';
+  const podeSolicitar = podeReservarVeiculo(usuario);
   const agora = new Date();
   const reservaAtual = agenda.find((reserva) =>
     dataHora(reserva.data, reserva.horario_inicio) <= agora &&

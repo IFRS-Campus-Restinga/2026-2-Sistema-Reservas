@@ -118,10 +118,12 @@ Para veículos, somente administradores e servidores autorizados podem reservar.
 
 ## Frontend
 
-O `/session/me/` já traz as permissões calculadas, e elas ficam disponíveis em qualquer página:
+O `/session/me/` já traz as permissões calculadas. O `MainLayout` carrega o usuário uma vez e o disponibiliza para qualquer componente (páginas, sidebar, modais) pelo `UsuarioContext`:
 
 ```jsx
-const { usuario } = useOutletContext();
+import { useUsuario } from '../../hooks/useUsuario';
+
+const usuario = useUsuario();
 ```
 
 ```json
@@ -138,9 +140,40 @@ const { usuario } = useOutletContext();
 }
 ```
 
-- Use as funções de `src/utils/permissoes.js` (`ehAdministrador`, `podeCriarGrupo`, `podeGerenciarGrupos`) ou leia `usuario.permissoes`.
+- Use as funções de `src/utils/permissoes.js`: `ehAdministrador`, `podeCriarGrupo`, `podeGerenciarGrupos`, `podeReservar(usuario, tipo)`, `podeReservarArea`, `podeReservarVeiculo`, `podeReservarRecursoGeral`. Os tipos ficam em `src/utils/tipoRecursoReservavel.js`.
 - **Não** faça `usuario.papel === 'admin'` nas telas. Se a regra mudar no backend, o front acompanha sozinho.
 - Esconder um botão não protege nada. Trate o erro **403** da API e mostre a mensagem que vier nele.
+
+### Telas e tabs do menu: declare a permissão em `src/config/rotas.js`
+
+Cada tela é uma entrada em `ROTAS`. A mesma entrada gera a rota, a tab da sidebar e a proteção:
+
+```js
+{
+  id: "veiculos",
+  path: "/veiculos",
+  componente: Veiculos,
+  permissao: podeReservarVeiculo,
+  menu: { titulo: "Veículos", icone: Car },
+},
+```
+
+- `permissao`: a função que decide quem acessa. Sem ela, qualquer usuário logado acessa.
+- `menu`: só nas telas que aparecem na sidebar. Telas de detalhe (`/veiculos/:id`) não têm `menu`, mas **precisam** repetir a `permissao` da tela principal.
+- Quem não tem permissão não vê a tab e, se digitar a URL, é redirecionado para a Home (`src/routes/RotaProtegida.jsx`).
+
+Não adicione rotas direto no `AppRoutes.jsx`: ele só percorre o `ROTAS`.
+
+### Botões e ações dentro da tela
+
+```jsx
+import { usePermissao } from '../../hooks/usePermissao';
+import { podeGerenciarGrupos } from '../../utils/permissoes';
+
+const podeCriar = usePermissao(podeGerenciarGrupos);
+```
+
+Se o código estiver depois de um `return` antecipado (ex.: `if (carregando) return ...`), hooks não podem ser chamados ali. Nesse caso, chame a função direto: `podeGerenciarGrupos(usuario)`.
 
 ## Precisa mudar uma regra?
 
@@ -148,11 +181,22 @@ const { usuario } = useOutletContext();
 |---|---|
 | O que cada papel reserva sem grupo | `TIPOS_RESERVA_LIVRE_POR_PAPEL` em `regras_reserva.py` |
 | Quem cria qual tipo de grupo | `PAPEIS_QUE_PODEM_CRIAR_POR_TIPO_MEMBRO` em `grupo_permissions.py` |
+| Quem vê cada tela/tab no front | `permissao` da rota em `src/config/rotas.js` |
 
 Mude só ali. O `/me`, as permissões e a validação dos grupos já usam esses valores.
+
+Telas e tabs hoje:
+
+| Tela | Quem vê |
+|---|---|
+| Home, Minhas Reservas | Qualquer usuário logado |
+| Áreas, Recursos, Veículos | Quem pode reservar aquele tipo (sem grupo ou por grupo vigente) |
+| Grupos | Quem pode criar grupos (admin e servidor) |
+| Administração | Só admin |
 
 ## Checklist antes do PR
 
 - [ ] Toda view nova tem `permission_classes` com uma permissão que herda de `UsuarioAutenticado`
 - [ ] Criação e edição de reserva chamam `pode_reservar`
 - [ ] Nenhuma comparação `papel == 'admin'`, nem no back nem no front
+- [ ] Toda tela nova está em `src/config/rotas.js` com a `permissao` certa (inclusive as de detalhe)

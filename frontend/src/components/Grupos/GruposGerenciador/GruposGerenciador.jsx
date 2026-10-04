@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useUsuario } from '../../../hooks/useUsuario';
 import { Plus } from 'lucide-react';
 import {
     buscarGrupos,
@@ -8,6 +8,7 @@ import {
     excluirGrupo,
 } from '../../../services';
 
+import { ehAdministrador, podeGerenciarGrupos } from '../../../utils/permissoes';
 import Botao from '../../Botao/Botao';
 import CampoBusca from '../../Administracao/CampoBusca/CampoBusca';
 import ModalConfirmacao from '../../Administracao/ModalConfirmacao/ModalConfirmacao';
@@ -16,9 +17,9 @@ import GrupoModal from '../ModalGrupo/GrupoModal';
 import styles from './GruposGerenciador.module.css';
 
 function GruposGerenciador({ apenasMeusGrupos = false }) {
-    const { usuario } = useOutletContext();
-    const ehAdmin = usuario.papel === 'admin';
-    const podeCriarGrupo = usuario.papel === 'admin' || usuario.papel === 'servidor';
+    const usuario = useUsuario();
+    const ehAdmin = ehAdministrador(usuario);
+    const podeCriarGrupo = podeGerenciarGrupos(usuario);
 
     const [grupos, setGrupos] = useState([]);
     const [carregando, setCarregando] = useState(true);

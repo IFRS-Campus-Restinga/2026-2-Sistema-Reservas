@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from 'react';
-import { useLocation, useOutletContext } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { useUsuario } from '../../hooks/useUsuario';
 import { Row, Col } from 'react-bootstrap';
 import { CalendarCheck, ClipboardList } from 'lucide-react';
 import CartaoReserva from '../../components/CartaoReserva/CartaoReserva';
@@ -70,7 +71,7 @@ function formatarData(data) {
 }
 
 function MinhasReservas() {
-  const { usuario } = useOutletContext();
+  const usuario = useUsuario();
   const location = useLocation();
 
   const [reservas, setReservas] = useState([]);
