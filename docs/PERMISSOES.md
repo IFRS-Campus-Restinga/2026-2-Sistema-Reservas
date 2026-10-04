@@ -191,7 +191,7 @@ Telas e tabs hoje:
 |---|---|
 | Home, Minhas Reservas | Qualquer usuário logado |
 | Áreas, Recursos, Veículos | Quem pode reservar aquele tipo (sem grupo ou por grupo vigente) |
-| Grupos | Quem pode criar grupos (admin e servidor) |
+| Meus Grupos | Quem pode criar grupos (admin e servidor) |
 | Administração | Só admin |
 
 ## Checklist antes do PR
