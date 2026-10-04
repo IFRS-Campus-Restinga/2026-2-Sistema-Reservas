@@ -76,7 +76,7 @@ export const ROTAS = [
     path: "/grupos",
     componente: Grupos,
     permissao: podeGerenciarGrupos,
-    menu: { titulo: "Grupos", icone: Users },
+    menu: { titulo: "Meus Grupos", icone: Users },
   },
   {
     id: "admin",

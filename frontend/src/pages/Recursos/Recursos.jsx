@@ -6,6 +6,7 @@ import CardRecurso from '../../components/CardRecurso/CardRecurso';
 import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/ReservaRecursoGeralModal';
 import { listarRecursosGerais, listarTiposRecurso } from '../../services';
 import { CATEGORIA_RECURSO_LABEL } from '../../utils/categoriaRecurso';
+import { normalizar } from '../../utils/texto';
 import styles from './Recursos.module.css';
 
 const CATEGORIAS_ANTIGAS = {
@@ -21,13 +22,6 @@ const TIPOS_AUDIOVISUAL = [
   'Câmeras fotográficas',
   'Suportes para projetor',
 ];
-
-function normalizar(texto) {
-  return String(texto || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-}
 
 function categoriaDoTipo(tipo) {
   if (CATEGORIA_RECURSO_LABEL[tipo.categoria]) {
