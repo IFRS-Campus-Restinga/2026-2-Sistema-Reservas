@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { useUsuario } from "../../hooks/useUsuario";
 import { ArrowLeft, CheckCircle, Users } from "lucide-react";
 import { buscarAgendaArea, buscarArea, buscarAreas, buscarBlocos } from "../../services";
 import ReservaAreaModal from "../../components/ReservaArea/ReservaAreaModal";
@@ -15,7 +16,7 @@ function formatarIntervalo(reserva) {
 function AreaDetalhe() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { usuario } = useOutletContext();
+  const usuario = useUsuario();
 
   const [area, setArea] = useState(null);
   const [areas, setAreas] = useState([]);

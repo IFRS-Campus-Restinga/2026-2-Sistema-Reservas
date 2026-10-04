@@ -1,4 +1,4 @@
-import { useOutletContext } from "react-router-dom";
+import { useUsuario } from "../../hooks/useUsuario";
 import { Calendar, ArrowRight } from "lucide-react";
 import styles from "./Home.module.css";
 import Banner from "../../components/Banner/Banner";
@@ -89,7 +89,7 @@ const reservas = [
 
 
 function Home() {
-  const { usuario } = useOutletContext();
+  const usuario = useUsuario();
 
   const hoje = new Date();
   const hojeISO = formatarDataISO(hoje);
