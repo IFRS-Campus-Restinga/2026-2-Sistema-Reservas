@@ -396,10 +396,6 @@ RECURSOS_GERAIS = [
     },
 ]
 
-,
-    },
-]
-
 
 def popular_usuarios():
     criados = 0
