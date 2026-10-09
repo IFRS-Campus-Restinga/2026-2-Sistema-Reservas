@@ -89,8 +89,7 @@ class EstruturaTimetableService:
                 area.edupage_id = sala_id
                 area.save()
             else:
-                primeiro_digito = sala_numero[0] if sala_numero[0].isdigit() else "1"
-                numero_bloco = "5" if sala_numero == "701" else primeiro_digito 
+                numero_bloco = sala_numero[0] if sala_numero[0].isdigit() else "1" 
 
                 bloco, _ = Bloco.objects.get_or_create(
                     numero=numero_bloco,

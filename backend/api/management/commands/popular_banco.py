@@ -7,11 +7,15 @@ from django.utils import timezone
 
 from accounts.enumerations import Papel
 from accounts.models.hub_user import HubUser
-from api.enumerations import StatusReserva, TipoReserva
+from api.enumerations import StatusReserva
 from api.enumerations.categoria_recurso import CategoriaRecurso
 from api.enumerations.status_recurso import StatusRecurso
 from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
 from api.enumerations.tipo_prazo import TipoPrazo
+from api.enumerations.area_enumerations.area_enums import TipoArea, EquipamentoArea
+from api.enumerations.bloco_enumerations.acessibilidade import Acessibilidade
+from api.models.area_model import Area
+from api.models.bloco_model import Bloco
 from api.models.grupo_model import Grupo
 from api.models.membro_grupo_model import MembroGrupo
 from api.models.recurso_geral_model import RecursoGeral
@@ -565,7 +569,84 @@ def popular_reservas_veiculos():
     return criados
 
 # Acrescente aqui as próximas funções, na ordem das dependências:
-# popular_blocos antes de popular_areas, por exemplo.
+# popular_tipos_recurso antes de popular_recursos_gerais, por exemplo.
+
+
+BLOCOS_SEED = [
+    {'numero': '1', 'nome': 'Bloco 1', 'banheiro': True, 'acessibilidade': [Acessibilidade.PISO_TATIL, Acessibilidade.BANHEIRO]},
+    {'numero': '3', 'nome': 'Bloco 3', 'banheiro': True, 'acessibilidade': [Acessibilidade.PISO_TATIL, Acessibilidade.BANHEIRO]},
+    {'numero': '4', 'nome': 'Bloco 4', 'banheiro': True, 'acessibilidade': [Acessibilidade.PISO_TATIL]},
+    {'numero': '5', 'nome': 'Bloco 5', 'banheiro': True, 'acessibilidade': [Acessibilidade.PISO_TATIL, Acessibilidade.BEBEDOURO]},
+    {'numero': '7', 'nome': 'Bloco 7', 'banheiro': False, 'acessibilidade': []},
+]
+
+AREAS_SEED = [
+    {'nome': '301', 'bloco': '3', 'capacidade': 35, 'tipo': TipoArea.CONVENCIONAL, 'caracteristica': 'Sala de Aula'},
+    {'nome': '302', 'bloco': '3', 'capacidade': 35, 'tipo': TipoArea.CONVENCIONAL, 'caracteristica': 'Sala de Aula'},
+    {'nome': '401 Redes', 'bloco': '4', 'capacidade': 30, 'tipo': TipoArea.INFORMATICA, 'caracteristica': 'Lab de Informática'},
+    {'nome': '402 Lab E', 'bloco': '4', 'capacidade': 30, 'tipo': TipoArea.INFORMATICA, 'caracteristica': 'Lab de Informática'},
+    {'nome': '502 [Lab de Gestão e negócios]', 'bloco': '5', 'capacidade': 40, 'tipo': TipoArea.LABORATORIO, 'caracteristica': 'Laboratório de Gestão'},
+    {'nome': '518 Musica', 'bloco': '5', 'capacidade': 20, 'tipo': TipoArea.MUSICA, 'caracteristica': 'Sala de Música'},
+    {'nome': '701 [Lab. Solos]', 'bloco': '7', 'capacidade': 25, 'tipo': TipoArea.LABORATORIO, 'caracteristica': 'Laboratório de Solos'},
+    {'nome': 'Moodle (EAD)', 'bloco': '1', 'capacidade': 0, 'tipo': TipoArea.CONVENCIONAL, 'caracteristica': 'Ambiente Virtual'},
+]
+
+def popular_blocos_padrao_timetable():
+    criados = 0
+    for dados in BLOCOS_SEED:
+        _, criado = Bloco.objects.get_or_create(
+            numero=dados['numero'],
+            defaults={
+                'nome': dados['nome'],
+                'banheiro': dados['banheiro'],
+                'acessibilidade': dados['acessibilidade'],
+            }
+        )
+        criados += criado
+    return criados
+
+def popular_areas_padrao_timetable():
+    criados = 0
+    for dados in AREAS_SEED:
+        bloco = Bloco.objects.get(numero=dados['bloco'])
+        _, criado = Area.objects.get_or_create(
+            nome=dados['nome'],
+            bloco=bloco,
+            defaults={
+                'capacidade': dados['capacidade'],
+                'caracteristica': dados['caracteristica'],
+                'disponibilidade': True,
+                'status': StatusRecurso.ATIVO,
+                'tipo': dados['tipo'],
+                'equipamento': [],
+            }
+        )
+        criados += criado
+    return criados
+
+def limpar_areas_mock():
+    # Remove blocos criados pelos mocks antigos (começam com 0 ou o fallback 99)
+    # Isso também remove as áreas associadas via CASCADE
+    blocos = Bloco.objects.filter(numero__in=['01', '02', '03', '04', '05', '06', '99'])
+    removidos, _ = blocos.delete()
+    return removidos
+
+def popular_areas_fallback():
+    bloco, _ = Bloco.objects.get_or_create(
+        numero='99',
+        defaults={'nome': 'Bloco Teste (Fallback)', 'banheiro': True}
+    )
+    _, criado = Area.objects.get_or_create(
+        nome='Sala Fallback 101',
+        bloco=bloco,
+        defaults={
+            'capacidade': 30,
+            'caracteristica': 'Sala de contingência caso o EduPage caia.',
+            'disponibilidade': True,
+        }
+    )
+    return 1 if criado else 0
+
 POPULADORES = [
     ('Usuários (alunos e servidores)', popular_usuarios),
     ('Veículos', popular_veiculos),
@@ -573,6 +654,8 @@ POPULADORES = [
     ('Recursos gerais', popular_recursos_gerais),
     ('Autorizações de veículos', popular_grupo_veiculos),
     ('Reservas de veículos', popular_reservas_veiculos),
+    ('Blocos (Padrão Timetable)', popular_blocos_padrao_timetable),
+    ('Áreas (Padrão Timetable)', popular_areas_padrao_timetable),
 ]
 
 
@@ -608,6 +691,7 @@ class Command(BaseCommand):
             help='Remove os cinco tipos amplos antigos sem recursos associados.',
         )
 
+
     @transaction.atomic
     def handle(self, *args, **options):
         for nome, popular in POPULADORES:
@@ -620,6 +704,14 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f'Recursos gerais da base antiga: {reclassificados} reclassificado(s).'
         ))
+
+        
+
+        # Limpeza automática de blocos com zero à esquerda (legado) antes de popular os novos
+        removidos_legado = limpar_areas_mock()
+        if removidos_legado > 0:
+            self.stdout.write(self.style.WARNING(f'Migração: {removidos_legado} blocos/áreas do formato antigo foram limpos automaticamente.'))
+
 
         if options['limpar_tipos_antigos']:
             removidos, mantidos = limpar_tipos_antigos()
