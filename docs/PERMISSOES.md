@@ -116,6 +116,22 @@ if not pode_reservar(request.user, TipoRecursoReservavel.RECURSO_GERAL, recurso.
 
 Para veículos, somente administradores e servidores autorizados podem reservar. `pode_reservar` exige cobertura contínua de grupo/vínculo em todos os dias da viagem; alunos não recebem essa autorização, inclusive por configurações antigas. Na edição, revalide o dono. No cancelamento, use `validar_cancelamento` de `services/reserva_veiculo_service.py`, que não exige autorização de grupo vigente. Veja [as regras de veículos](RESERVAS_VEICULOS.md).
 
+### 4. Grupos e membros têm exclusão lógica
+
+Excluir um grupo ou remover um membro **não apaga** o registro: só preenche `excluido_em`. Excluir um grupo marca também todos os seus membros. Readicionar um membro removido cria um registro novo; o antigo fica como histórico.
+
+| Para | Use | Traz |
+|---|---|---|
+| Regras, permissões, telas | `Grupo.objects` / `MembroGrupo.objects` | Só os ativos |
+| Histórico, auditoria | `Grupo.todos` / `MembroGrupo.todos` | Tudo, inclusive excluídos |
+
+- Para checar se alguém tem autorização, use `pode_reservar` ou `autorizacoes_vigentes`. Elas já ignoram os excluídos.
+- Filtros que atravessam a relação pelo outro lado **não** ignoram os excluídos. Ex.: `HubUser.objects.filter(autorizacoes_grupo__grupo=grupo)` traz também quem já foi removido. Nesses casos, parta do `MembroGrupo.objects`:
+
+```python
+usuarios_do_grupo = MembroGrupo.objects.filter(grupo=grupo).values('usuario_id')
+```
+
 ## Frontend
 
 O `/session/me/` já traz as permissões calculadas. O `MainLayout` carrega o usuário uma vez e o disponibiliza para qualquer componente (páginas, sidebar, modais) pelo `UsuarioContext`:
@@ -198,5 +214,6 @@ Telas e tabs hoje:
 
 - [ ] Toda view nova tem `permission_classes` com uma permissão que herda de `UsuarioAutenticado`
 - [ ] Criação e edição de reserva chamam `pode_reservar`
+- [ ] Consultas de grupos e membros partem de `objects` (ativos), nunca de um filtro pelo lado do usuário
 - [ ] Nenhuma comparação `papel == 'admin'`, nem no back nem no front
 - [ ] Toda tela nova está em `src/config/rotas.js` com a `permissao` certa (inclusive as de detalhe)

@@ -53,7 +53,7 @@ class MembroGrupoCandidatosView(APIView):
         candidatos = (
             HubUser.objects
             .filter(Q(nome__icontains=busca) | Q(email__icontains=busca), is_active=True, papel=grupo.tipo_membro_permitido)
-            .exclude(autorizacoes_grupo__grupo=grupo)
+            .exclude(id__in=MembroGrupo.objects.filter(grupo=grupo).values('usuario_id'))
             .exclude(id__in=self.ler_ids_excluidos(request.query_params.get('excluir', '')))
             .annotate(relevancia=Case(
                 When(nome__istartswith=busca, then=Value(0)),
