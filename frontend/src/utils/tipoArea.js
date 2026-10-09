@@ -1,6 +1,7 @@
 import { Building2, DoorOpen, Dumbbell, Flame, FlaskConical, Monitor, Music, Presentation } from "lucide-react";
 
 export const TIPO_AREA_LABEL = {
+  SALA: "Sala de Aula",
   CONVENCIONAL: "Convencional",
   LABORATORIO: "Laboratório",
   INFORMATICA: "Informática",
@@ -11,6 +12,7 @@ export const TIPO_AREA_LABEL = {
 };
 
 export const TIPO_AREA_ICONE = {
+  SALA: DoorOpen,
   CONVENCIONAL: DoorOpen,
   LABORATORIO: FlaskConical,
   INFORMATICA: Monitor,

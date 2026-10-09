@@ -583,12 +583,12 @@ BLOCOS_SEED = [
 AREAS_SEED = [
     {'nome': '301', 'bloco': '3', 'capacidade': 35, 'tipo': TipoArea.CONVENCIONAL, 'caracteristica': 'Sala de Aula'},
     {'nome': '302', 'bloco': '3', 'capacidade': 35, 'tipo': TipoArea.CONVENCIONAL, 'caracteristica': 'Sala de Aula'},
-    {'nome': '401 Redes', 'bloco': '4', 'capacidade': 30, 'tipo': TipoArea.INFORMATICA, 'caracteristica': 'Lab de Informática'},
-    {'nome': '402 Lab E', 'bloco': '4', 'capacidade': 30, 'tipo': TipoArea.INFORMATICA, 'caracteristica': 'Lab de Informática'},
-    {'nome': '502 [Lab de Gestão e negócios]', 'bloco': '5', 'capacidade': 40, 'tipo': TipoArea.LABORATORIO, 'caracteristica': 'Laboratório de Gestão'},
-    {'nome': '518 Musica', 'bloco': '5', 'capacidade': 20, 'tipo': TipoArea.MUSICA, 'caracteristica': 'Sala de Música'},
-    {'nome': '701 [Lab. Solos]', 'bloco': '7', 'capacidade': 25, 'tipo': TipoArea.LABORATORIO, 'caracteristica': 'Laboratório de Solos'},
-    {'nome': 'Moodle (EAD)', 'bloco': '1', 'capacidade': 0, 'tipo': TipoArea.CONVENCIONAL, 'caracteristica': 'Ambiente Virtual'},
+    {'nome': '401', 'bloco': '4', 'capacidade': 30, 'tipo': TipoArea.INFORMATICA, 'caracteristica': 'Redes'},
+    {'nome': '402', 'bloco': '4', 'capacidade': 30, 'tipo': TipoArea.INFORMATICA, 'caracteristica': 'Lab E'},
+    {'nome': '502', 'bloco': '5', 'capacidade': 40, 'tipo': TipoArea.LABORATORIO, 'caracteristica': 'Lab de Gestão e negócios'},
+    {'nome': '518', 'bloco': '5', 'capacidade': 20, 'tipo': TipoArea.MUSICA, 'caracteristica': 'Musica'},
+    {'nome': '701', 'bloco': '7', 'capacidade': 25, 'tipo': TipoArea.LABORATORIO, 'caracteristica': 'Lab. Solos'},
+    {'nome': 'Moodle', 'bloco': '1', 'capacidade': 0, 'tipo': TipoArea.CONVENCIONAL, 'caracteristica': 'EAD'},
 ]
 
 def popular_blocos_padrao_timetable():

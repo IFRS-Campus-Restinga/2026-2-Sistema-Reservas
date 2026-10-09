@@ -20,11 +20,13 @@ import styles from "./CardArea.module.css";
  */
 
 function CardArea({ area, aoClicar, blocoNome }) {
+  console.log("CARDAREA", area.nome, area.caracteristica, area.tipo);
   const estaAtiva = area.status === "ATIVO";
   const rotuloStatus = STATUS_RECURSO_LABEL[area.status] ?? STATUS_RECURSO_LABEL.INATIVO;
   const IconeTipo = TIPO_AREA_ICONE[area.tipo] ?? ICONE_AREA_PADRAO;
 
-  const subtitulo = [TIPO_AREA_LABEL[area.tipo], blocoNome].filter(Boolean).join(" · ");
+  const infoArea = area.caracteristica || TIPO_AREA_LABEL[area.tipo];
+  const subtitulo = [infoArea, blocoNome].filter(Boolean).join(" - ");
 
   return (
     <Card 
