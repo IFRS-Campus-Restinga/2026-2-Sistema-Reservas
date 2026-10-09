@@ -2,11 +2,11 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from .base_model import BaseModel
+from .exclusao_logica_model import ExclusaoLogicaModel
 from .grupo_model import Grupo
 
 
-class MembroGrupo(BaseModel):
+class MembroGrupo(ExclusaoLogicaModel):
 
     grupo = models.ForeignKey(
         Grupo,
@@ -71,4 +71,10 @@ class MembroGrupo(BaseModel):
             db_table = 'membro_grupo'
             verbose_name = 'Membro do Grupo'
             verbose_name_plural = 'Membros do Grupo'
-            unique_together = ['grupo', 'usuario']
+            constraints = [
+                models.UniqueConstraint(
+                    fields=['grupo', 'usuario'],
+                    condition=models.Q(excluido_em__isnull=True),
+                    name='membro_grupo_unico_ativo',
+                ),
+            ]
