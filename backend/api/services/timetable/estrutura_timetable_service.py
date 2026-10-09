@@ -78,19 +78,29 @@ class EstruturaTimetableService:
                 continue
                 
             sala_numero = sala_numero.strip()
+            
+            # Separa o número da sala das informações extras (ex: '502 [Lab Gestão]' -> '502' e 'Lab Gestão')
+            partes = sala_numero.split(" ", 1)
+            nome_limpo = partes[0]
+            caract_limpa = ""
+            if len(partes) > 1:
+                import re
+                resto = partes[1].strip()
+                resto = re.sub(r'^[\[\(\-]\s*', '', resto)
+                resto = re.sub(r'\s*[\]\)]$', '', resto)
+                caract_limpa = resto
 
-            # Tenta encontrar a área no banco cujo nome contenha "516",
-            # se não for encontrada, os blocos serão criados automaticamente
-
-            area = Area.objects.filter(nome__icontains=sala_numero).first()
+            # Tenta encontrar a área no banco
+            area = Area.objects.filter(nome__icontains=nome_limpo).first()
 
             if area:
                 # se a sala já existe no banco, apenas vincula o ID
                 area.edupage_id = sala_id
+                if caract_limpa and not area.caracteristica:
+                    area.caracteristica = caract_limpa
                 area.save()
             else:
-                primeiro_digito = sala_numero[0] if sala_numero[0].isdigit() else "1"
-                numero_bloco = "5" if sala_numero == "701" else primeiro_digito 
+                numero_bloco = nome_limpo[0] if nome_limpo[0].isdigit() else "1" 
 
                 bloco, _ = Bloco.objects.get_or_create(
                     numero=numero_bloco,
@@ -98,12 +108,17 @@ class EstruturaTimetableService:
                 )
                 
                 area_obj, created = Area.objects.get_or_create(
-                    nome=sala_numero,
+                    nome=nome_limpo,
                     bloco=bloco,
-                    defaults={'edupage_id': sala_id}
+                    defaults={
+                        'edupage_id': sala_id,
+                        'caracteristica': caract_limpa
+                    }
                 )
                 if not created:
                     area_obj.edupage_id = sala_id
+                    if caract_limpa and not area_obj.caracteristica:
+                        area_obj.caracteristica = caract_limpa
                     area_obj.save()
 
     def preparar_estrutura(self):

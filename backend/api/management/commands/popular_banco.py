@@ -7,19 +7,18 @@ from django.utils import timezone
 
 from accounts.enumerations import Papel
 from accounts.models.hub_user import HubUser
-from api.enumerations import StatusReserva, TipoReserva
-from api.enumerations.area_enumerations.area_enums import EquipamentoArea, TipoArea
-from api.enumerations.bloco_enumerations.acessibilidade import Acessibilidade
+from api.enumerations import StatusReserva
 from api.enumerations.categoria_recurso import CategoriaRecurso
 from api.enumerations.status_recurso import StatusRecurso
 from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
 from api.enumerations.tipo_prazo import TipoPrazo
+from api.enumerations.area_enumerations.area_enums import TipoArea, EquipamentoArea
+from api.enumerations.bloco_enumerations.acessibilidade import Acessibilidade
 from api.models.area_model import Area
 from api.models.bloco_model import Bloco
 from api.models.grupo_model import Grupo
 from api.models.membro_grupo_model import MembroGrupo
 from api.models.recurso_geral_model import RecursoGeral
-from api.models.reserva_area_model import ReservaArea
 from api.models.reserva_veiculo_model import ReservaVeiculo
 from api.models.tipo_recurso_model import TipoRecurso
 from api.models.veiculo_model import Veiculo
@@ -401,64 +400,6 @@ RECURSOS_GERAIS = [
     },
 ]
 
-BLOCOS = [
-    {
-        'numero': f'{numero:02d}',
-        'nome': f'Bloco {numero:02d}',
-        'banheiro': True,
-        'acessibilidade': [Acessibilidade.PISO_TATIL, Acessibilidade.BANHEIRO],
-    }
-    for numero in range(1, 6)
-] + [
-    {
-        'numero': '06',
-        'nome': 'Bloco Área de Convivência',
-        'banheiro': True,
-        'acessibilidade': [
-            Acessibilidade.PISO_TATIL,
-            Acessibilidade.BANHEIRO,
-            Acessibilidade.BEBEDOURO,
-        ],
-    },
-]
-
-AREAS = [
-    {'nome': 'Sala 101', 'bloco': '01', 'capacidade': 35, 'tipo': TipoArea.CONVENCIONAL,
-     'caracteristica': 'Sala para aulas e reuniões.',
-     'equipamento': [EquipamentoArea.PROJETOR, EquipamentoArea.QUADRO_BRANCO]},
-    {'nome': 'Laboratório de Informática 102', 'bloco': '01', 'capacidade': 30, 'tipo': TipoArea.INFORMATICA,
-     'caracteristica': 'Laboratório com computadores para atividades acadêmicas.',
-     'equipamento': [EquipamentoArea.COMPUTADOR, EquipamentoArea.PROJETOR, EquipamentoArea.AR_CONDICIONADO]},
-    {'nome': 'Sala 201', 'bloco': '02', 'capacidade': 40, 'tipo': TipoArea.CONVENCIONAL,
-     'caracteristica': 'Sala de aula convencional.',
-     'equipamento': [EquipamentoArea.PROJETOR, EquipamentoArea.QUADRO_BRANCO]},
-    {'nome': 'Laboratório de Ciências 202', 'bloco': '02', 'capacidade': 24, 'tipo': TipoArea.LABORATORIO,
-     'caracteristica': 'Laboratório para aulas práticas.',
-     'equipamento': [EquipamentoArea.TV, EquipamentoArea.AR_CONDICIONADO]},
-    {'nome': 'Sala de Música 301', 'bloco': '03', 'capacidade': 20, 'tipo': TipoArea.MUSICA,
-     'caracteristica': 'Sala com tratamento acústico.',
-     'equipamento': [EquipamentoArea.SISTEMA_DE_SOM, EquipamentoArea.AR_CONDICIONADO]},
-    {'nome': 'Auditório 302', 'bloco': '03', 'capacidade': 120, 'tipo': TipoArea.AUDITORIO,
-     'caracteristica': 'Auditório para palestras e eventos.',
-     'equipamento': [EquipamentoArea.PROJETOR, EquipamentoArea.SISTEMA_DE_SOM, EquipamentoArea.AR_CONDICIONADO]},
-    {'nome': 'Quadra Poliesportiva', 'bloco': '04', 'capacidade': 80, 'tipo': TipoArea.QUADRA,
-     'caracteristica': 'Espaço coberto para práticas esportivas.', 'equipamento': []},
-    {'nome': 'Sala 401', 'bloco': '04', 'capacidade': 30, 'tipo': TipoArea.CONVENCIONAL,
-     'caracteristica': 'Sala para atividades acadêmicas.',
-     'equipamento': [EquipamentoArea.QUADRO_BRANCO, EquipamentoArea.TV]},
-    {'nome': 'Sala 501', 'bloco': '05', 'capacidade': 35, 'tipo': TipoArea.CONVENCIONAL,
-     'caracteristica': 'Sala de aula com recursos multimídia.',
-     'equipamento': [EquipamentoArea.PROJETOR, EquipamentoArea.AR_CONDICIONADO]},
-    {'nome': 'Laboratório de Eletrônica 502', 'bloco': '05', 'capacidade': 25, 'tipo': TipoArea.LABORATORIO,
-     'caracteristica': 'Laboratório para projetos e aulas práticas.',
-     'equipamento': [EquipamentoArea.COMPUTADOR, EquipamentoArea.QUADRO_BRANCO]},
-    {'nome': 'Espaço de Convivência', 'bloco': '06', 'capacidade': 100, 'tipo': TipoArea.CONVENCIONAL,
-     'caracteristica': 'Espaço aberto para integração e eventos.',
-     'equipamento': [EquipamentoArea.SISTEMA_DE_SOM]},
-    {'nome': 'Churrasqueira', 'bloco': '06', 'capacidade': 50, 'tipo': TipoArea.CHURRASQUEIRA,
-     'caracteristica': 'Área coberta para confraternizações.', 'equipamento': []},
-]
-
 
 def popular_usuarios():
     criados = 0
@@ -540,39 +481,6 @@ def reclassificar_recursos_gerais():
     return reclassificados
 
 
-def popular_blocos():
-    criados = 0
-    for dados in BLOCOS:
-        _, criado = Bloco.objects.get_or_create(
-            numero=dados['numero'],
-            defaults={
-                'nome': dados['nome'],
-                'banheiro': dados['banheiro'],
-                'acessibilidade': dados['acessibilidade'],
-            },
-        )
-        criados += criado
-    return criados
-
-
-def popular_areas():
-    criados = 0
-    for dados in AREAS:
-        bloco = Bloco.objects.get(numero=dados['bloco'])
-        _, criado = Area.objects.get_or_create(
-            nome=dados['nome'],
-            bloco=bloco,
-            defaults={
-                'capacidade': dados['capacidade'],
-                'caracteristica': dados['caracteristica'],
-                'disponibilidade': True,
-                'status': StatusRecurso.ATIVO,
-                'tipo': dados['tipo'],
-                'equipamento': dados['equipamento'],
-            },
-        )
-        criados += criado
-    return criados
 
 
 def popular_grupo_veiculos():
@@ -618,44 +526,6 @@ def usuarios_para_reservas():
     )
 
 
-def popular_reservas_areas():
-    usuarios = usuarios_para_reservas()
-    if not usuarios:
-        return 0
-
-    hoje = timezone.localdate()
-    dados_reservas = [
-        ('Reunião de planejamento', 'Sala 101', 0, time(16), time(18), False, StatusReserva.CONFIRMADA),
-        ('Aula de programação', 'Laboratório de Informática 102', 1, time(8), time(11), True, StatusReserva.CONFIRMADA),
-        ('Ensaio do grupo musical', 'Sala de Música 301', 2, time(14), time(17), False, StatusReserva.PENDENTE),
-        ('Palestra institucional', 'Auditório 302', 3, time(9), time(12), False, StatusReserva.CONFIRMADA),
-        ('Treino esportivo', 'Quadra Poliesportiva', 4, time(18), time(21), True, StatusReserva.CONFIRMADA),
-        ('Confraternização da equipe', 'Churrasqueira', 6, time(11), time(16), False, StatusReserva.CANCELADA),
-        ('Oficina de eletrônica', 'Laboratório de Eletrônica 502', -7, time(9), time(12), True, StatusReserva.CONCLUIDA),
-        ('Evento de integração', 'Espaço de Convivência', 8, time(13), time(18), False, StatusReserva.REJEITADA),
-    ]
-
-    criados = 0
-    for indice, (nome, area_nome, deslocamento, inicio, fim, aula, status) in enumerate(dados_reservas):
-        usuario = usuarios[indice % len(usuarios)]
-        area = Area.objects.get(nome=area_nome)
-        _, criado = ReservaArea.objects.get_or_create(
-            nome=nome,
-            usuario=usuario,
-            area=area,
-            data=hoje + timedelta(days=deslocamento),
-            defaults={
-                'descricao': 'Reserva fictícia criada pelo popular_banco.',
-                'horario_inicio': inicio,
-                'horario_fim': fim,
-                'tipo_reserva': TipoReserva.INTERNA,
-                'status': status,
-                'aula': aula,
-            },
-        )
-        criados += criado
-    return criados
-
 
 def popular_reservas_veiculos():
     usuarios = usuarios_para_reservas()
@@ -699,17 +569,93 @@ def popular_reservas_veiculos():
     return criados
 
 # Acrescente aqui as próximas funções, na ordem das dependências:
-# popular_blocos antes de popular_areas, por exemplo.
+# popular_tipos_recurso antes de popular_recursos_gerais, por exemplo.
+
+
+BLOCOS_SEED = [
+    {'numero': '1', 'nome': 'Bloco 1', 'banheiro': True, 'acessibilidade': [Acessibilidade.PISO_TATIL, Acessibilidade.BANHEIRO]},
+    {'numero': '3', 'nome': 'Bloco 3', 'banheiro': True, 'acessibilidade': [Acessibilidade.PISO_TATIL, Acessibilidade.BANHEIRO]},
+    {'numero': '4', 'nome': 'Bloco 4', 'banheiro': True, 'acessibilidade': [Acessibilidade.PISO_TATIL]},
+    {'numero': '5', 'nome': 'Bloco 5', 'banheiro': True, 'acessibilidade': [Acessibilidade.PISO_TATIL, Acessibilidade.BEBEDOURO]},
+    {'numero': '7', 'nome': 'Bloco 7', 'banheiro': False, 'acessibilidade': []},
+]
+
+AREAS_SEED = [
+    {'nome': '301', 'bloco': '3', 'capacidade': 35, 'tipo': TipoArea.CONVENCIONAL, 'caracteristica': 'Sala de Aula'},
+    {'nome': '302', 'bloco': '3', 'capacidade': 35, 'tipo': TipoArea.CONVENCIONAL, 'caracteristica': 'Sala de Aula'},
+    {'nome': '401', 'bloco': '4', 'capacidade': 30, 'tipo': TipoArea.INFORMATICA, 'caracteristica': 'Redes'},
+    {'nome': '402', 'bloco': '4', 'capacidade': 30, 'tipo': TipoArea.INFORMATICA, 'caracteristica': 'Lab E'},
+    {'nome': '502', 'bloco': '5', 'capacidade': 40, 'tipo': TipoArea.LABORATORIO, 'caracteristica': 'Lab de Gestão e negócios'},
+    {'nome': '518', 'bloco': '5', 'capacidade': 20, 'tipo': TipoArea.MUSICA, 'caracteristica': 'Musica'},
+    {'nome': '701', 'bloco': '7', 'capacidade': 25, 'tipo': TipoArea.LABORATORIO, 'caracteristica': 'Lab. Solos'},
+    {'nome': 'Moodle', 'bloco': '1', 'capacidade': 0, 'tipo': TipoArea.CONVENCIONAL, 'caracteristica': 'EAD'},
+]
+
+def popular_blocos_padrao_timetable():
+    criados = 0
+    for dados in BLOCOS_SEED:
+        _, criado = Bloco.objects.get_or_create(
+            numero=dados['numero'],
+            defaults={
+                'nome': dados['nome'],
+                'banheiro': dados['banheiro'],
+                'acessibilidade': dados['acessibilidade'],
+            }
+        )
+        criados += criado
+    return criados
+
+def popular_areas_padrao_timetable():
+    criados = 0
+    for dados in AREAS_SEED:
+        bloco = Bloco.objects.get(numero=dados['bloco'])
+        _, criado = Area.objects.get_or_create(
+            nome=dados['nome'],
+            bloco=bloco,
+            defaults={
+                'capacidade': dados['capacidade'],
+                'caracteristica': dados['caracteristica'],
+                'disponibilidade': True,
+                'status': StatusRecurso.ATIVO,
+                'tipo': dados['tipo'],
+                'equipamento': [],
+            }
+        )
+        criados += criado
+    return criados
+
+def limpar_areas_mock():
+    # Remove blocos criados pelos mocks antigos (começam com 0 ou o fallback 99)
+    # Isso também remove as áreas associadas via CASCADE
+    blocos = Bloco.objects.filter(numero__in=['01', '02', '03', '04', '05', '06', '99'])
+    removidos, _ = blocos.delete()
+    return removidos
+
+def popular_areas_fallback():
+    bloco, _ = Bloco.objects.get_or_create(
+        numero='99',
+        defaults={'nome': 'Bloco Teste (Fallback)', 'banheiro': True}
+    )
+    _, criado = Area.objects.get_or_create(
+        nome='Sala Fallback 101',
+        bloco=bloco,
+        defaults={
+            'capacidade': 30,
+            'caracteristica': 'Sala de contingência caso o EduPage caia.',
+            'disponibilidade': True,
+        }
+    )
+    return 1 if criado else 0
+
 POPULADORES = [
     ('Usuários (alunos e servidores)', popular_usuarios),
     ('Veículos', popular_veiculos),
     ('Tipos de recurso', popular_tipos_recurso),
     ('Recursos gerais', popular_recursos_gerais),
-    ('Blocos', popular_blocos),
-    ('Áreas', popular_areas),
     ('Autorizações de veículos', popular_grupo_veiculos),
-    ('Reservas de áreas', popular_reservas_areas),
     ('Reservas de veículos', popular_reservas_veiculos),
+    ('Blocos (Padrão Timetable)', popular_blocos_padrao_timetable),
+    ('Áreas (Padrão Timetable)', popular_areas_padrao_timetable),
 ]
 
 
@@ -745,6 +691,7 @@ class Command(BaseCommand):
             help='Remove os cinco tipos amplos antigos sem recursos associados.',
         )
 
+
     @transaction.atomic
     def handle(self, *args, **options):
         for nome, popular in POPULADORES:
@@ -757,6 +704,14 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f'Recursos gerais da base antiga: {reclassificados} reclassificado(s).'
         ))
+
+        
+
+        # Limpeza automática de blocos com zero à esquerda (legado) antes de popular os novos
+        removidos_legado = limpar_areas_mock()
+        if removidos_legado > 0:
+            self.stdout.write(self.style.WARNING(f'Migração: {removidos_legado} blocos/áreas do formato antigo foram limpos automaticamente.'))
+
 
         if options['limpar_tipos_antigos']:
             removidos, mantidos = limpar_tipos_antigos()
