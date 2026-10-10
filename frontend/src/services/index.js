@@ -58,3 +58,4 @@ export {
   consultarDisponibilidadeVeiculo,
   buscarAgendaVeiculo,
 } from './reservasVeiculos';
+export { buscarDataAtual } from './dataAtual';
