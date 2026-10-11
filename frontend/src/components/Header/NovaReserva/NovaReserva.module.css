@@ -1,0 +1,23 @@
+/* Troca o verde padrão do Bootstrap pela cor da marca */
+.botao {
+  --bs-btn-color: #ffffff;
+  --bs-btn-bg: var(--cor-marca);
+  --bs-btn-border-color: var(--cor-marca);
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: var(--cor-marca-escura);
+  --bs-btn-hover-border-color: var(--cor-marca-escura);
+  --bs-btn-active-color: #ffffff;
+  --bs-btn-active-bg: var(--cor-marca-escura);
+  --bs-btn-active-border-color: var(--cor-marca-escura);
+  --bs-btn-disabled-bg: var(--cor-marca);
+  --bs-btn-disabled-border-color: var(--cor-marca);
+}
+
+/* Remove a seta padrão do Dropdown.Toggle, usamos o ChevronDown */
+.botao::after {
+  display: none;
+}
+
+.icone {
+  color: var(--cor-marca);
+}
