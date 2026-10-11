@@ -13,6 +13,8 @@ from api.permissions.reserva_permissions import PodeGerenciarReserva
 from api.serializers.reserva_area_serializer import ReservaAreaSerializer, serializar_recorrencia
 from api.services.recorrencia_service import criar_reservas_recorrentes
 from api.validators.reserva_area_validator import validar_autorizacao, validar_disponibilidade_area
+from api.enumerations.auditoria_enumerations import AcaoAuditoria
+from api.services.auditoria import foto, registrar_auditoria
 
 
 STATUS_ALTERAVEIS = [
@@ -126,6 +128,7 @@ class ReservaAreaDetailView(APIView):
             )
 
             self.check_object_permissions(request, reserva)
+            antes = foto(reserva)
 
             if reserva.status not in STATUS_ALTERAVEIS:
                 return Response(
@@ -139,6 +142,7 @@ class ReservaAreaDetailView(APIView):
             ):
                 reserva.status = StatusReserva.CANCELADA
                 reserva.save(update_fields=["status"])
+                registrar_auditoria(request.user, AcaoAuditoria.CANCELAR, reserva, antes=antes, depois=foto(reserva))
 
                 serializer = ReservaAreaSerializer(reserva)
 
@@ -183,5 +187,6 @@ class ReservaAreaDetailView(APIView):
 
             serializer.validated_data["area"] = dados["area"]
             serializer.save()
+            registrar_auditoria(request.user, AcaoAuditoria.EDITAR, reserva, antes=antes, depois=foto(reserva))
 
         return Response(serializer.data)
