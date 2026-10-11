@@ -1,0 +1,9 @@
+.alternador :global(.form-check-input:checked) {
+  background-color: var(--cor-marca);
+  border-color: var(--cor-marca);
+}
+
+.alternador :global(.form-check-input:focus) {
+  border-color: var(--cor-marca);
+  box-shadow: 0 0 0 0.2rem var(--cor-marca-clara);
+}
