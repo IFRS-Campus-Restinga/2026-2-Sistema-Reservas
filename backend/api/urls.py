@@ -7,6 +7,7 @@ from api.views.grupo_view import GrupoListCreateView, GrupoDetailView
 from api.views.membro_grupo_view import MembroGrupoListCreateView, MembroGrupoCandidatosView, MembroGrupoDetailView
 from api.views.veiculo_view import VeiculoCreateView, VeiculoDetailView
 from api.views.timetable_view import TimetableView
+from api.views.log_auditoria_view import LogAuditoriaListView, LogAuditoriaDetailView
 from api.views.reserva_recurso_geral_view import ReservaRecursoGeralListCreateView, ReservaRecursoGeralDetailView, DisponibilidadeRecursoGeralView
 from api.views.reserva_area_view import (
     ReservaAreaListCreateView,
@@ -32,6 +33,8 @@ urlpatterns = [
     path("veiculos/", VeiculoCreateView.as_view(), name="veiculo-list"),
     path("veiculos/<int:pk>/", VeiculoDetailView.as_view(), name="veiculo-detail"),
     path('timetable/', TimetableView.as_view(), name='timetable-list'),
+    path('auditoria/', LogAuditoriaListView.as_view(), name='log-auditoria-list'),
+    path('auditoria/<int:pk>/', LogAuditoriaDetailView.as_view(), name='log-auditoria-detail'),
     path('grupos/', GrupoListCreateView.as_view(), name='grupo-list-create'),
     path('grupos/<int:pk>/', GrupoDetailView.as_view(), name='grupo-detail'),
     path('grupos/<int:grupo_pk>/membros/', MembroGrupoListCreateView.as_view(), name='membro-grupo-list-create'),
