@@ -9,6 +9,7 @@ import { criarReservaArea, atualizarReservaArea } from '../../services/reservasA
 import { TIPO_AREA_LABEL } from '../../utils/tipoArea';
 import { STATUS_RECURSO_LABEL } from '../../utils/statusRecurso';
 import { TURNO_LABEL, PERIODOS_POR_TURNO } from '../../utils/periodosAula';
+import { horarioParaMinutos } from '../../utils/data';
 import styles from './ReservaAreaModal.module.css';
 
 const HORARIOS = Array.from({ length: 32 }, (_, indice) => {
@@ -18,6 +19,16 @@ const HORARIOS = Array.from({ length: 32 }, (_, indice) => {
 
   return `${horas}:${minutos}`;
 });
+
+// Término sugerido: uma hora depois do início, limitado ao último horário da lista
+function horarioFimSugerido(horarioInicio) {
+  const total = Math.min(
+    horarioParaMinutos(horarioInicio) + 60,
+    horarioParaMinutos(HORARIOS[HORARIOS.length - 1])
+  );
+
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
 
 function nomeBloco(area, blocos) {
   const blocoId = typeof area.bloco === 'object' ? area.bloco?.id : area.bloco;
@@ -31,6 +42,8 @@ function ReservaAreaModal({
   blocos = [],
   usuario,
   reservaEdicao,
+  dataInicial,
+  horarioInicial,
   aoFechar,
   aoReservar,
 }) {
@@ -55,21 +68,27 @@ function ReservaAreaModal({
 
     setAreaId(String(reservaEdicao?.area || areaInicial?.id || ''));
     setTitulo(reservaEdicao?.nome || '');
-    setData(reservaEdicao?.data || '');
+    const dataPreenchida = reservaEdicao?.data || dataInicial || '';
+    const inicioPreenchido = reservaEdicao?.horario_inicio?.slice(0, 5) || horarioInicial;
+
+    setData(dataPreenchida);
     setMes(
-      reservaEdicao?.data
-        ? new Date(`${reservaEdicao.data}T12:00:00`)
+      dataPreenchida
+        ? new Date(`${dataPreenchida}T12:00:00`)
         : new Date(new Date().getFullYear(), new Date().getMonth(), 1)
     );
     setAula(reservaEdicao?.aula ?? false);
     setTurno('manha');
     setPeriodosSelecionados([]);
-    setHorarioInicio(reservaEdicao?.horario_inicio?.slice(0, 5) || '08:00');
-    setHorarioFim(reservaEdicao?.horario_fim?.slice(0, 5) || '10:00');
+    setHorarioInicio(inicioPreenchido || '08:00');
+    setHorarioFim(
+      reservaEdicao?.horario_fim?.slice(0, 5) ||
+        (horarioInicial ? horarioFimSugerido(horarioInicial) : '10:00')
+    );
     setParticipantes(10);
     setObservacoes(reservaEdicao?.descricao || '');
     setErro('');
-  }, [aberto, areaInicial, reservaEdicao]);
+  }, [aberto, areaInicial, reservaEdicao, dataInicial, horarioInicial]);
 
   const areaSelecionada = areas.find((area) => String(area.id) === areaId);
 
