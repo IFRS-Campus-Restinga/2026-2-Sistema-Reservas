@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Alert, Form } from "react-bootstrap";
-import { ClipboardList, Columns, LayoutGrid } from "lucide-react";
+import { ClipboardList, Columns, LayoutGrid, Repeat } from "lucide-react";
 import { useUsuario } from "../../hooks/useUsuario";
 import {
   buscarAreas,
@@ -297,13 +297,22 @@ function Calendario() {
       </div>
 
       {aviso && (
-        <Alert variant="success" dismissible onClose={() => setAviso("")} className="mx-3 mx-md-4 mt-3 mb-0 py-2">
-          {aviso}
+        <Alert
+          variant="success"
+          className="d-flex align-items-center justify-content-between gap-3 mx-3 mx-md-4 my-3 py-2 flex-shrink-0"
+        >
+          <span>{aviso}</span>
+          <button
+            type="button"
+            className="btn-close flex-shrink-0"
+            aria-label="Fechar aviso"
+            onClick={() => setAviso("")}
+          />
         </Alert>
       )}
 
       {erro && (
-        <Alert variant="danger" className="mx-3 mx-md-4 mt-3 mb-0 py-2" role="alert">
+        <Alert variant="danger" className="mx-3 mx-md-4 my-3 py-2 flex-shrink-0" role="alert">
           {erro}
         </Alert>
       )}
@@ -380,11 +389,21 @@ function Calendario() {
                       <button
                         key={reserva.id}
                         type="button"
-                        className={styles.reserva}
+                        className={`${styles.reserva} ${reserva.recorrencia ? styles.recorrente : ""}`}
                         data-tipo={String(reserva.tipo_reserva).toLowerCase()}
                         style={{ top: posicaoY(reserva.horario_inicio) + 1, height: altura - 2 }}
                         onClick={() => setReservaDetalhe(reserva)}
                       >
+                        {reserva.recorrencia && (
+                          <span
+                            className={styles.iconeRecorrencia}
+                            role="img"
+                            aria-label="Reserva recorrente"
+                            title="Reserva recorrente"
+                          >
+                            <Repeat size={14} />
+                          </span>
+                        )}
                         <span className={styles.reservaTitulo}>
                           {reserva.aula && "📘 "}
                           {reserva.nome}

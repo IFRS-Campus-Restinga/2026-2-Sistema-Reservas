@@ -163,6 +163,19 @@
   filter: brightness(0.95);
 }
 
+/* Reserva que faz parte de uma recorrência: ícone no canto superior direito */
+.recorrente {
+  padding-right: 28px;
+}
+
+.iconeRecorrencia {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  display: flex;
+  opacity: 0.9;
+}
+
 .reservaTitulo,
 .reservaDetalhe {
   display: block;
