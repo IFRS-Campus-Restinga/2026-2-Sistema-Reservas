@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 
-CAMPOS_IGNORADOS_NA_FOTO = {'excluido_em'}
+CAMPOS_IGNORADOS_NA_FOTO = {'excluido_em', 'duracao'}
 
 
 def foto(objeto):
