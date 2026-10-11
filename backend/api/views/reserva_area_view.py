@@ -10,7 +10,8 @@ from api.models.area_model import Area
 from api.models.reserva_area_model import ReservaArea
 from api.permissions.regras_comuns import UsuarioAutenticado
 from api.permissions.reserva_permissions import PodeGerenciarReserva
-from api.serializers.reserva_area_serializer import ReservaAreaSerializer
+from api.serializers.reserva_area_serializer import ReservaAreaSerializer, serializar_recorrencia
+from api.services.recorrencia_service import criar_reservas_recorrentes
 from api.validators.reserva_area_validator import validar_autorizacao, validar_disponibilidade_area
 
 
@@ -36,7 +37,7 @@ class ReservaAreaListCreateView(APIView):
     def get(self, request):
         reservas = ReservaArea.objects.filter(
             status=StatusReserva.CONFIRMADA
-        ).select_related("area__bloco", "usuario").order_by("-data", "-horario_inicio")
+        ).select_related("area__bloco", "usuario", "recorrencia").order_by("-data", "-horario_inicio")
 
         for parametro, filtro in (("data_inicio", "data__gte"), ("data_fim", "data__lte")):
             valor = request.query_params.get(parametro)
@@ -67,6 +68,7 @@ class ReservaAreaListCreateView(APIView):
 
         with transaction.atomic():
             dados = serializer.validated_data
+            dados_recorrencia = dados.pop("recorrencia", None)
 
             area = get_object_or_404(
                 Area.objects.select_for_update(),
@@ -74,6 +76,14 @@ class ReservaAreaListCreateView(APIView):
             )
 
             dados["area"] = area
+
+            if dados_recorrencia:
+                recorrencia = criar_reservas_recorrentes(request.user, dados, dados_recorrencia)
+
+                return Response(
+                    serializar_recorrencia(recorrencia),
+                    status=status.HTTP_201_CREATED,
+                )
 
             validar_autorizacao(request.user, dados)
             validar_disponibilidade_area(dados)
@@ -91,7 +101,7 @@ class MinhasReservasAreaListView(APIView):
     def get(self, request):
         reservas = ReservaArea.objects.filter(
             usuario=request.user
-        ).order_by("-data", "-horario_inicio")
+        ).select_related("area__bloco", "recorrencia").order_by("-data", "-horario_inicio")
 
         serializer = ReservaAreaSerializer(reservas, many=True)
 
