@@ -1,5 +1,6 @@
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from django.utils.dateparse import parse_date
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -35,7 +36,26 @@ class ReservaAreaListCreateView(APIView):
     def get(self, request):
         reservas = ReservaArea.objects.filter(
             status=StatusReserva.CONFIRMADA
-        ).order_by("-data", "-horario_inicio")
+        ).select_related("area__bloco", "usuario").order_by("-data", "-horario_inicio")
+
+        for parametro, filtro in (("data_inicio", "data__gte"), ("data_fim", "data__lte")):
+            valor = request.query_params.get(parametro)
+
+            if valor is None:
+                continue
+
+            try:
+                data = parse_date(valor)
+            except ValueError:
+                data = None
+
+            if data is None:
+                return Response(
+                    {"detail": f"O parâmetro {parametro} deve estar no formato AAAA-MM-DD."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            reservas = reservas.filter(**{filtro: data})
 
         serializer = ReservaAreaSerializer(reservas, many=True)
 
