@@ -9,6 +9,8 @@ import { useUsuario } from "../../hooks/useUsuario";
 import { temPermissao } from "../../utils/permissoes";
 import styles from "./SideBar.module.css";
 
+const HUB_URL = "http://localhost:3000";
+
 export default function Sidebar({
     paginaAtual,
     menuRecolhido,
@@ -77,6 +79,7 @@ export default function Sidebar({
             <div className={styles.footer}>
                 <button
                     type="button"
+                    onClick={() => window.location.href = HUB_URL}
                     title={menuRecolhido ? "Sair" : undefined}
                     className={`${styles.botaoFooter} ${styles.botaoSair
                         } ${menuRecolhido ? styles.botaoFooterRecolhido : ""}`}
