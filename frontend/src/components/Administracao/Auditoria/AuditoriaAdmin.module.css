@@ -1,0 +1,149 @@
+.auditoria {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.titulo {
+  margin: 0;
+  color: #1f2937;
+  font-family: var(--fonte-titulo);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.subtitulo,
+.total {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.filtros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  align-items: end;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #f3f4f6;
+  border-radius: 12px;
+  background-color: #ffffff;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.input {
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.input:focus {
+  outline: 2px solid var(--cor-marca);
+  outline-offset: 0;
+}
+
+.limpar {
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 150ms ease;
+}
+
+.limpar:hover {
+  background-color: #f9fafb;
+}
+
+.acao {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background-color: #f3f4f6;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.acao[data-acao='CRIAR'] {
+  background-color: var(--cor-marca-clara);
+  color: #006b30;
+}
+
+.acao[data-acao='EDITAR'] {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+.acao[data-acao='EXCLUIR'] {
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+.acao[data-acao='CANCELAR'] {
+  background-color: #fff7ed;
+  color: #b45309;
+}
+
+.objeto {
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.verDetalhes {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cor-marca-escura);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.verDetalhes:hover {
+  text-decoration: underline;
+}
+
+.erro {
+  padding: 12px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background-color: #fef2f2;
+  color: #b91c1c;
+  font-size: 14px;
+}
+
+.carregando {
+  padding: 40px 16px;
+  border: 1px solid #f3f4f6;
+  border-radius: 12px;
+  background-color: #ffffff;
+  color: #9ca3af;
+  text-align: center;
+}

@@ -58,3 +58,7 @@ export {
   consultarDisponibilidadeVeiculo,
   buscarAgendaVeiculo,
 } from './reservasVeiculos';
+export {
+  buscarLogsAuditoria,
+  buscarLogAuditoria,
+} from './auditoria';
