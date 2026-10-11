@@ -17,8 +17,15 @@ async function tratarResposta(resposta) {
   return dados;
 }
 
-export async function listarReservasAreas() {
-  const resposta = await fetch(URL, {
+export async function listarReservasAreas({ dataInicio, dataFim } = {}) {
+  const parametros = new URLSearchParams();
+
+  if (dataInicio) parametros.set('data_inicio', dataInicio);
+  if (dataFim) parametros.set('data_fim', dataFim);
+
+  const consulta = parametros.size ? `?${parametros}` : '';
+
+  const resposta = await fetch(`${URL}${consulta}`, {
     credentials: 'include',
   });
 

@@ -5,12 +5,14 @@ import {
   Shield,
   Users,
   DoorOpen,
-  Car
+  Car,
+  CalendarDays,
 } from "lucide-react";
 
 import Home from "../pages/Home/Home";
 import Areas from "../pages/Areas/Areas";
 import AreaDetalhe from "../pages/AreaDetalhe/AreaDetalhe";
+import Calendario from "../pages/Calendario/Calendario";
 import Veiculos from "../pages/Veiculos/Veiculos";
 import VeiculoDetalhe from "../pages/VeiculoDetalhe/VeiculoDetalhe";
 import Recursos from "../pages/Recursos/Recursos";
@@ -31,6 +33,12 @@ export const ROTAS = [
     path: "/",
     componente: Home,
     menu: { titulo: "Home", icone: IconeHome },
+  },
+  {
+    id: "calendario",
+    path: "/calendario",
+    componente: Calendario,
+    menu: { titulo: "Calendário", icone: CalendarDays },
   },
   {
     id: "areas",
