@@ -4,12 +4,20 @@ import { CheckCircle2 } from 'lucide-react';
 import Modal from '../Administracao/Modal/Modal';
 import Botao from '../Botao/Botao';
 import CalendarioReserva from '../CalendarioReserva/CalendarioReserva';
+import CamposRecorrencia from '../CamposRecorrencia/CamposRecorrencia';
 import Select from '../Select/Select';
 import { criarReservaArea, atualizarReservaArea } from '../../services/reservasAreas';
 import { TIPO_AREA_LABEL } from '../../utils/tipoArea';
 import { STATUS_RECURSO_LABEL } from '../../utils/statusRecurso';
 import { TURNO_LABEL, PERIODOS_POR_TURNO } from '../../utils/periodosAula';
 import { horarioParaMinutos } from '../../utils/data';
+import {
+  TIPO_RECORRENCIA,
+  conflitosRecorrencia,
+  gerarDatasRecorrencia,
+  montarRecorrencia,
+  validarRecorrencia,
+} from '../../utils/recorrencia';
 import styles from './ReservaAreaModal.module.css';
 
 const HORARIOS = Array.from({ length: 32 }, (_, indice) => {
@@ -60,6 +68,10 @@ function ReservaAreaModal({
   const [horarioFim, setHorarioFim] = useState('10:00');
   const [participantes, setParticipantes] = useState(10);
   const [observacoes, setObservacoes] = useState('');
+  const [recorrente, setRecorrente] = useState(false);
+  const [tipoRecorrencia, setTipoRecorrencia] = useState(TIPO_RECORRENCIA.SEMANAL);
+  const [dataFimRecorrencia, setDataFimRecorrencia] = useState('');
+  const [conflitos, setConflitos] = useState([]);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState('');
 
@@ -87,10 +99,21 @@ function ReservaAreaModal({
     );
     setParticipantes(10);
     setObservacoes(reservaEdicao?.descricao || '');
+    setRecorrente(false);
+    setTipoRecorrencia(TIPO_RECORRENCIA.SEMANAL);
+    setDataFimRecorrencia('');
+    setConflitos([]);
     setErro('');
   }, [aberto, areaInicial, reservaEdicao, dataInicial, horarioInicial]);
 
   const areaSelecionada = areas.find((area) => String(area.id) === areaId);
+
+  // A recorrência só é definida na criação, a edição altera apenas a reserva aberta
+  const recorrenciaAtiva = recorrente && !reservaEdicao;
+  const quantidadeReservas =
+    recorrenciaAtiva && !validarRecorrencia(data, tipoRecorrencia, dataFimRecorrencia)
+      ? gerarDatasRecorrencia(data, tipoRecorrencia, dataFimRecorrencia).length
+      : 1;
 
   const gruposArea = [...blocos]
     .sort((a, b) => (a.numero ?? 0) - (b.numero ?? 0))
@@ -148,6 +171,7 @@ function ReservaAreaModal({
   async function enviar(evento) {
     evento.preventDefault();
     setErro('');
+    setConflitos([]);
 
     if (!areaId) {
       setErro('Selecione uma área.');
@@ -176,6 +200,11 @@ function ReservaAreaModal({
       return;
     }
 
+    // O erro da recorrência já é exibido dentro de CamposRecorrencia
+    if (recorrenciaAtiva && validarRecorrencia(data, tipoRecorrencia, dataFimRecorrencia)) {
+      return;
+    }
+
     try {
       setEnviando(true);
 
@@ -194,11 +223,19 @@ function ReservaAreaModal({
         : await criarReservaArea({
             ...dados,
             tipo_reserva: usuario?.perfil_acesso === 'convidado' ? 'EXTERNA' : 'INTERNA',
+            recorrencia: montarRecorrencia(
+              recorrenciaAtiva,
+              tipoRecorrencia,
+              dataFimRecorrencia
+            ),
           });
 
       aoReservar(resultado);
     } catch (erroRequisicao) {
-      setErro(erroRequisicao.message);
+      const conflitosRequisicao = conflitosRecorrencia(erroRequisicao);
+
+      setConflitos(conflitosRequisicao);
+      setErro(conflitosRequisicao.length ? '' : erroRequisicao.message);
     } finally {
       setEnviando(false);
     }
@@ -237,8 +274,11 @@ function ReservaAreaModal({
             valor={areaId}
             aoAlterar={setAreaId}
             grupos={gruposArea}
+            valorTodos=""
+            rotuloTodos="Selecione uma área"
             ariaLabel="Área"
             required
+            larguraTotal
           />
         </Form.Group>
 
@@ -339,6 +379,19 @@ function ReservaAreaModal({
           </div>
         )}
 
+        {!reservaEdicao && (
+          <CamposRecorrencia
+            ativa={recorrente}
+            aoAlternar={setRecorrente}
+            tipo={tipoRecorrencia}
+            aoAlterarTipo={setTipoRecorrencia}
+            dataFim={dataFimRecorrencia}
+            aoAlterarDataFim={setDataFimRecorrencia}
+            dataInicio={data}
+            conflitos={conflitos}
+          />
+        )}
+
         <Form.Group>
           <Form.Label>Número de participantes</Form.Label>
           <Form.Control
@@ -379,7 +432,7 @@ function ReservaAreaModal({
           </Alert>
         )}
 
-        <div className="d-flex gap-2 justify-content-end">
+        <div className={styles.acoes}>
           <Botao
             titulo="Cancelar"
             estilo="secundario"
@@ -393,7 +446,9 @@ function ReservaAreaModal({
                 ? 'Salvando...'
                 : reservaEdicao
                   ? 'Salvar alterações'
-                  : 'Confirmar reserva'
+                  : quantidadeReservas > 1
+                    ? `Confirmar ${quantidadeReservas} reservas`
+                    : 'Confirmar reserva'
             }
             tipo="submit"
             desabilitado={enviando}

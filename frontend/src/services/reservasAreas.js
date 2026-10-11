@@ -11,7 +11,10 @@ async function tratarResposta(resposta) {
       ? primeiroErro
       : 'Não foi possível concluir a operação.';
 
-    throw new Error(dados.detail || mensagem);
+    const erro = new Error(dados.detail || mensagem);
+    erro.dados = dados;
+
+    throw erro;
   }
 
   return dados;

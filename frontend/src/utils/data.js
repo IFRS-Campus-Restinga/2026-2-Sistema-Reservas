@@ -6,8 +6,8 @@ export function formatarDataCurta(dataISO) {
     .replace(".", "");
 }
 
-// Monta "AAAA-MM-DD" 
-function dataParaISO(data) {
+// Monta "AAAA-MM-DD"
+export function dataParaISO(data) {
   const mes = String(data.getMonth() + 1).padStart(2, "0");
   const dia = String(data.getDate()).padStart(2, "0");
 
@@ -20,6 +20,14 @@ export function somarDias(dataISO, dias) {
   data.setDate(data.getDate() + dias);
 
   return dataParaISO(data);
+}
+
+// ("2026-09-17", "2026-09-20") -> 3
+export function diferencaEmDias(dataInicioISO, dataFimISO) {
+  const inicio = new Date(`${dataInicioISO}T12:00:00`);
+  const fim = new Date(`${dataFimISO}T12:00:00`);
+
+  return Math.round((fim - inicio) / (24 * 60 * 60 * 1000));
 }
 
 // Segunda a domingo da semana que contém a data informada
