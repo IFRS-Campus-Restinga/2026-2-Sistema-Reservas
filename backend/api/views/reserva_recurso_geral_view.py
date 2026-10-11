@@ -12,6 +12,8 @@ from api.permissions.regras_comuns import UsuarioAutenticado, usuario_e_admin
 from api.permissions.reserva_permissions import PodeGerenciarReserva
 from api.serializers.reserva_recurso_geral_serializer import ReservaRecursoGeralSerializer
 from api.validators.reserva_recurso_geral_validator import STATUS_RESERVAS_ATIVAS, validar_autorizacao, validar_disponibilidade, quantidade_disponivel
+from api.enumerations.auditoria_enumerations import AcaoAuditoria
+from api.services.auditoria import foto, registrar_auditoria
 from .view_helpers import BuscarObjetoComPermissaoMixin
 
 STATUS_ALTERAVEIS = [
@@ -113,6 +115,7 @@ class ReservaRecursoGeralDetailView(BuscarObjetoComPermissaoMixin, APIView):
         with transaction.atomic():
             reserva = get_object_or_404(ReservaRecursoGeral.objects.select_for_update(), pk=pk)
             self.check_object_permissions(request, reserva)
+            antes = foto(reserva)
 
             if alteracao_status and novo_status in status_administrativos | {StatusReserva.CANCELADA}:
                 if reserva.status not in STATUS_RESERVAS_ATIVAS:
@@ -131,6 +134,8 @@ class ReservaRecursoGeralDetailView(BuscarObjetoComPermissaoMixin, APIView):
 
                 reserva.status = novo_status
                 reserva.save(update_fields=["status"])
+                acao = AcaoAuditoria.CANCELAR if novo_status == StatusReserva.CANCELADA else AcaoAuditoria.EDITAR
+                registrar_auditoria(request.user, acao, reserva, antes=antes, depois=foto(reserva))
 
                 return Response(ReservaRecursoGeralSerializer(reserva).data)
 
@@ -175,5 +180,6 @@ class ReservaRecursoGeralDetailView(BuscarObjetoComPermissaoMixin, APIView):
 
             serializer.validated_data["recurso_geral"] = recurso
             serializer.save()
+            registrar_auditoria(request.user, AcaoAuditoria.EDITAR, reserva, antes=antes, depois=foto(reserva))
 
         return Response(serializer.data)
