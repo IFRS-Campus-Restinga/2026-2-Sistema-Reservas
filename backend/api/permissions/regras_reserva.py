@@ -49,30 +49,26 @@ def pode_reservar(usuario, tipo_recurso_autorizado, tipo_recurso_id=None, data=N
     if tipo_recurso_autorizado == TipoRecursoReservavel.VEICULO:
         if getattr(usuario, 'papel', None) != Papel.SERVIDOR:
             return False
-        inicio = data or timezone.localdate()
-        return _tem_cobertura_veiculo(usuario, inicio, data_fim or inicio)
-    return all(
-        _tem_autorizacao(usuario, tipo_recurso_autorizado, tipo_recurso_id, dia)
-        for dia in {data, data_fim or data}
+    inicio = data or timezone.localdate()
+    return _tem_cobertura_grupo(
+        usuario, tipo_recurso_autorizado, tipo_recurso_id, inicio, data_fim or inicio,
     )
 
 
-def _tem_autorizacao(usuario, tipo_recurso_autorizado, tipo_recurso_id, data):
-    autorizacoes = autorizacoes_vigentes(usuario, data).filter(grupo__tipo_recurso_autorizado=tipo_recurso_autorizado)
-    if tipo_recurso_autorizado == TipoRecursoReservavel.RECURSO_GERAL:
-        autorizacoes = autorizacoes.filter(grupo__tipo_recurso_id=tipo_recurso_id)
-    return autorizacoes.exists()
-
-
-def _tem_cobertura_veiculo(usuario, inicio, fim):
+def _tem_cobertura_grupo(usuario, tipo_recurso_autorizado, tipo_recurso_id, inicio, fim):
     if fim < inicio:
         return False
     membros = MembroGrupo.objects.filter(
         usuario=usuario,
-        grupo__tipo_membro_permitido=Papel.SERVIDOR,
-        grupo__tipo_recurso_autorizado=TipoRecursoReservavel.VEICULO,
+        grupo__tipo_membro_permitido=F('usuario__papel'),
+        grupo__tipo_recurso_autorizado=tipo_recurso_autorizado,
+        grupo__excluido_em__isnull=True,
         grupo__data_inicio_validade__lte=fim,
     ).select_related('grupo').order_by('grupo__data_inicio_validade')
+    if tipo_recurso_autorizado == TipoRecursoReservavel.RECURSO_GERAL:
+        if tipo_recurso_id is None:
+            return False
+        membros = membros.filter(grupo__tipo_recurso_id=tipo_recurso_id)
     proximo_dia = inicio
     for membro in membros:
         grupo = membro.grupo
