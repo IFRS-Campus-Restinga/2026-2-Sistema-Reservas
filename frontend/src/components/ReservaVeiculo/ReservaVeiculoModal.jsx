@@ -56,6 +56,7 @@ function ReservaVeiculoModal({
   const [descricao, setDescricao] = useState('');
   const [data, setData] = useState('');
   const [dataRetorno, setDataRetorno] = useState('');
+  const [selecionandoRetorno, setSelecionandoRetorno] = useState(false);
   const [mesSaida, setMesSaida] = useState(new Date());
   const [horarioInicio, setHorarioInicio] = useState('');
   const [horarioFim, setHorarioFim] = useState('');
@@ -78,6 +79,7 @@ function ReservaVeiculoModal({
     setDescricao(reservaEdicao?.descricao || '');
     setData(saida);
     setDataRetorno(retorno);
+    setSelecionandoRetorno(false);
     setMesSaida(saida ? new Date(`${saida}T12:00:00`) : new Date());
     setHorarioInicio(reservaEdicao?.horario_inicio?.slice(0, 5) || '');
     setHorarioFim(reservaEdicao?.horario_fim?.slice(0, 5) || '');
@@ -137,21 +139,17 @@ function ReservaVeiculoModal({
     setDisponivel(null);
     setErro('');
 
-    if (!data || dataRetorno) {
+    if (!selecionandoRetorno || novaData < data) {
       setData(novaData);
-      setDataRetorno('');
+      setDataRetorno(novaData);
+      setSelecionandoRetorno(true);
       setHorarioInicio('');
       setHorarioFim('');
       return;
     }
 
-    if (novaData < data) {
-      setData(novaData);
-      setHorarioInicio('');
-      return;
-    }
-
     setDataRetorno(novaData);
+    setSelecionandoRetorno(false);
     setHorarioFim('');
   }
 
@@ -266,8 +264,8 @@ function ReservaVeiculoModal({
           <small>
             {!data
               ? 'Selecione a data de retirada.'
-              : !dataRetorno
-                ? 'Agora selecione a data de retorno.'
+              : selecionandoRetorno
+                ? `Retirada e retorno em ${data.split('-').reverse().join('/')}. Para devolver em outro dia, selecione uma data posterior.`
                 : `Retirada em ${data.split('-').reverse().join('/')} e retorno em ${dataRetorno.split('-').reverse().join('/')}. Clique em outra data para escolher um novo período.`}
           </small>
         </div>
