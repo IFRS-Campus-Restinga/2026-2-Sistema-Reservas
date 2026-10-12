@@ -5,7 +5,7 @@ import { Calendar, ArrowRight } from "lucide-react";
 import styles from "./Home.module.css";
 import Banner from "../../components/Banner/Banner";
 import CartaoReserva from "../../components/CartaoReserva/CartaoReserva";
-import { formatarDataCurta } from "../../utils/data";
+import { dataParaISO, formatarDataCurta, somarDias } from "../../utils/data";
 import { PAPEL_USUARIO_LABEL } from "../../utils/usuario";
 import {
   buscarDataAtual,
@@ -32,23 +32,13 @@ function dataDeISO(dataISO) {
   return new Date(ano, mes - 1, dia);
 }
 
-function formatarDataISO(data) {
-  const mes = String(data.getMonth() + 1).padStart(2, "0");
-  const dia = String(data.getDate()).padStart(2, "0");
-  return `${data.getFullYear()}-${mes}-${dia}`;
-}
-
-function adicionarDias(data, dias) {
-  const resultado = new Date(data);
-  resultado.setDate(resultado.getDate() + dias);
-  return resultado;
-}
-
 function obterDiasDaSemana(hoje) {
+  const hojeISO = dataParaISO(hoje);
   return Array.from({ length: 7 }, (_, indice) => {
-    const data = adicionarDias(hoje, indice);
+    const dataISO = somarDias(hojeISO, indice);
+    const data = dataDeISO(dataISO);
     return {
-      data: formatarDataISO(data),
+      data: dataISO,
       rotulo: data
         .toLocaleDateString("pt-BR", { weekday: "short" })
         .replace(".", ""),
