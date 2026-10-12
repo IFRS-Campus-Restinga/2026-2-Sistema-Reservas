@@ -173,8 +173,12 @@ function ReservaVeiculoModal({
       setErro('O horário de retirada deve ser futuro.');
       return;
     }
-    if (!veiculo || ocupantes < 1 || ocupantes > veiculo.capacidade) {
-      setErro(`Informe de 1 a ${veiculo?.capacidade || 1} ocupantes, incluindo o motorista.`);
+    if (!veiculoId || !veiculo) {
+      setErro('Selecione um veículo.');
+      return;
+    }
+    if (ocupantes < 1 || ocupantes > veiculo.capacidade) {
+      setErro(`Informe de 1 a ${veiculo.capacidade} ocupantes, incluindo o motorista.`);
       return;
     }
 
@@ -215,8 +219,6 @@ function ReservaVeiculoModal({
     }
   }
 
-  if (!veiculoInicial && !reservaEdicao) return null;
-
   const opcoesVeiculos = veiculos.filter((item) =>
     item.status === 'ATIVO' || String(item.id) === veiculoId
   );
@@ -245,6 +247,7 @@ function ReservaVeiculoModal({
             setVeiculoId(evento.target.value);
             setDisponivel(null);
           }}>
+            <option value="">Selecione um veículo</option>
             {opcoesVeiculos.map((item) => (
               <option key={item.id} value={item.id} disabled={item.status !== 'ATIVO'}>
                 {item.nome} · {item.placa}{item.status !== 'ATIVO' ? ` (${STATUS_RECURSO_LABEL[item.status]})` : ''}

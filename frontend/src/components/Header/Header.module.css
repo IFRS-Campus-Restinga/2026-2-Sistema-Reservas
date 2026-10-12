@@ -126,3 +126,46 @@
   font-weight: 700;
 }
 
+
+.setaAberta {
+  transform: rotate(180deg);
+}
+
+.menuReserva {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  width: 190px;
+  padding: 6px 0;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background-color: #ffffff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+}
+
+.itemReserva {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  color: #374151;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.itemReserva svg {
+  flex-shrink: 0;
+  color: #009a44;
+}
+
+.itemReserva:hover,
+.itemReserva:focus-visible {
+  background-color: #f3f4f6;
+  outline: none;
+}
