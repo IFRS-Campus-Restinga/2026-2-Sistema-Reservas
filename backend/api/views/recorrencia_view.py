@@ -4,10 +4,12 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from api.enumerations.auditoria_enumerations import AcaoAuditoria
 from api.enumerations.status_reserva import StatusReserva
 from api.models.recorrencia_model import Recorrencia
 from api.permissions.reserva_permissions import PodeGerenciarReserva
 from api.serializers.reserva_area_serializer import serializar_recorrencia
+from api.services.auditoria import foto, registrar_auditoria
 from api.services.recorrencia_service import cancelar_recorrencia, editar_recorrencia
 from .view_helpers import BuscarObjetoComPermissaoMixin
 
@@ -49,7 +51,10 @@ class RecorrenciaReservaAreaDetailView(BuscarObjetoComPermissaoMixin, APIView):
                         status=status.HTTP_400_BAD_REQUEST,
                     )
 
-                cancelar_recorrencia(recorrencia)
+                canceladas = cancelar_recorrencia(recorrencia)
+
+                for reserva, antes in canceladas:
+                    registrar_auditoria(request.user, AcaoAuditoria.CANCELAR, reserva, antes=antes, depois=foto(reserva))
 
                 return Response(serializar_recorrencia(recorrencia))
 
@@ -59,6 +64,9 @@ class RecorrenciaReservaAreaDetailView(BuscarObjetoComPermissaoMixin, APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            editar_recorrencia(recorrencia, request.data)
+            alteradas = editar_recorrencia(recorrencia, request.data)
+
+            for reserva, antes in alteradas:
+                registrar_auditoria(request.user, AcaoAuditoria.EDITAR, reserva, antes=antes, depois=foto(reserva))
 
         return Response(serializar_recorrencia(recorrencia))

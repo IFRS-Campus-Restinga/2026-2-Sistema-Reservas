@@ -8,6 +8,7 @@ from api.models.area_model import Area
 from api.models.recorrencia_model import Recorrencia
 from api.models.reserva_area_model import ReservaArea
 from api.serializers.reserva_area_serializer import ReservaAreaSerializer
+from api.services.auditoria import foto
 from api.validators.reserva_area_validator import (
     validar_area_ativa,
     validar_autorizacao,
@@ -178,8 +179,14 @@ def editar_recorrencia(recorrencia, dados_edicao):
 
     _validar_ocorrencias(recorrencia.usuario, ocorrencias)
 
+    alteradas = []
+
     for serializer in serializers:
+        antes = foto(serializer.instance)
         serializer.save()
+        alteradas.append((serializer.instance, antes))
+
+    return alteradas
 
 
 def cancelar_recorrencia(recorrencia):
@@ -190,6 +197,12 @@ def cancelar_recorrencia(recorrencia):
             "detail": "Não há reservas futuras confirmadas nesta recorrência."
         })
 
+    canceladas = []
+
     for reserva in reservas:
+        antes = foto(reserva)
         reserva.status = StatusReserva.CANCELADA
         reserva.save(update_fields=["status"])
+        canceladas.append((reserva, antes))
+
+    return canceladas
