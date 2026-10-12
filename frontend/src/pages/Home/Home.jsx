@@ -72,44 +72,61 @@ function Home() {
   const [erro, setErro] = useState("");
 
   useEffect(() => {
-    Promise.all([
+    Promise.allSettled([
       buscarDataAtual(),
       listarReservasRecursosGerais(),
       listarMinhasReservasAreas(),
       listarReservasVeiculos(),
       listarRecursosGerais(),
       buscarVeiculos(),
-    ])
-      .then(
-        ([
-          dataAtual,
-          reservasRecurso,
-          reservasArea,
-          reservasVeiculo,
-          listaRecursos,
-          listaVeiculos,
-        ]) => {
+    ]).then(
+      ([
+        dataAtual,
+        reservasRecurso,
+        reservasArea,
+        reservasVeiculo,
+        listaRecursos,
+        listaVeiculos,
+      ]) => {
+        const validaRetorno = (resultado) =>
+          resultado.status === "fulfilled" ? resultado.value : [];
+
+        const secoesComFalha = [
+          [reservasRecurso, "recursos gerais"],
+          [reservasArea, "áreas"],
+          [reservasVeiculo, "veículos"],
+        ]
+          .filter(([resultado]) => resultado.status === "rejected")
+          .map(([, rotulo]) => rotulo);
+
+        if (dataAtual.status === "rejected") {
+          setErro(dataAtual.reason.message);
+        } else if (secoesComFalha.length) {
+          setErro(
+            `Não foi possível carregar as reservas de: ${secoesComFalha.join(", ")}.`,
+          );
+        } else {
           setErro("");
-          setAgora(dataAtual);
-          setRecursos(listaRecursos);
-          setVeiculos(listaVeiculos);
-          setReservas([
-            ...reservasRecurso.map((reserva) => ({
-              ...reserva,
-              modalidade: "recurso_geral",
-            })),
-            ...reservasArea.map((reserva) => ({
-              ...reserva,
-              modalidade: "area",
-            })),
-            ...reservasVeiculo.map((reserva) => ({
-              ...reserva,
-              modalidade: "veiculo",
-            })),
-          ]);
-        },
-      )
-      .catch((falha) => setErro(falha.message));
+        }
+        setAgora(dataAtual.status === "fulfilled" ? dataAtual.value : null);
+        setRecursos(validaRetorno(listaRecursos));
+        setVeiculos(validaRetorno(listaVeiculos));
+        setReservas([
+          ...validaRetorno(reservasRecurso).map((reserva) => ({
+            ...reserva,
+            modalidade: "recurso_geral",
+          })),
+          ...validaRetorno(reservasArea).map((reserva) => ({
+            ...reserva,
+            modalidade: "area",
+          })),
+          ...validaRetorno(reservasVeiculo).map((reserva) => ({
+            ...reserva,
+            modalidade: "veiculo",
+          })),
+        ]);
+      },
+    );
   }, []);
 
   function nomeItem(reserva) {
