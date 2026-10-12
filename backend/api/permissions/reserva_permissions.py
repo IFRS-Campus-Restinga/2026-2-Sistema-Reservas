@@ -1,5 +1,10 @@
 from .regras_comuns import UsuarioAutenticado, usuario_e_admin
 
+class PodeConfirmarReserva(UsuarioAutenticado):
+    message = "Apenas administradores podem confirmar reservas."
+
+    def tem_permissao(self, request, view):
+        return usuario_e_admin(request.user)
 
 def usuario_e_dono_ou_admin(user, reserva):
     return usuario_e_admin(user) or reserva.usuario_id == user.id
@@ -10,3 +15,4 @@ class PodeGerenciarReserva(UsuarioAutenticado):
 
     def has_object_permission(self, request, view, obj):
         return usuario_e_dono_ou_admin(request.user, obj)
+
