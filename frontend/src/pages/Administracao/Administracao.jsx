@@ -4,6 +4,7 @@ import styles from "./Administracao.module.css";
 
 import AbasAdmin from "../../components/Administracao/AbasAdmin/AbasAdmin";
 import VeiculosAdmin from "../../components/Administracao/Veiculos/VeiculosAdmin";
+import ReservasAdmin from "../../components/Administracao/Reservas/ReservasAdmin";
 import RecursosAdmin from "../../components/Administracao/Recursos/RecursosAdmin";
 import BlocosAdmin from "../../components/Administracao/Blocos/BlocosAdmin";
 import AreasAdmin from "../../components/Administracao/Areas/AreasAdmin";
@@ -14,6 +15,10 @@ const abas = [
   {
     id: "visao-geral",
     rotulo: "Visão Geral",
+  },
+  {
+    id: "reservas",
+    rotulo: "Reservas",
   },
   {
     id: "recursos",
@@ -63,6 +68,10 @@ function Administracao() {
             Visão geral da administração.
           </p>
         )}
+
+        {abaAtiva === "reservas" && (
+                  <ReservasAdmin />
+                )}
 
         {abaAtiva === "recursos" && (
           <RecursosAdmin />
