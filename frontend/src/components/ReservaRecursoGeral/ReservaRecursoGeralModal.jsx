@@ -1,4 +1,4 @@
-
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 
@@ -25,10 +25,13 @@ function ReservaRecursoGeralModal({
   aberto,
   tipo,
   recursoInicial,
+  tipos = [],
+  recursos = [],
   reservaEdicao,
   aoFechar,
   aoReservar,
 }) {
+  const [tipoId, setTipoId] = useState('');
   const [recursoId, setRecursoId] = useState('');
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
@@ -45,34 +48,77 @@ function ReservaRecursoGeralModal({
   const [disponiveisPeriodo, setDisponiveisPeriodo] = useState(null);
   const [verificando, setVerificando] = useState(false);
 
-  useEffect(() => {
-    if (!aberto || !recursoInicial) return;
+  const tiposComRecursos = tipos.length > 0
+    ? tipos.map((itemTipo) => ({
+        ...itemTipo,
+        recursos: recursos.filter(
+          (recurso) => String(recurso.tipo_recurso) === String(itemTipo.id)
+        ),
+      }))
+    : tipo
+      ? [tipo]
+      : [];
 
-    setRecursoId(String(recursoInicial.id));
+  const tiposDisponiveis = tiposComRecursos.filter((itemTipo) =>
+    itemTipo.recursos?.some(
+      (recurso) =>
+        recurso.status === 'ATIVO' &&
+        Number(recurso.quantidade_total) > 0
+    )
+  );
+
+  useEffect(() => {
+    if (!aberto) return;
+
+    const tipoInicialId = tipo?.id ||
+      tiposComRecursos.find((itemTipo) =>
+        itemTipo.recursos?.some(
+          (recurso) => String(recurso.id) === String(recursoInicial?.id)
+        )
+      )?.id || '';
+
+    setTipoId(String(tipoInicialId));
+    setRecursoId(String(recursoInicial?.id || ''));
     setTitulo(reservaEdicao?.nome || '');
     setDescricao(reservaEdicao?.descricao || '');
     setData(reservaEdicao?.data || '');
-
     setMes(
       reservaEdicao?.data
         ? new Date(`${reservaEdicao.data}T12:00:00`)
         : new Date(new Date().getFullYear(), new Date().getMonth(), 1)
     );
-
     setHorarioInicio(reservaEdicao?.horario_inicio?.slice(0, 5) || '08:00');
     setHorarioFim(reservaEdicao?.horario_fim?.slice(0, 5) || '10:00');
     setQuantidade(reservaEdicao?.quantidades || 1);
     setDataDevolucao(reservaEdicao?.data_devolucao_prevista || '');
+    setDisponiveisPeriodo(null);
     setErro('');
-  }, [aberto, recursoInicial, reservaEdicao]);
+  }, [aberto, tipo, recursoInicial, reservaEdicao]);
 
-  const recursoEscolhido = tipo?.recursos.find(
-    (item) => String(item.id) === recursoId
+  const tipoSelecionado = tiposComRecursos.find(
+    (itemTipo) => String(itemTipo.id) === String(tipoId)
+  ) || tipo;
+
+  const opcoes = (tipoSelecionado?.recursos || []).filter(
+    (recurso) =>
+      recurso.status === 'ATIVO' &&
+      (
+        Number(recurso.quantidade_total) > 0 ||
+        (
+          reservaEdicao &&
+          String(recurso.id) === String(recursoInicial?.id)
+        )
+      )
+  );
+
+  const recurso = opcoes.find(
+    (item) => String(item.id) === String(recursoId)
   ) || recursoInicial;
-  const prazoLongo = recursoEscolhido?.tipo_prazo === 'LONGO_PRAZO';
+
+  const prazoLongo = recurso?.tipo_prazo === 'LONGO_PRAZO';
   const devolucaoEscolhida = prazoLongo ? dataDevolucao : data;
   const periodoValido = Boolean(
-    aberto && recursoEscolhido && data && devolucaoEscolhida &&
+    aberto && recurso && data && devolucaoEscolhida &&
     devolucaoEscolhida >= data &&
     (devolucaoEscolhida > data || horarioFim > horarioInicio)
   );
@@ -87,8 +133,9 @@ function ReservaRecursoGeralModal({
     let ativo = true;
     setVerificando(true);
     setDisponiveisPeriodo(null);
+
     consultarDisponibilidadeRecursoGeral({
-      recurso_geral: recursoEscolhido.id,
+      recurso_geral: recurso.id,
       data,
       horario_inicio: horarioInicio,
       horario_fim: horarioFim,
@@ -99,46 +146,47 @@ function ReservaRecursoGeralModal({
         if (ativo) setDisponiveisPeriodo(resultado.disponiveis);
       })
       .catch((falha) => {
-        if (ativo) setErro(falha.message || 'Não foi possível consultar a disponibilidade.');
+        if (ativo) {
+          setErro(
+            falha.message || 'Não foi possível consultar a disponibilidade.'
+          );
+        }
       })
       .finally(() => {
         if (ativo) setVerificando(false);
       });
-    return () => { ativo = false; };
-  }, [periodoValido, recursoEscolhido?.id, data, horarioInicio, horarioFim,
-      devolucaoEscolhida, reservaEdicao?.id]);
 
-  if (!tipo || !recursoInicial) return null;
+    return () => {
+      ativo = false;
+    };
+  }, [
+    periodoValido,
+    recurso?.id,
+    data,
+    horarioInicio,
+    horarioFim,
+    devolucaoEscolhida,
+    reservaEdicao?.id,
+  ]);
 
-  const opcoes = tipo.recursos.filter(
-    (recurso) =>
-      recurso.status === 'ATIVO' &&
-      (
-        Number(recurso.quantidade_total) > 0 ||
-        (
-          reservaEdicao &&
-          String(recurso.id) === String(recursoInicial.id)
-        )
-      )
-  );
+  const limite = recurso
+    ? (disponiveisPeriodo ?? Number(recurso.quantidade_total))
+    : 0;
 
-
-  const recurso =
-    opcoes.find((item) => String(item.id) === recursoId) || recursoInicial;
-
-  const limite = disponiveisPeriodo ?? Number(recurso.quantidade_total);
-
-  const longoPrazo = recurso.tipo_prazo === 'LONGO_PRAZO';
-
+  function selecionarTipo(id) {
+    setTipoId(id);
+    setRecursoId('');
+    setQuantidade(1);
+    setDataDevolucao('');
+    setDisponiveisPeriodo(null);
+    setErro('');
+  }
 
   function selecionarRecurso(id) {
-    const escolhido = opcoes.find((item) => String(item.id) === id);
-
-    if (!escolhido) return;
-
     setRecursoId(id);
     setQuantidade(1);
     setDataDevolucao('');
+    setDisponiveisPeriodo(null);
     setErro('');
   }
 
@@ -146,17 +194,27 @@ function ReservaRecursoGeralModal({
     evento.preventDefault();
     setErro('');
 
+    if (!tipoSelecionado) {
+      setErro('Selecione um tipo de recurso.');
+      return;
+    }
+
+    if (!recurso) {
+      setErro('Selecione um recurso.');
+      return;
+    }
+
     if (!data) {
       setErro('Escolha uma data para a reserva.');
       return;
     }
 
-    if (longoPrazo && (!dataDevolucao || dataDevolucao < data)) {
+    if (prazoLongo && (!dataDevolucao || dataDevolucao < data)) {
       setErro('Informe uma data de devolução igual ou posterior à retirada.');
       return;
     }
 
-    if ((longoPrazo ? dataDevolucao === data : true) && horarioFim <= horarioInicio) {
+    if ((prazoLongo ? dataDevolucao === data : true) && horarioFim <= horarioInicio) {
       setErro('O horário de devolução deve ser posterior ao de retirada no mesmo dia.');
       return;
     }
@@ -176,7 +234,7 @@ function ReservaRecursoGeralModal({
         horario_inicio: horarioInicio,
         horario_fim: horarioFim,
         recurso_geral: recurso.id,
-        data_devolucao_prevista: longoPrazo ? dataDevolucao : data,
+        data_devolucao_prevista: prazoLongo ? dataDevolucao : data,
         quantidades: Number(quantidade),
       };
 
@@ -222,22 +280,47 @@ function ReservaRecursoGeralModal({
           />
         </label>
 
-        <label>
-          Tipo de recurso
-          <input
-            disabled
-            value={`${tipo.descricao} · ${
-              TIPO_PRAZO_LABEL[recurso.tipo_prazo] || recurso.tipo_prazo
-            }`}
-          />
-        </label>
+        {tipos.length > 0 ? (
+          <label>
+            Tipo de recurso
+            <select
+              required
+              value={tipoId}
+              onChange={(evento) => selecionarTipo(evento.target.value)}
+            >
+              <option value="">Selecione um tipo</option>
+              {tiposDisponiveis.map((itemTipo) => (
+                <option key={itemTipo.id} value={itemTipo.id}>
+                  {itemTipo.descricao}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <label>
+            Tipo de recurso
+            <input
+              disabled
+              value={
+                tipoSelecionado && recurso
+                  ? `${tipoSelecionado.descricao} · ${
+                      TIPO_PRAZO_LABEL[recurso.tipo_prazo] || recurso.tipo_prazo
+                    }`
+                  : ''
+              }
+            />
+          </label>
+        )}
 
         <label>
           Item específico
           <select
-            value={String(recurso.id)}
+            required
+            value={recursoId}
             onChange={(evento) => selecionarRecurso(evento.target.value)}
+            disabled={!tipoSelecionado}
           >
+            <option value="">Selecione um recurso</option>
             {opcoes.map((item) => (
               <option key={item.id} value={String(item.id)}>
                 {item.nome} · {item.quantidade_total} unidade(s)
@@ -245,6 +328,12 @@ function ReservaRecursoGeralModal({
             ))}
           </select>
         </label>
+
+        {recurso && (
+          <small>
+            {TIPO_PRAZO_LABEL[recurso.tipo_prazo] || recurso.tipo_prazo}
+          </small>
+        )}
 
         <div className={styles.campo}>
           <span>Escolha um dia disponível</span>
@@ -292,19 +381,23 @@ function ReservaRecursoGeralModal({
           <input
             type="number"
             min={1}
-            max={limite}
+            max={limite || 1}
             value={quantidade}
             onChange={(evento) => setQuantidade(Number(evento.target.value))}
             required
+            disabled={!recurso}
           />
 
-          <small>
-            {limite} unidade(s) disponível(is) no cadastro. A disponibilidade
-            da data será validada ao salvar.
-          </small>
+          {recurso && (
+            <small>
+              {verificando
+                ? 'Verificando disponibilidade...'
+                : `${limite} unidade(s) disponível(is) no período.`}
+            </small>
+          )}
         </label>
 
-        {longoPrazo && (
+        {prazoLongo && (
           <label>
             Data de devolução prevista *
             <input
@@ -333,7 +426,7 @@ function ReservaRecursoGeralModal({
           />
         </label>
 
-        {recurso.tem_termo_de_responsabilidade && (
+        {recurso?.tem_termo_de_responsabilidade && (
           <p className={styles.termo}>
             Este recurso exige termo de responsabilidade.
           </p>
