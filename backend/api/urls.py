@@ -22,13 +22,20 @@ from api.views.reserva_veiculo_view import (
 from api.views.recorrencia_view import RecorrenciaReservaAreaDetailView
 from api.views.agenda_reserva_view import AgendaReservasView
 from api.views.data_atual_view import DataAtualView
-from api.views.termo_view import TermoReservaView, ModeloTermoView, ArquivoTermoView, AnaliseTermoView, SolicitacoesTermoView
+from api.views.termo_view import (
+    TermoReservaView, ModeloTermoView, ArquivoTermoView, AnaliseTermoView,
+    SolicitacoesTermoView, TermoOperacionalView, ModeloTermoOperacionalView,
+    AnaliseTermoOperacionalView,
+)
 
 
 urlpatterns = [
     path('reservas/<int:pk>/termo/', TermoReservaView.as_view(), name='termo-reserva'),
     path('reservas/<int:pk>/termo/modelo/', ModeloTermoView.as_view(), name='termo-modelo'),
     path('reservas/<int:pk>/termo/analise/', AnaliseTermoView.as_view(), name='termo-analise'),
+    path('reservas/<int:pk>/termo-operacional/<str:tipo>/', TermoOperacionalView.as_view(), name='termo-operacional'),
+    path('reservas/<int:pk>/termo-operacional/<str:tipo>/modelo/', ModeloTermoOperacionalView.as_view(), name='termo-operacional-modelo'),
+    path('reservas/<int:pk>/termo-operacional/<str:tipo>/analise/', AnaliseTermoOperacionalView.as_view(), name='termo-operacional-analise'),
     path('termos/<int:pk>/arquivo/', ArquivoTermoView.as_view(), name='termo-arquivo'),
     path('termos/<int:pk>/modelo/', ArquivoTermoView.as_view(original=True), name='termo-modelo-enviado'),
     path('solicitacoes/termos/', SolicitacoesTermoView.as_view(), name='solicitacoes-termos'),
