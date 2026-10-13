@@ -62,3 +62,7 @@ export {
   listarReservasPendentes,
   confirmarReservaPendente, 
 } from './reservasPendentes';
+export {
+  listarNotificacoes,
+  marcarNotificacaoComoLida,
+} from './notificacoes';

@@ -11,6 +11,7 @@ from api.permissions.regras_comuns import SomenteAdmin
 from api.permissions.reserva_permissions import PodeConfirmarReserva
 from api.serializers.reserva_pendente_serializer import ReservaPendenteSerializer
 from api.services.auditoria import foto, registrar_auditoria
+from api.services.notificacao_service import criar_notificacao_confirmacao
 
 def _entidade_reserva(reserva):
     if getattr(reserva, "reservaarea", None) is not None:
@@ -78,5 +79,7 @@ class ConfirmarReservaView(APIView):
                 entidade=entidade,
                 descricao=f"Confirmação da reserva {reserva.nome}",
             )
+
+            criar_notificacao_confirmacao(reserva)
 
         return Response(ReservaPendenteSerializer(reserva).data)
