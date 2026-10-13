@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0015_log_auditoria'),
+        ('api', '0016_merge_20261011_1927'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

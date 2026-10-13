@@ -13,6 +13,7 @@ from api.permissions.reserva_permissions import usuario_e_dono_ou_admin
 
 STATUS_RESERVAS_ABERTAS = (
     StatusReserva.PENDENTE, StatusReserva.AGUARDANDO_TERMO, StatusReserva.CONFIRMADA,
+    StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO,
 )
 STATUS_RESERVAS_FINAIS = (
     StatusReserva.CANCELADA, StatusReserva.REJEITADA, StatusReserva.CONCLUIDA,

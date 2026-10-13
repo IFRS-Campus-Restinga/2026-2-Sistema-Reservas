@@ -37,7 +37,8 @@
   background: white;
 }
 
-.cartao[data-status="AGUARDANDO_TERMO"] {
+.cartao[data-status="AGUARDANDO_TERMO"],
+.cartao[data-status="AGUARDANDO_TERMO_DEVOLUCAO"] {
   border-color: #fed7aa;
 }
 
@@ -85,7 +86,8 @@
   background: #dbeafe;
 }
 
-.situacao[data-status="AGUARDANDO_TERMO"] {
+.situacao[data-status="AGUARDANDO_TERMO"],
+.situacao[data-status="AGUARDANDO_TERMO_DEVOLUCAO"] {
   color: #ea580c;
   background: #ffedd5;
 }

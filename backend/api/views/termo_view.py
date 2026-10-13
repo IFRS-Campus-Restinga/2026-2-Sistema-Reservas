@@ -7,7 +7,7 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from api.enumerations import StatusReserva
+from api.enumerations import StatusReserva, TipoTermo
 from api.enumerations.status_termo import StatusTermo
 from api.models import Reserva, TermoResponsabilidade
 from api.pagination import PaginacaoPadrao
@@ -15,8 +15,8 @@ from api.permissions.reserva_permissions import PodeGerenciarReserva
 from api.permissions.regras_comuns import SomenteAdministrador
 from api.serializers.termo_serializer import AnaliseTermoSerializer
 from api.services.termo_service import (
-    ABERTAS, analisar_termo, enviar_termo, modelo_da_reserva, reserva_concreta,
-    reserva_exige_termo, resumo_termo,
+    ABERTAS, RESERVAS_VEICULO_ABERTAS, analisar_termo, enviar_termo, modelo_da_reserva, reserva_concreta,
+    reserva_exige_termo, resumo_termo, validar_termo_operacional,
 )
 
 
@@ -74,6 +74,44 @@ class ModeloTermoView(TermoReservaView):
         return resposta
 
 
+class TermoOperacionalView(TermoReservaView):
+    def obter_tipo(self, tipo):
+        tipos = {
+            'retirada': TipoTermo.RETIRADA_VEICULO,
+            'devolucao': TipoTermo.DEVOLUCAO_VEICULO,
+        }
+        documento = tipos.get(tipo)
+        if documento is None:
+            raise ValidationError('Tipo de documento operacional inválido.')
+        return documento
+
+    def get(self, request, pk, tipo):
+        reserva = self.obter_reserva(request, pk)
+        documento = self.obter_tipo(tipo)
+        return Response(resumo_termo(reserva, request.user, documento))
+
+    def post(self, request, pk, tipo):
+        documento = self.obter_tipo(tipo)
+        with transaction.atomic():
+            reserva = self.obter_reserva(request, pk, bloquear=True)
+            enviar_termo(reserva, request.user, request.FILES.get('arquivo'), documento)
+            return Response(resumo_termo(reserva, request.user, documento), status=201)
+
+
+class ModeloTermoOperacionalView(TermoOperacionalView):
+    http_method_names = ['get', 'head', 'options']
+
+    def get(self, request, pk, tipo):
+        reserva = self.obter_reserva(request, pk)
+        documento = self.obter_tipo(tipo)
+        validar_termo_operacional(reserva, documento)
+        caminho = modelo_da_reserva(reserva, documento)
+        resposta = FileResponse(caminho.open('rb'), as_attachment=True, filename=caminho.name,
+                               content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        resposta['Cache-Control'] = 'private, no-store'
+        return resposta
+
+
 class ArquivoTermoView(APIView):
     permission_classes = [PodeGerenciarReserva]
     original = False
@@ -100,6 +138,24 @@ class AnaliseTermoView(APIView):
             return Response(resumo_termo(reserva, request.user))
 
 
+class AnaliseTermoOperacionalView(AnaliseTermoView):
+    def post(self, request, pk, tipo):
+        serializer = AnaliseTermoSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        tipos = {
+            'retirada': TipoTermo.RETIRADA_VEICULO,
+            'devolucao': TipoTermo.DEVOLUCAO_VEICULO,
+        }
+        documento = tipos.get(tipo)
+        if documento is None:
+            raise ValidationError('Tipo de documento operacional inválido.')
+        with transaction.atomic():
+            reserva = get_object_or_404(Reserva.objects.select_for_update(), pk=pk)
+            dados = serializer.validated_data
+            analisar_termo(reserva, dados['termo_id'], request.user, dados['status'], dados['motivo'], documento)
+            return Response(resumo_termo(reserva, request.user, documento))
+
+
 class SolicitacoesTermoView(APIView):
     permission_classes = [SomenteAdministrador]
 
@@ -110,6 +166,16 @@ class SolicitacoesTermoView(APIView):
         )
         modalidade = request.query_params.get('tipo', 'todos')
         status = request.query_params.get('status', 'abertas')
+        documento_parametro = request.query_params.get('documento', 'responsabilidade')
+        documentos = {
+            'todos': None,
+            'responsabilidade': TipoTermo.RESPONSABILIDADE,
+            'retirada': TipoTermo.RETIRADA_VEICULO,
+            'devolucao': TipoTermo.DEVOLUCAO_VEICULO,
+        }
+        documento = documentos.get(documento_parametro)
+        if documento_parametro not in documentos:
+            raise ValidationError({'documento': 'Tipo de documento inválido.'})
         if modalidade not in ('todos', 'veiculo', 'recurso_geral'):
             raise ValidationError({'tipo': 'Tipo de solicitação inválido.'})
         if modalidade != 'todos':
@@ -118,8 +184,20 @@ class SolicitacoesTermoView(APIView):
             else:
                 relacao = 'reservarecursogeral'
             queryset = queryset.filter(**{f'{relacao}__isnull': False})
+        if documento is not None and documento != TipoTermo.RESPONSABILIDADE:
+            queryset = queryset.filter(termos__tipo=documento, termos__atual=True)
+        elif documento is None:
+            queryset = queryset.filter(Q(status__in=RESERVAS_VEICULO_ABERTAS) | Q(termos__atual=True)).distinct()
         if status == 'abertas':
-            queryset = queryset.filter(status__in=ABERTAS)
+            if documento == TipoTermo.RESPONSABILIDADE:
+                queryset = queryset.filter(status__in=RESERVAS_VEICULO_ABERTAS)
+            elif documento is None:
+                queryset = queryset.filter(
+                    Q(status__in=RESERVAS_VEICULO_ABERTAS)
+                    | Q(termos__atual=True, termos__status=StatusTermo.PENDENTE)
+                ).distinct()
+            else:
+                queryset = queryset.filter(termos__status=StatusTermo.PENDENTE)
         elif status == 'todos':
             queryset = queryset.exclude(status=StatusReserva.CANCELADA)
         elif status in StatusReserva.values:
@@ -137,6 +215,21 @@ class SolicitacoesTermoView(APIView):
             else:
                 item = concreta.recurso_geral
                 nome_item = item.nome
+            termos_atuais = list(reserva.termos.filter(atual=True))
+            termo_atual = next((termo for termo in termos_atuais if termo.status == StatusTermo.PENDENTE), None)
+            if termo_atual is None:
+                termo_atual = next((termo for termo in termos_atuais if termo.tipo == TipoTermo.RESPONSABILIDADE), None)
+            tipo_resultado = documento_parametro
+            if tipo_resultado == 'todos':
+                tipo_resultado = 'responsabilidade'
+            status_termo = None
+            if termo_atual is not None:
+                tipo_resultado = {
+                    TipoTermo.RESPONSABILIDADE: 'responsabilidade',
+                    TipoTermo.RETIRADA_VEICULO: 'retirada',
+                    TipoTermo.DEVOLUCAO_VEICULO: 'devolucao',
+                }[termo_atual.tipo]
+                status_termo = termo_atual.status
             resultados.append({
                 'id': reserva.pk, 'nome': reserva.nome, 'descricao': reserva.descricao,
                 'status': reserva.status, 'modalidade': tipo, 'tipo_reserva': reserva.tipo_reserva,
@@ -147,5 +240,7 @@ class SolicitacoesTermoView(APIView):
                 'destino': getattr(concreta, 'destino', ''), 'finalidade': getattr(concreta, 'finalidade', ''),
                 'quantidade': getattr(concreta, 'quantidades', None),
                 'ocupantes': getattr(concreta, 'quantidade_passageiros', None),
+                'termo_tipo': tipo_resultado,
+                'termo_status': status_termo,
             })
         return paginacao.get_paginated_response(resultados)

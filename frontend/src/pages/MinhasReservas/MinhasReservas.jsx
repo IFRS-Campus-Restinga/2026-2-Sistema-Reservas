@@ -2,12 +2,13 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useUsuario } from '../../hooks/useUsuario';
-import { ClipboardList, CalendarCheck, Info, Package, UserRound } from 'lucide-react';
+import { ClipboardList, Info, Package, UserRound } from 'lucide-react';
 import CartaoReserva from '../../components/CartaoReserva/CartaoReserva';
 import ModalDetalheReserva from '../../components/ModalDetalheReserva/ModalDetalheReserva';
 import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/ReservaRecursoGeralModal';
 import ReservaAreaModal from '../../components/ReservaArea/ReservaAreaModal';
 import ReservaVeiculoModal from '../../components/ReservaVeiculo/ReservaVeiculoModal';
+import TermoReserva from '../../components/TermoReserva/TermoReserva';
 import Select from '../../components/Select/Select';
 import {
   listarRecursosGerais,
@@ -24,7 +25,7 @@ import {
   listarReservasRecursosGerais,
   cancelarReservaRecursoGeral,
 } from '../../services/reservasRecursosGerais';
-import { STATUS_RESERVA_LABEL } from '../../utils/reserva';
+import { STATUS_RESERVA_LABEL, statusReservaApresentado } from '../../utils/reserva';
 import { ehAdministrador } from '../../utils/permissoes';
 import styles from './MinhasReservas.module.css';
 
@@ -330,7 +331,7 @@ function MinhasReservas() {
 
   const ordenadas = [...reservasDoTipo]
     .filter((reserva) => {
-      const status = String(reserva.status || '').toLowerCase();
+      const status = statusReservaApresentado(reserva);
       return filtroStatus === 'todos' ? status !== 'cancelada' : status === filtroStatus;
     })
     .sort((a, b) =>
@@ -405,6 +406,7 @@ function MinhasReservas() {
             modalidade={MODALIDADES[reserva.modalidade] || 'Reserva'}
             periodo={periodoVeiculo(reserva)}
             mostrarStatus={true}
+            mostrarDisponibilidadeRetirada={reserva.modalidade === 'veiculo'}
             aoClicar={() => setSelecionada(reserva)}
           />
         ))}
@@ -419,6 +421,12 @@ function MinhasReservas() {
           periodo={periodoVeiculo(selecionada)}
           exigeTermo={selecionada.modalidade === 'veiculo' || Boolean(recursoDaReserva(selecionada)?.tem_termo_de_responsabilidade)}
           aoAtualizarTermo={atualizarSituacaoTermo}
+          conteudoExtra={selecionada.modalidade === 'veiculo' ? (
+            <>
+              <TermoReserva reservaId={selecionada.id} modalidade="veiculo" tipoDocumento="retirada" ocultarIndisponivel />
+              <TermoReserva reservaId={selecionada.id} modalidade="veiculo" tipoDocumento="devolucao" ocultarIndisponivel />
+            </>
+          ) : null}
           detalhes={detalhesDaReserva(selecionada)}
           aoEditar={podeAlterar(selecionada) ? () => abrirEdicao(selecionada) : undefined}
           aoCancelar={podeAlterar(selecionada) ? cancelarSelecionada : undefined}
