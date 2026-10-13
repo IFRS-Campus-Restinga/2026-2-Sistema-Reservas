@@ -207,6 +207,7 @@ function Calendario() {
   }
 
   function podeAlterar(reserva) {
+    if (reserva?.celula_timetable) return false;
     return String(reserva.usuario) === String(usuario?.id) || ehAdministrador(usuario);
   }
 
@@ -444,6 +445,11 @@ function Calendario() {
           ]}
           aoEditar={podeAlterar(reservaDetalhe) ? () => abrirEdicao(reservaDetalhe) : undefined}
           aoCancelar={podeAlterar(reservaDetalhe) ? cancelarDetalhe : undefined}
+          motivoAcoesIndisponiveis={
+            reservaDetalhe.celula_timetable
+              ? "Aulas da grade horária oficial (Timetable) não podem ser alteradas ou canceladas."
+              : undefined
+          }
           aoFechar={() => setReservaDetalhe(null)}
         />
       )}

@@ -42,9 +42,10 @@ class ReservaAreaSerializer(serializers.ModelSerializer):
             "area",
             "area_detalhe",
             "aula",
+            "celula_timetable",
             "recorrencia",
         ]
-        read_only_fields = ["id", "status", "duracao", "usuario"]
+        read_only_fields = ["id", "status", "duracao", "usuario", "celula_timetable"]
 
     def validate(self, dados):
         def valor(campo):

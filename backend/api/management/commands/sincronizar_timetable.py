@@ -20,7 +20,13 @@ class Command(BaseCommand):
             celulas_service = CelulasService()
             celulas_salvas = celulas_service.processar_e_salvar_aulas(tabelas_brutas)
             quantidade_salvas = len(celulas_salvas)
-            self.stdout.write(self.style.SUCCESS(f"Sincronização concluída com sucesso! {quantidade_salvas} aulas salvas para o semestre ativo."))
+            self.stdout.write(self.style.SUCCESS(f"{quantidade_salvas} aulas salvas para o semestre ativo."))
+
+            # Etapa 3: Reservas de Área Físicas
+            self.stdout.write("Gerando reservas fixas de área para todo o semestre...")
+            from api.services.timetable.reservas_timetable_service import ReservasTimetableService
+            total_reservas = ReservasTimetableService.gerar_reservas_das_celulas(celulas_salvas)
+            self.stdout.write(self.style.SUCCESS(f"Sincronização concluída com sucesso! {total_reservas} reservas de área cadastradas para o semestre."))
             
             if quantidade_salvas > 0:
                 primeiro = celulas_salvas[0]
