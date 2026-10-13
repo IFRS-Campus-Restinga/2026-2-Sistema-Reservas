@@ -20,7 +20,6 @@ import styles from "./CardArea.module.css";
  */
 
 function CardArea({ area, aoClicar, blocoNome }) {
-  console.log("CARDAREA", area.nome, area.caracteristica, area.tipo);
   const estaAtiva = area.status === "ATIVO";
   const rotuloStatus = STATUS_RECURSO_LABEL[area.status] ?? STATUS_RECURSO_LABEL.INATIVO;
   const IconeTipo = TIPO_AREA_ICONE[area.tipo] ?? ICONE_AREA_PADRAO;

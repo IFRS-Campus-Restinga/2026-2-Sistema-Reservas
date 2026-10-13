@@ -1,3 +1,4 @@
+import re
 from datetime import time
 from .edupage_service import EdupageService
 from api.models import Area, Bloco
@@ -84,7 +85,6 @@ class EstruturaTimetableService:
             nome_limpo = partes[0]
             caract_limpa = ""
             if len(partes) > 1:
-                import re
                 resto = partes[1].strip()
                 resto = re.sub(r'^[\[\(\-]\s*', '', resto)
                 resto = re.sub(r'\s*[\]\)]$', '', resto)

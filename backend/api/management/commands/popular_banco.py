@@ -18,7 +18,9 @@ from api.models.area_model import Area
 from api.models.bloco_model import Bloco
 from api.models.grupo_model import Grupo
 from api.models.membro_grupo_model import MembroGrupo
+from api.models.recorrencia_model import Recorrencia
 from api.models.recurso_geral_model import RecursoGeral
+from api.models.reserva_area_model import ReservaArea
 from api.models.reserva_veiculo_model import ReservaVeiculo
 from api.models.tipo_recurso_model import TipoRecurso
 from api.models.veiculo_model import Veiculo
@@ -628,24 +630,20 @@ def limpar_areas_mock():
     # Remove blocos criados pelos mocks antigos (começam com 0 ou o fallback 99)
     # Isso também remove as áreas associadas via CASCADE
     blocos = Bloco.objects.filter(numero__in=['01', '02', '03', '04', '05', '06', '99'])
-    removidos, _ = blocos.delete()
-    return removidos
 
-def popular_areas_fallback():
-    bloco, _ = Bloco.objects.get_or_create(
-        numero='99',
-        defaults={'nome': 'Bloco Teste (Fallback)', 'banheiro': True}
+    # ReservaArea.area usa PROTECT, então as reservas dessas áreas precisam ser
+    # apagadas antes; caso contrário o delete dos blocos falha e desfaz o seed inteiro.
+    reservas = ReservaArea.objects.filter(area__bloco__in=blocos)
+    recorrencias_ids = set(
+        reservas.exclude(recorrencia__isnull=True).values_list('recorrencia_id', flat=True)
     )
-    _, criado = Area.objects.get_or_create(
-        nome='Sala Fallback 101',
-        bloco=bloco,
-        defaults={
-            'capacidade': 30,
-            'caracteristica': 'Sala de contingência caso o EduPage caia.',
-            'disponibilidade': True,
-        }
-    )
-    return 1 if criado else 0
+    reservas_removidas, _ = reservas.delete()
+
+    # Recorrências que ficaram sem nenhuma reserva também são descartadas.
+    Recorrencia.objects.filter(id__in=recorrencias_ids, reservas__isnull=True).delete()
+
+    removidos, _ = blocos.delete()
+    return removidos + reservas_removidas
 
 POPULADORES = [
     ('Usuários (alunos e servidores)', popular_usuarios),
@@ -710,7 +708,7 @@ class Command(BaseCommand):
         # Limpeza automática de blocos com zero à esquerda (legado) antes de popular os novos
         removidos_legado = limpar_areas_mock()
         if removidos_legado > 0:
-            self.stdout.write(self.style.WARNING(f'Migração: {removidos_legado} blocos/áreas do formato antigo foram limpos automaticamente.'))
+            self.stdout.write(self.style.WARNING(f'Migração: {removidos_legado} blocos/áreas/reservas do formato antigo foram limpos automaticamente.'))
 
 
         if options['limpar_tipos_antigos']:
