@@ -13,3 +13,4 @@ from .reserva_veiculo_model import ReservaVeiculo
 
 from .reserva_area_model import ReservaArea
 from .log_auditoria_model import LogAuditoria
+from .termo_responsabilidade_model import TermoResponsabilidade
