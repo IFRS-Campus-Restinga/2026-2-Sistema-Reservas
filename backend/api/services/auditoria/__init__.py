@@ -1,2 +1,4 @@
+from .consulta_auditoria_service import filtrar_logs_auditoria
 from .foto_service import foto
 from .registro_auditoria_service import registrar_auditoria
+from .rotulos_auditoria_service import rotulos_campos
