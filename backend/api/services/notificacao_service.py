@@ -14,3 +14,16 @@ def criar_notificacao_confirmacao(reserva):
         },
     )
     return notificacao
+
+def criar_notificacao_cancelamento(reserva):
+    notificacao, _ = Notificacao.objects.get_or_create(
+        usuario=reserva.usuario,
+        reserva=reserva,
+        tipo=TipoNotificacao.CANCELAMENTO_RESERVA,
+        defaults={
+            "titulo": "Reserva cancelada",
+            "mensagem": f'Sua reserva "{reserva.nome}" foi cancelada pelo administrador.',
+        },
+    )
+
+    return notificacao

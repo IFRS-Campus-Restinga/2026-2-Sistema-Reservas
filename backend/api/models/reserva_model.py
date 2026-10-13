@@ -21,6 +21,25 @@ class Reserva(BaseModel):
         related_name="reservas",
         verbose_name="Usuário criador",
     )
+    motivo_cancelamento = models.TextField(
+        max_length=500,
+        null=True,
+        blank=True,
+        verbose_name="Motivo do cancelamento",
+    )
+    cancelada_em = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Cancelada em",
+    )
+    cancelada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reservas_canceladas",
+        verbose_name="Cancelada por",
+    )
 
     class Meta:
         verbose_name = "Reserva"

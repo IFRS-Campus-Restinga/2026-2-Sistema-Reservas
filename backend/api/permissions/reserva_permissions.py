@@ -9,6 +9,11 @@ class PodeConfirmarReserva(UsuarioAutenticado):
 def usuario_e_dono_ou_admin(user, reserva):
     return usuario_e_admin(user) or reserva.usuario_id == user.id
 
+class PodeCancelarReserva(UsuarioAutenticado):
+    message = "Apenas administradores podem cancelar reservas por esta tela."
+
+    def tem_permissao(self, request, view):
+        return usuario_e_admin(request.user)
 
 class PodeGerenciarReserva(UsuarioAutenticado):
     message = "Apenas o responsável pela reserva ou um administrador pode realizar esta ação."

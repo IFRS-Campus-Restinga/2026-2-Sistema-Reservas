@@ -61,6 +61,7 @@ export {
 export { 
   listarReservasPendentes,
   confirmarReservaPendente, 
+  cancelarReservaAdmin,
 } from './reservasPendentes';
 export {
   listarNotificacoes,

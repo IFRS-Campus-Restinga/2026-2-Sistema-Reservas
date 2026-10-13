@@ -21,6 +21,7 @@ class NotificacaoSerializer(serializers.ModelSerializer):
 
     def get_reserva(self, notificacao):
         reserva = notificacao.reserva
+        cancelada_por = reserva.cancelada_por
         return {
             "id": reserva.id,
             "nome": reserva.nome,
@@ -28,4 +29,15 @@ class NotificacaoSerializer(serializers.ModelSerializer):
             "data": reserva.data,
             "horario_inicio": reserva.horario_inicio,
             "horario_fim": reserva.horario_fim,
+            "motivo_cancelamento": reserva.motivo_cancelamento,
+            "cancelada_em": reserva.cancelada_em,
+            "cancelada_por": (
+                {
+                    "id": cancelada_por.id,
+                    "nome": cancelada_por.nome,
+                    "email": cancelada_por.email,
+                }
+                if cancelada_por
+                else None
+            ),
         }

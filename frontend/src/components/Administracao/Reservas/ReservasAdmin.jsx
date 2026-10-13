@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Eye } from 'lucide-react';
 import styles from './ReservasAdmin.module.css';
 
-import { listarReservasPendentes, confirmarReservaPendente } from '../../../services';
+import { listarReservasPendentes, confirmarReservaPendente, cancelarReservaAdmin } from '../../../services';
 import CampoBusca from '../CampoBusca/CampoBusca';
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import Select from '../../Select/Select';
@@ -31,9 +31,11 @@ function ReservasAdmin() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
   const [erroConfirmacao, setErroConfirmacao] = useState('');
+  const [erroCancelamento, setErroCancelamento] = useState('');
   const [mensagemSucesso, setMensagemSucesso] = useState('');
   const [reservaSelecionada, setReservaSelecionada] = useState(null);
   const [confirmandoId, setConfirmandoId] = useState(null);
+  const [cancelandoId, setCancelandoId] = useState(null);
 
   useEffect(() => {
     let ativo = true;
@@ -90,15 +92,47 @@ function ReservasAdmin() {
     }
   }
 
+  async function cancelarReserva(reserva, motivo) {
+    if (!reserva || confirmandoId || cancelandoId) return;
+
+    try {
+      setCancelandoId(reserva.id);
+      setErroCancelamento('');
+      setErroConfirmacao('');
+      setMensagemSucesso('');
+
+      await cancelarReservaAdmin(reserva.id, motivo);
+
+      setReservas((reservasAtuais) =>
+        reservasAtuais.filter((item) => item.id !== reserva.id)
+      );
+
+      setReservaSelecionada(null);
+
+      setMensagemSucesso(
+        `Reserva "${reserva.nome}" cancelada com sucesso.`
+      );
+    } catch (erro) {
+      console.error(erro);
+
+      setErroCancelamento(
+        erro.message || 'Não foi possível cancelar a reserva.'
+      );
+    } finally {
+      setCancelandoId(null);
+    }
+  }
+
   function abrirDetalhes(reserva) {
     setErroConfirmacao('');
+    setErroCancelamento('');
     setReservaSelecionada(reserva);
   }
 
   function fecharDetalhes() {
-    if (confirmandoId) return;
-
+    if (confirmandoId || cancelandoId) return;
     setErroConfirmacao('');
+    setErroCancelamento('');
     setReservaSelecionada(null);
   }
 
@@ -256,6 +290,9 @@ function ReservasAdmin() {
         aoConfirmar={confirmarReserva}
         confirmando={confirmandoId === reservaSelecionada?.id}
         erroConfirmacao={erroConfirmacao}
+        aoCancelar={cancelarReserva}
+        cancelando={cancelandoId === reservaSelecionada?.id}
+        erroCancelamento={erroCancelamento}
       />
     </div>
   );

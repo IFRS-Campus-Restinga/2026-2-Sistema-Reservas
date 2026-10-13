@@ -37,3 +37,19 @@ export async function confirmarReservaPendente(id) {
     'Não foi possível confirmar a reserva.'
   );
 }
+
+export async function cancelarReservaAdmin(id, motivo) {
+  const resposta = await fetch(`/api/reservas/${id}/cancelar/`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ motivo }),
+  });
+
+  return tratarResposta(
+    resposta,
+    'Não foi possível cancelar a reserva.'
+  );
+}

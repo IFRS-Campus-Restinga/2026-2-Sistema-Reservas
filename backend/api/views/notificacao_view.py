@@ -15,7 +15,7 @@ class MinhasNotificacoesListView(APIView):
         notificacoes = (
             Notificacao.objects
             .filter(usuario=request.user)
-            .select_related("reserva")
+            .select_related("reserva", "reserva__cancelada_por")
             .order_by("-criada_em")
         )
 
@@ -30,7 +30,7 @@ class MarcarNotificacaoLidaView(APIView):
 
     def patch(self, request, pk):
         notificacao = get_object_or_404(
-            Notificacao.objects.select_related("reserva"),
+            Notificacao.objects.select_related("reserva", "reserva__cancelada_por"),
             pk=pk,
             usuario=request.user,
         )
