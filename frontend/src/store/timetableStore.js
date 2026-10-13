@@ -29,9 +29,10 @@ export const useTimetableStore = create((set, get) => ({
   syncTimetable: async () => {
     set({ isLoading: true, error: null });
     try {
-      await api.post('/timetable/');
+      const postResponse = await api.post('/timetable/');
       const response = await api.get('/timetable/');
       set({ timetableData: response.data, isLoading: false });
+      return postResponse.data;
     } catch (error) {
       const msg = error.response?.data?.erro || error.response?.data?.detail || error.message;
       set({ error: msg, isLoading: false });

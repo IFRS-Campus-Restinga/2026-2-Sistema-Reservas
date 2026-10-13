@@ -16,6 +16,15 @@ class ReservaArea(Reserva):
         verbose_name="É aula?",
     )
 
+    celula_timetable = models.ForeignKey(
+        "CelulaTimetable",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="reservas_area",
+        verbose_name="Célula da Timetable",
+    )
+
     class Meta:
         verbose_name = "Reserva de Área"
         verbose_name_plural = "Reservas de Área"
