@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useUsuario } from '../../hooks/useUsuario';
-import { CalendarCheck, ClipboardList } from 'lucide-react';
+import { ClipboardList, CalendarCheck, Info, Package, UserRound } from 'lucide-react';
 import CartaoReserva from '../../components/CartaoReserva/CartaoReserva';
 import ModalDetalheReserva from '../../components/ModalDetalheReserva/ModalDetalheReserva';
 import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/ReservaRecursoGeralModal';
@@ -25,7 +25,6 @@ import {
   cancelarReservaRecursoGeral,
 } from '../../services/reservasRecursosGerais';
 import { STATUS_RESERVA_LABEL } from '../../utils/reserva';
-import { STATUS_RECURSO_LABEL } from '../../utils/statusRecurso';
 import { ehAdministrador } from '../../utils/permissoes';
 import styles from './MinhasReservas.module.css';
 
@@ -151,22 +150,13 @@ function MinhasReservas() {
       return [
         {
           rotulo: 'Finalidade',
-          valor: 'Empréstimo de recurso',
-          icone: ClipboardList,
+          valor: reserva.descricao || 'Empréstimo de recurso',
+          icone: Info,
         },
         {
           rotulo: 'Quantidade',
-          valor: reserva.quantidades,
-          icone: ClipboardList,
-        },
-        {
-          rotulo: 'Devolução prevista',
-          valor: formatarData(reserva.data_devolucao_prevista),
-          icone: CalendarCheck,
-        },
-        {
-          rotulo: 'Observações',
-          valor: reserva.descricao || 'Nenhuma',
+          valor: `${reserva.quantidades} unidade(s) · devolução até ${formatarData(reserva.data_devolucao_prevista)}`,
+          icone: Package,
         },
       ];
     }
@@ -186,20 +176,14 @@ function MinhasReservas() {
     }
 
     if (reserva.modalidade === 'veiculo') {
-      const veiculo = veiculos.find((item) => String(item.id) === String(reserva.veiculo));
       return [
-        { rotulo: 'Destino', valor: reserva.destino },
-        { rotulo: 'Finalidade', valor: reserva.finalidade, icone: ClipboardList },
+        { rotulo: 'Finalidade', valor: reserva.finalidade, icone: Info },
         {
-          rotulo: 'Ocupantes, incluindo motorista',
-          valor: reserva.quantidade_passageiros,
-          icone: ClipboardList,
+          rotulo: 'Destino e ocupantes',
+          valor: `${reserva.destino} · ${reserva.quantidade_passageiros} ocupante(s), incluindo motorista`,
+          icone: UserRound,
         },
-        { rotulo: 'Observações', valor: reserva.descricao || 'Nenhuma' },
-        {
-          rotulo: 'Situação do veículo',
-          valor: veiculo ? STATUS_RECURSO_LABEL[veiculo.status] : 'Não informada',
-        },
+        { rotulo: 'Observações', valor: reserva.descricao },
       ];
     }
 
@@ -355,12 +339,20 @@ function MinhasReservas() {
       )
     );
 
-  const recurso =
-    selecionada?.modalidade === 'recurso_geral'
-      ? recursoDaReserva(selecionada)
-      : null;
-
-  const ehRecurso = selecionada?.modalidade === 'recurso_geral';
+  function atualizarSituacaoTermo(dados) {
+    setReservas((atuais) => atuais.map((reserva) => {
+      if (reserva.id === dados.reserva) {
+        return { ...reserva, status: dados.status_reserva };
+      }
+      return reserva;
+    }));
+    setSelecionada((atual) => {
+      if (atual?.id === dados.reserva) {
+        return { ...atual, status: dados.status_reserva };
+      }
+      return atual;
+    });
+  }
 
   return (
     <div className={styles.pagina}>
@@ -425,11 +417,8 @@ function MinhasReservas() {
           item={nomeItem(selecionada)}
           responsavel={nomeResponsavel(selecionada)}
           periodo={periodoVeiculo(selecionada)}
-          exigeTermo={
-            ehRecurso
-              ? Boolean(recurso?.tem_termo_de_responsabilidade)
-              : Boolean(selecionada.exigeTermo)
-          }
+          exigeTermo={selecionada.modalidade === 'veiculo' || Boolean(recursoDaReserva(selecionada)?.tem_termo_de_responsabilidade)}
+          aoAtualizarTermo={atualizarSituacaoTermo}
           detalhes={detalhesDaReserva(selecionada)}
           aoEditar={podeAlterar(selecionada) ? () => abrirEdicao(selecionada) : undefined}
           aoCancelar={podeAlterar(selecionada) ? cancelarSelecionada : undefined}

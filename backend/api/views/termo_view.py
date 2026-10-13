@@ -1,0 +1,151 @@
+from django.db import transaction
+from django.db.models import Q
+from django.http import FileResponse
+from django.shortcuts import get_object_or_404
+from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from api.enumerations import StatusReserva
+from api.enumerations.status_termo import StatusTermo
+from api.models import Reserva, TermoResponsabilidade
+from api.pagination import PaginacaoPadrao
+from api.permissions.reserva_permissions import PodeGerenciarReserva
+from api.permissions.regras_comuns import SomenteAdministrador
+from api.serializers.termo_serializer import AnaliseTermoSerializer
+from api.services.termo_service import (
+    ABERTAS, analisar_termo, enviar_termo, modelo_da_reserva, reserva_concreta,
+    reserva_exige_termo, resumo_termo,
+)
+
+
+def reservas_com_recurso():
+    return Reserva.objects.select_related(
+        'usuario', 'reservaveiculo__veiculo', 'reservarecursogeral__recurso_geral',
+    )
+
+
+def resposta_arquivo(campo, nome, content_type):
+    try:
+        arquivo = campo.open('rb')
+    except (FileNotFoundError, OSError):
+        raise NotFound('O arquivo não está disponível. Entre em contato com a administração.')
+    resposta = FileResponse(arquivo, as_attachment=True, filename=nome, content_type=content_type)
+    resposta['Cache-Control'] = 'private, no-store'
+    resposta['X-Content-Type-Options'] = 'nosniff'
+    return resposta
+
+
+class TermoReservaView(APIView):
+    permission_classes = [PodeGerenciarReserva]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def obter_reserva(self, request, pk, bloquear=False):
+        if bloquear:
+            queryset = Reserva.objects.select_for_update()
+        else:
+            queryset = Reserva.objects.all()
+        reserva = get_object_or_404(queryset, pk=pk)
+        self.check_object_permissions(request, reserva)
+        if not reserva_exige_termo(reserva):
+            raise ValidationError('Esta reserva não exige termo de responsabilidade.')
+        return reserva
+
+    def get(self, request, pk):
+        return Response(resumo_termo(self.obter_reserva(request, pk), request.user))
+
+    def post(self, request, pk):
+        with transaction.atomic():
+            reserva = self.obter_reserva(request, pk, bloquear=True)
+            enviar_termo(reserva, request.user, request.FILES.get('arquivo'))
+            return Response(resumo_termo(reserva, request.user), status=201)
+
+
+class ModeloTermoView(TermoReservaView):
+    http_method_names = ['get', 'head', 'options']
+
+    def get(self, request, pk):
+        reserva = self.obter_reserva(request, pk)
+        caminho = modelo_da_reserva(reserva)
+        resposta = FileResponse(caminho.open('rb'), as_attachment=True, filename=caminho.name,
+                               content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        resposta['Cache-Control'] = 'private, no-store'
+        return resposta
+
+
+class ArquivoTermoView(APIView):
+    permission_classes = [PodeGerenciarReserva]
+    original = False
+
+    def get(self, request, pk):
+        termo = get_object_or_404(TermoResponsabilidade.objects.select_related('reserva'), pk=pk)
+        self.check_object_permissions(request, termo.reserva)
+        if self.original:
+            return resposta_arquivo(termo.arquivo_original, 'termo-em-branco.docx',
+                                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        return resposta_arquivo(termo.arquivo_assinado, termo.nome_original, 'application/pdf')
+
+
+class AnaliseTermoView(APIView):
+    permission_classes = [SomenteAdministrador]
+
+    def post(self, request, pk):
+        serializer = AnaliseTermoSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        with transaction.atomic():
+            reserva = get_object_or_404(Reserva.objects.select_for_update(), pk=pk)
+            dados = serializer.validated_data
+            analisar_termo(reserva, dados['termo_id'], request.user, dados['status'], dados['motivo'])
+            return Response(resumo_termo(reserva, request.user))
+
+
+class SolicitacoesTermoView(APIView):
+    permission_classes = [SomenteAdministrador]
+
+    def get(self, request):
+        queryset = reservas_com_recurso().filter(
+            Q(reservaveiculo__isnull=False)
+            | Q(reservarecursogeral__recurso_geral__tem_termo_de_responsabilidade=True)
+        )
+        modalidade = request.query_params.get('tipo', 'todos')
+        status = request.query_params.get('status', 'abertas')
+        if modalidade not in ('todos', 'veiculo', 'recurso_geral'):
+            raise ValidationError({'tipo': 'Tipo de solicitação inválido.'})
+        if modalidade != 'todos':
+            if modalidade == 'veiculo':
+                relacao = 'reservaveiculo'
+            else:
+                relacao = 'reservarecursogeral'
+            queryset = queryset.filter(**{f'{relacao}__isnull': False})
+        if status == 'abertas':
+            queryset = queryset.filter(status__in=ABERTAS)
+        elif status == 'todos':
+            queryset = queryset.exclude(status=StatusReserva.CANCELADA)
+        elif status in StatusReserva.values:
+            queryset = queryset.filter(status=status)
+        else:
+            raise ValidationError({'status': 'Status de solicitação inválido.'})
+        paginacao = PaginacaoPadrao()
+        pagina = paginacao.paginate_queryset(queryset.order_by('-data', '-pk'), request)
+        resultados = []
+        for reserva in pagina:
+            concreta, tipo = reserva_concreta(reserva)
+            if tipo == 'veiculo':
+                item = concreta.veiculo
+                nome_item = f'{item.nome} · {item.placa}'
+            else:
+                item = concreta.recurso_geral
+                nome_item = item.nome
+            resultados.append({
+                'id': reserva.pk, 'nome': reserva.nome, 'descricao': reserva.descricao,
+                'status': reserva.status, 'modalidade': tipo, 'tipo_reserva': reserva.tipo_reserva,
+                'data': reserva.data, 'horario_inicio': reserva.horario_inicio,
+                'horario_fim': reserva.horario_fim, 'data_devolucao_prevista': concreta.data_devolucao_prevista,
+                'responsavel': reserva.usuario.nome or reserva.usuario.email,
+                'item': nome_item,
+                'destino': getattr(concreta, 'destino', ''), 'finalidade': getattr(concreta, 'finalidade', ''),
+                'quantidade': getattr(concreta, 'quantidades', None),
+                'ocupantes': getattr(concreta, 'quantidade_passageiros', None),
+            })
+        return paginacao.get_paginated_response(resultados)

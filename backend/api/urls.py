@@ -24,9 +24,16 @@ from api.views.agenda_reserva_view import AgendaReservasView
 from api.views.reserva_pendente_view import ReservasPendentesListView, ConfirmarReservaView, CancelarReservaAdminView
 from api.views.notificacao_view import MinhasNotificacoesListView, MarcarNotificacaoLidaView
 from api.views.data_atual_view import DataAtualView
+from api.views.termo_view import TermoReservaView, ModeloTermoView, ArquivoTermoView, AnaliseTermoView, SolicitacoesTermoView
 
 
 urlpatterns = [
+    path('reservas/<int:pk>/termo/', TermoReservaView.as_view(), name='termo-reserva'),
+    path('reservas/<int:pk>/termo/modelo/', ModeloTermoView.as_view(), name='termo-modelo'),
+    path('reservas/<int:pk>/termo/analise/', AnaliseTermoView.as_view(), name='termo-analise'),
+    path('termos/<int:pk>/arquivo/', ArquivoTermoView.as_view(), name='termo-arquivo'),
+    path('termos/<int:pk>/modelo/', ArquivoTermoView.as_view(original=True), name='termo-modelo-enviado'),
+    path('solicitacoes/termos/', SolicitacoesTermoView.as_view(), name='solicitacoes-termos'),
     path('recursos-gerais/', RecursoGeralListCreateView.as_view(), name='recurso-geral-list-create'),
     path('recursos-gerais/<int:pk>/', RecursoGeralDetailView.as_view(), name='recurso-geral-detail'),
     path('tipos-recurso/', TipoRecursoCreateView.as_view(), name='tipo-recurso-create'),
