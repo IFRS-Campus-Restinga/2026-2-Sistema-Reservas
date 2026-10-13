@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useUsuario } from '../../hooks/useUsuario';
-import { ClipboardList, Info, Package, UserRound } from 'lucide-react';
+import { ClipboardList, CalendarCheck, Info, Package, UserRound } from 'lucide-react';
 import CartaoReserva from '../../components/CartaoReserva/CartaoReserva';
 import ModalDetalheReserva from '../../components/ModalDetalheReserva/ModalDetalheReserva';
 import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/ReservaRecursoGeralModal';
