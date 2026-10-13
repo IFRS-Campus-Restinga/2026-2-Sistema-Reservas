@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
-import { CalendarClock, Download, FileWarning, Info, Package, Pencil, Trash2, Upload, UserRound, X } from 'lucide-react';
+import { useState } from 'react';
+import { Clock, Globe, Info, MapPin, Pencil, Trash2, UserRound, X } from 'lucide-react';
+import useFocoModal from '../../hooks/useFocoModal';
+import TermoReserva from '../TermoReserva/TermoReserva';
 import { STATUS_RESERVA_LABEL } from '../../utils/reserva';
 import styles from './ModalDetalheReserva.module.css';
 import ModalConfirmacao from '../Administracao/ModalConfirmacao/ModalConfirmacao';
@@ -9,8 +11,6 @@ function dataFormatada(data) {
   return new Date(`${data}T12:00:00`).toLocaleDateString('pt-BR');
 }
 
-// Este modal não conhece APIs de recursos, veículos ou áreas.
-// Cada página passa as informações e as funções que sua modalidade suporta.
 function ModalDetalheReserva({
   reserva,
   modalidade,
@@ -19,8 +19,9 @@ function ModalDetalheReserva({
   periodo,
   detalhes = [],
   exigeTermo = false,
-  urlTermo,
-  aoEnviarTermo,
+  aoAtualizarTermo,
+  administrativo = false,
+  acoesAdministrativas,
   aoEditar,
   aoCancelar,
   motivoAcoesIndisponiveis,
@@ -29,21 +30,19 @@ function ModalDetalheReserva({
   const [confirmando, setConfirmando] = useState(false);
   const [processando, setProcessando] = useState(false);
   const [erro, setErro] = useState('');
-  const arquivoRef = useRef(null);
-
-  useEffect(() => {
-    function fecharComEscape(evento) {
-      if (evento.key === 'Escape' && !processando) aoFechar();
-    }
-    document.addEventListener('keydown', fecharComEscape);
-    return () => document.removeEventListener('keydown', fecharComEscape);
-  }, [aoFechar, processando]);
+  const [enviandoTermo, setEnviandoTermo] = useState(false);
+  const bloqueado = processando || enviandoTermo;
+  const modalRef = useFocoModal({ aberto: Boolean(reserva) && !confirmando, aoFechar, bloqueado });
 
   if (!reserva) return null;
 
   const tipo = String(reserva.tipo_reserva || '').toLowerCase();
   const status = String(reserva.status || '').toLowerCase();
   const podeCancelar = Boolean(aoCancelar);
+
+  function fechar() {
+    if (!bloqueado) aoFechar();
+  }
 
   async function cancelar() {
     try {
@@ -57,43 +56,30 @@ function ModalDetalheReserva({
     }
   }
 
-  async function enviarTermo(evento) {
-    const arquivo = evento.target.files?.[0];
-    if (!arquivo || !aoEnviarTermo) return;
-    try {
-      setProcessando(true);
-      setErro('');
-      await aoEnviarTermo(arquivo);
-    } catch (falha) {
-      setErro(falha.message || 'Não foi possível enviar o termo.');
-    } finally {
-      setProcessando(false);
-      evento.target.value = '';
-    }
+  if (confirmando) {
+    return (
+      <ModalConfirmacao
+        aberto
+        titulo="Cancelar reserva?"
+        mensagem={`Tem certeza que deseja cancelar a reserva ${reserva.nome}?`}
+        aviso={erro}
+        textoConfirmar="Confirmar"
+        processando={processando}
+        aoCancelar={() => {
+          setConfirmando(false);
+          setErro('');
+        }}
+        aoConfirmar={cancelar}
+      />
+    );
   }
 
-  if (confirmando) {
   return (
-    <ModalConfirmacao
-      aberto
-      titulo="Cancelar reserva?"
-      mensagem={`Tem certeza que deseja cancelar a reserva ${reserva.nome}?`}
-      aviso={erro}
-      textoConfirmar="Confirmar"
-      processando={processando}
-      aoCancelar={() => {
-        setConfirmando(false);
-        setErro('');
-      }}
-      aoConfirmar={cancelar}
-    />
-  );
-}
-
-  return (
-    <div className={styles.fundo} onMouseDown={processando ? undefined : aoFechar}>
+    <div className={styles.fundo} onMouseDown={fechar}>
       <div
         className={styles.modal}
+        ref={modalRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="titulo-detalhe-reserva"
@@ -103,66 +89,46 @@ function ModalDetalheReserva({
           <div>
             <span className={styles.sobretitulo}>{modalidade}</span>
             <h2 id="titulo-detalhe-reserva">{reserva.nome}</h2>
-            <span className={styles.status}>
-              {STATUS_RESERVA_LABEL[status] || reserva.status}
-            </span>
+            <div className={styles.etiquetas}>
+              <span className={styles.status}>{STATUS_RESERVA_LABEL[status] || reserva.status}</span>
+              {tipo === 'externa' && <span className={styles.status}><Globe size={10} />Externo</span>}
+            </div>
           </div>
-          <button type="button" className={styles.fechar} onClick={aoFechar} disabled={processando} aria-label="Fechar">
-            <X size={20} />
+          <button type="button" className={styles.fechar} onClick={fechar} disabled={bloqueado} aria-label="Fechar">
+            <X size={18} />
           </button>
         </header>
 
         <div className={styles.conteudo}>
           <div className={styles.linha}>
-            <span className={styles.icone}><Package size={17} /></span>
+            <span className={styles.icone}><MapPin size={14} /></span>
             <div><span className={styles.rotulo}>{modalidade}</span><strong>{item || 'Não informado'}</strong></div>
           </div>
           <div className={styles.linha}>
-            <span className={styles.icone}><CalendarClock size={17} /></span>
+            <span className={styles.icone}><Clock size={14} /></span>
             <div>
               <span className={styles.rotulo}>Data e horário</span>
-              <strong>{periodo || `${dataFormatada(reserva.data)} · ${reserva.horario_inicio} às ${reserva.horario_fim}`}</strong>
+              <strong>{periodo || `${dataFormatada(reserva.data)} · ${reserva.horario_inicio.slice(0, 5)} às ${reserva.horario_fim.slice(0, 5)}`}</strong>
             </div>
           </div>
           <div className={styles.linha}>
-            <span className={styles.icone}><UserRound size={17} /></span>
+            <span className={styles.icone}><UserRound size={14} /></span>
             <div><span className={styles.rotulo}>Responsável</span><strong>{responsavel || 'Não informado'}</strong></div>
           </div>
           {detalhes.filter((detalhe) => detalhe.valor !== null && detalhe.valor !== undefined && detalhe.valor !== '').map((detalhe) => {
             const Icone = detalhe.icone || Info;
             return (
               <div className={styles.linha} key={detalhe.rotulo}>
-                <span className={styles.icone}><Icone size={17} /></span>
+                <span className={styles.icone}><Icone size={14} /></span>
                 <div><span className={styles.rotulo}>{detalhe.rotulo}</span><strong>{detalhe.valor}</strong></div>
               </div>
             );
           })}
 
           {exigeTermo && (
-            <div className={styles.termos}>
-              <div className={styles.alertaTermo}>
-                <FileWarning size={18} />
-                <div><strong>Termo de responsabilidade</strong><span>Este recurso exige termo assinado.</span></div>
-              </div>
-              <div className={styles.arquivosTermo}>
-                <strong>Termo desta reserva</strong>
-                {urlTermo ? (
-                  <a href={urlTermo} download><Download size={15} /> Baixar termo em branco</a>
-                ) : (
-                  <span className={styles.indisponivel}>Download disponível após a integração da API de termos.</span>
-                )}
-                {aoEnviarTermo ? (
-                  <>
-                    <input ref={arquivoRef} type="file" accept=".pdf,.png,.jpg,.jpeg" hidden onChange={enviarTermo} />
-                    <button type="button" className={styles.enviarTermo} disabled={processando} onClick={() => arquivoRef.current?.click()}>
-                      <Upload size={15} /> Enviar termo assinado
-                    </button>
-                  </>
-                ) : (
-                  <span className={styles.indisponivel}>Envio disponível após a integração da API de termos.</span>
-                )}
-              </div>
-            </div>
+            <TermoReserva key={reserva.id} reservaId={reserva.id} modalidade={reserva.modalidade}
+              administrativo={administrativo} somenteResumo={administrativo}
+              aoAtualizar={aoAtualizarTermo} aoProcessar={setEnviandoTermo} />
           )}
 
           {erro && <p className={styles.erro} role="alert">{erro}</p>}
@@ -170,32 +136,14 @@ function ModalDetalheReserva({
             <p className={styles.erro}>{motivoAcoesIndisponiveis}</p>
           )}
 
-          {confirmando ? (
+          {administrativo && acoesAdministrativas}
+          {!administrativo && (
             <div className={styles.acoes}>
-              <button
-                type="button"
-                disabled={!aoEditar || processando}
-                onClick={aoEditar}
-              >
-                <Pencil size={16} /> Editar
+              <button type="button" disabled={!aoEditar || bloqueado} onClick={aoEditar}>
+                <Pencil size={13} /> Editar
               </button>
-
-              <button
-                type="button"
-                className={styles.cancelar}
-                disabled={!podeCancelar || processando}
-                onClick={() => setConfirmando(true)}
-              >
-                <Trash2 size={16} /> Cancelar
-              </button>
-            </div>
-          ) : (
-            <div className={styles.acoes}>
-              <button type="button" disabled={!aoEditar || processando} title={!aoEditar ? 'Edição depende da API desta modalidade' : undefined} onClick={aoEditar}>
-                <Pencil size={16} /> Editar
-              </button>
-              <button type="button" className={styles.cancelar} disabled={!podeCancelar || processando} title={!podeCancelar ? 'Cancelamento indisponível para esta reserva' : undefined} onClick={() => setConfirmando(true)}>
-                <Trash2 size={16} /> Cancelar
+              <button type="button" className={styles.cancelar} disabled={!podeCancelar || bloqueado} onClick={() => setConfirmando(true)}>
+                <Trash2 size={13} /> Cancelar
               </button>
             </div>
           )}
