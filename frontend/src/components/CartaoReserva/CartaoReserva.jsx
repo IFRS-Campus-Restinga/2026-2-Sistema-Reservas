@@ -1,10 +1,10 @@
 import styles from './CartaoReserva.module.css';
 import { formatarDataCurta } from '../../utils/data';
-import { STATUS_RESERVA_LABEL, TIPO_RESERVA_LABEL } from '../../utils/reserva';
+import { STATUS_RESERVA_LABEL, TIPO_RESERVA_LABEL, statusReservaApresentado } from '../../utils/reserva';
 
 function CartaoReserva({ reserva, modalidade, periodo, mostrarStatus = true, aoClicar }) {
   const tipo = String(reserva.tipo_reserva || '').toLowerCase();
-  const status = String(reserva.status || '').toLowerCase();
+  const status = statusReservaApresentado(reserva);
   const nomeTipo = modalidade || TIPO_RESERVA_LABEL[tipo] || tipo;
   const Componente = aoClicar ? 'button' : 'div';
 
