@@ -688,6 +688,11 @@ class Command(BaseCommand):
             action='store_true',
             help='Remove os cinco tipos amplos antigos sem recursos associados.',
         )
+        parser.add_argument(
+            '--sincronizar-timetable',
+            action='store_true',
+            help='Sincroniza os horários, salas, aulas e gera as reservas de área da Timetable do EduPage.',
+        )
 
 
     @transaction.atomic
@@ -716,3 +721,8 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(
                 f'Tipos antigos: {removidos} removido(s), {mantidos} preservado(s) por ainda ter recursos.'
             ))
+
+        if options['sincronizar_timetable']:
+            from django.core.management import call_command
+            self.stdout.write(self.style.WARNING('\nSincronizando Timetable com EduPage e gerando reservas de área...'))
+            call_command('sincronizar_timetable')

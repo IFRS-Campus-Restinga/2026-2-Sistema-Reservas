@@ -46,9 +46,12 @@ function TimetableAdmin() {
     try {
       setSincronizando(true);
       setMensagemSucesso('');
-      await syncTimetable();
-      setMensagemSucesso('Grade horária sincronizada com sucesso com o EduPage!');
-      setTimeout(() => setMensagemSucesso(''), 4000);
+      const resultado = await syncTimetable();
+      const detalhe = resultado?.total_reservas
+        ? ` (${resultado.total_aulas} aulas e ${resultado.total_reservas} reservas de área criadas)`
+        : '';
+      setMensagemSucesso(`Grade horária sincronizada com sucesso com o EduPage!${detalhe}`);
+      setTimeout(() => setMensagemSucesso(''), 5000);
     } catch (err) {
       console.error(err);
     } finally {

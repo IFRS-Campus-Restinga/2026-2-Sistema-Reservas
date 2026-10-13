@@ -130,6 +130,14 @@ class ReservaAreaDetailView(APIView):
             self.check_object_permissions(request, reserva)
             antes = foto(reserva)
 
+            if reserva.celula_timetable_id is not None:
+                return Response(
+                    {
+                        "detail": "Aulas da grade horária (Timetable) são gerenciadas exclusivamente pela sincronização com o EduPage e não podem ser alteradas ou canceladas manualmente."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             if reserva.status not in STATUS_ALTERAVEIS:
                 return Response(
                     {"detail": "Esta reserva não pode mais ser alterada ou cancelada."},
