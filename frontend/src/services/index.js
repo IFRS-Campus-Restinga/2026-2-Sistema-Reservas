@@ -60,3 +60,7 @@ export {
   buscarAgendaVeiculo,
 } from './reservasVeiculos';
 export { buscarDataAtual } from './dataAtual';
+export {
+  buscarLogsAuditoria,
+  buscarLogAuditoria,
+} from './auditoria';

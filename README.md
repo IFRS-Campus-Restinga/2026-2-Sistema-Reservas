@@ -6,6 +6,8 @@ O login depende do HUB rodando localmente (via Docker/Dev Containers). Setup com
 
 Ao criar APIs ou telas, siga o guia de permissões: [docs/PERMISSOES.md](docs/PERMISSOES.md).
 
+Ao criar views que alteram dados, siga o guia de auditoria: [docs/AUDITORIA.md](docs/AUDITORIA.md).
+
 ## Rodando o backend
 
 ```powershell
