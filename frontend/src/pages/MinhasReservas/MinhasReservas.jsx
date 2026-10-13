@@ -406,6 +406,7 @@ function MinhasReservas() {
             modalidade={MODALIDADES[reserva.modalidade] || 'Reserva'}
             periodo={periodoVeiculo(reserva)}
             mostrarStatus={true}
+            mostrarDisponibilidadeRetirada={reserva.modalidade === 'veiculo'}
             aoClicar={() => setSelecionada(reserva)}
           />
         ))}

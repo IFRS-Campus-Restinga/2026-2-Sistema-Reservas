@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 from pathlib import Path
 
@@ -199,6 +199,13 @@ def validar_termo_operacional(reserva, tipo):
         raise ValidationError('A reserva não aceita documentos operacionais neste estado.')
     if tipo == TipoTermo.RETIRADA_VEICULO and reserva.status != StatusReserva.CONFIRMADA:
         raise ValidationError('A retirada só pode ser enviada após a confirmação da reserva.')
+    if tipo == TipoTermo.RETIRADA_VEICULO:
+        inicio = timezone.make_aware(
+            datetime.combine(reserva.data, reserva.horario_inicio),
+            timezone.get_current_timezone(),
+        )
+        if timezone.now() < inicio - timedelta(hours=1):
+            raise ValidationError('O termo de retirada fica disponível uma hora antes do início da reserva.')
     if tipo == TipoTermo.DEVOLUCAO_VEICULO:
         if reserva.status not in (StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO, StatusReserva.PENDENTE):
             raise ValidationError('A devolução só pode ser enviada após a aprovação da retirada.')

@@ -17,6 +17,14 @@ export function statusReservaApresentado(reserva, agora = new Date()) {
   return 'confirmada';
 }
 
+export function termoRetiradaDisponivel(reserva, agora = new Date()) {
+  if (String(reserva?.status || '').toUpperCase() !== 'CONFIRMADA') return false;
+
+  const inicio = new Date(`${reserva.data}T${reserva.horario_inicio}`);
+  if (Number.isNaN(inicio.getTime())) return false;
+  return agora >= new Date(inicio.getTime() - 60 * 60 * 1000);
+}
+
 export const TIPO_RESERVA_LABEL = {
   interna: "Interna",
   externa: "Externa",
