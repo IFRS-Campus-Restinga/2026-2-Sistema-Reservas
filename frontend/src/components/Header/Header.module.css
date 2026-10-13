@@ -126,3 +126,43 @@
   font-weight: 700;
 }
 
+@media (max-width: 767px) {
+  .header {
+    gap: 8px;
+    padding-inline: 12px;
+  }
+
+  .titulo {
+    overflow: hidden;
+    font-size: 16px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .subTitulo {
+    font-size: 10px;
+  }
+
+  .acoes {
+    flex-shrink: 0;
+    gap: 4px;
+  }
+
+  .botaNovaReserva {
+    padding: 8px;
+  }
+
+  .botaNovaReserva span,
+  .dadosUsuario {
+    display: none;
+  }
+
+  .containerPerfil {
+    padding-left: 0;
+  }
+
+  .infoPerfil {
+    padding-inline: 0;
+  }
+}
+

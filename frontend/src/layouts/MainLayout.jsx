@@ -9,11 +9,20 @@ import { buscarUsuarioLogado } from '../services'
 import styles from './MainLayout.module.css'
 
 function MainLayout() {
-  const [menuRecolhido, setMenuRecolhido] = useState(false)
+  const [menuRecolhido, setMenuRecolhido] = useState(() => window.matchMedia('(max-width: 767px)').matches)
   const [usuario, setUsuario] = useState(null)
   const [carregando, setCarregando] = useState(true)
 
   const location = useLocation();
+
+  useEffect(() => {
+    const telaPequena = window.matchMedia('(max-width: 767px)');
+    function adaptarMenu(evento) {
+      setMenuRecolhido(evento.matches);
+    }
+    telaPequena.addEventListener('change', adaptarMenu);
+    return () => telaPequena.removeEventListener('change', adaptarMenu);
+  }, []);
   const paginaAtual = ITENS_MENU.find((item) =>
     item.path === location.pathname ||
     (item.path !== '/' && location.pathname.startsWith(`${item.path}/`))
