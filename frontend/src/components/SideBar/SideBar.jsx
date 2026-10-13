@@ -3,11 +3,13 @@ import {
     LogOut,
     ChevronLeft,
     ChevronRight,
+    ExternalLink
 } from "lucide-react";
 import { ITENS_MENU } from "../../config/rotas";
 import { useUsuario } from "../../hooks/useUsuario";
 import { temPermissao } from "../../utils/permissoes";
 import styles from "./SideBar.module.css";
+import { HUB_URL } from "../../config/hub"
 
 export default function Sidebar({
     paginaAtual,
@@ -77,14 +79,15 @@ export default function Sidebar({
             <div className={styles.footer}>
                 <button
                     type="button"
-                    title={menuRecolhido ? "Sair" : undefined}
+                    onClick={() => window.location.href = HUB_URL}
+                    title={menuRecolhido ? "Voltar ao HUB" : undefined}
                     className={`${styles.botaoFooter} ${styles.botaoSair
                         } ${menuRecolhido ? styles.botaoFooterRecolhido : ""}`}
                 >
-                    <LogOut size={16} />
+                    <ExternalLink size={16} />
 
                     {!menuRecolhido && (
-                        <span>Sair do Sistema</span>
+                        <span>Voltar ao HUB</span>
                     )}
                 </button>
 

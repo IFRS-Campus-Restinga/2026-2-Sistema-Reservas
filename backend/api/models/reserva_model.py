@@ -21,6 +21,14 @@ class Reserva(BaseModel):
         related_name="reservas",
         verbose_name="Usuário criador",
     )
+    recorrencia = models.ForeignKey(
+        "Recorrencia",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="reservas",
+        verbose_name="Recorrência",
+    )
 
     class Meta:
         verbose_name = "Reserva"
