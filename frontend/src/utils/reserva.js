@@ -4,6 +4,7 @@ export const STATUS_RESERVA_LABEL = {
   cancelada: "Cancelada",
   rejeitada: "Rejeitada",
   aguardando_termo: "Aguardando termo",
+  aguardando_termo_devolucao: "Aguardando termo de devolução",
   concluida: "Concluída",
 };
 

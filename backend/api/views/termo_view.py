@@ -15,7 +15,7 @@ from api.permissions.reserva_permissions import PodeGerenciarReserva
 from api.permissions.regras_comuns import SomenteAdministrador
 from api.serializers.termo_serializer import AnaliseTermoSerializer
 from api.services.termo_service import (
-    ABERTAS, analisar_termo, enviar_termo, modelo_da_reserva, reserva_concreta,
+    ABERTAS, RESERVAS_VEICULO_ABERTAS, analisar_termo, enviar_termo, modelo_da_reserva, reserva_concreta,
     reserva_exige_termo, resumo_termo, validar_termo_operacional,
 )
 
@@ -187,13 +187,13 @@ class SolicitacoesTermoView(APIView):
         if documento is not None and documento != TipoTermo.RESPONSABILIDADE:
             queryset = queryset.filter(termos__tipo=documento, termos__atual=True)
         elif documento is None:
-            queryset = queryset.filter(Q(status__in=ABERTAS) | Q(termos__atual=True)).distinct()
+            queryset = queryset.filter(Q(status__in=RESERVAS_VEICULO_ABERTAS) | Q(termos__atual=True)).distinct()
         if status == 'abertas':
             if documento == TipoTermo.RESPONSABILIDADE:
-                queryset = queryset.filter(status__in=ABERTAS)
+                queryset = queryset.filter(status__in=RESERVAS_VEICULO_ABERTAS)
             elif documento is None:
                 queryset = queryset.filter(
-                    Q(status__in=ABERTAS)
+                    Q(status__in=RESERVAS_VEICULO_ABERTAS)
                     | Q(termos__atual=True, termos__status=StatusTermo.PENDENTE)
                 ).distinct()
             else:

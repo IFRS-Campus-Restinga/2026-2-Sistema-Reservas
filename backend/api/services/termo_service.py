@@ -16,6 +16,7 @@ from api.permissions.regras_comuns import usuario_e_admin
 
 
 ABERTAS = (StatusReserva.AGUARDANDO_TERMO, StatusReserva.PENDENTE)
+RESERVAS_VEICULO_ABERTAS = ABERTAS + (StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO,)
 MODELOS = Path(__file__).resolve().parent.parent / 'templates' / 'termos'
 
 MODELOS_POR_TIPO = {
@@ -164,6 +165,9 @@ def enviar_termo(reserva, usuario, arquivo, tipo=TipoTermo.RESPONSABILIDADE):
             if tipo == TipoTermo.RESPONSABILIDADE:
                 reserva.status = StatusReserva.PENDENTE
                 Reserva.objects.filter(pk=reserva.pk).update(status=reserva.status)
+            elif tipo == TipoTermo.DEVOLUCAO_VEICULO:
+                reserva.status = StatusReserva.PENDENTE
+                Reserva.objects.filter(pk=reserva.pk).update(status=reserva.status)
     except Exception:
         for campo in (termo.arquivo_original, termo.arquivo_assinado):
             if campo.name:
@@ -196,9 +200,11 @@ def validar_termo_operacional(reserva, tipo):
     if tipo == TipoTermo.RETIRADA_VEICULO and reserva.status != StatusReserva.CONFIRMADA:
         raise ValidationError('A retirada só pode ser enviada após a confirmação da reserva.')
     if tipo == TipoTermo.DEVOLUCAO_VEICULO:
+        if reserva.status not in (StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO, StatusReserva.PENDENTE):
+            raise ValidationError('A devolução só pode ser enviada após a aprovação da retirada.')
         retirada = reserva.termos.filter(tipo=TipoTermo.RETIRADA_VEICULO, atual=True).first()
-        if not retirada:
-            raise ValidationError('A devolução só pode ser enviada após o envio da retirada.')
+        if not retirada or retirada.status != StatusTermo.APROVADO:
+            raise ValidationError('A devolução só pode ser enviada após a aprovação da retirada.')
 
 
 def analisar_termo(reserva, termo_id, usuario, decisao, motivo, tipo=TipoTermo.RESPONSABILIDADE):
@@ -211,6 +217,12 @@ def analisar_termo(reserva, termo_id, usuario, decisao, motivo, tipo=TipoTermo.R
     termo = reserva.termos.filter(pk=termo_id, tipo=tipo, atual=True).first()
     if not termo or termo.status != StatusTermo.PENDENTE:
         raise ValidationError('Este termo já foi analisado ou substituído. Atualize a solicitação.')
+    if tipo == TipoTermo.DEVOLUCAO_VEICULO:
+        retirada = reserva.termos.filter(
+            tipo=TipoTermo.RETIRADA_VEICULO, atual=True, status=StatusTermo.APROVADO,
+        ).first()
+        if not retirada:
+            raise ValidationError('A devolução só pode ser analisada após a aprovação da retirada.')
     if decisao == StatusTermo.APROVADO and tipo == TipoTermo.RESPONSABILIDADE:
         concreta, modalidade = reserva_concreta(reserva)
         if modalidade == 'veiculo':
@@ -230,6 +242,12 @@ def analisar_termo(reserva, termo_id, usuario, decisao, motivo, tipo=TipoTermo.R
         novo_status = StatusReserva.CONFIRMADA
     elif tipo == TipoTermo.RESPONSABILIDADE:
         novo_status = StatusReserva.AGUARDANDO_TERMO
+    elif tipo == TipoTermo.RETIRADA_VEICULO:
+        novo_status = StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO
+    elif decisao == StatusTermo.APROVADO and tipo == TipoTermo.DEVOLUCAO_VEICULO:
+        novo_status = StatusReserva.CONCLUIDA
+    elif tipo == TipoTermo.DEVOLUCAO_VEICULO:
+        novo_status = StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO
     termo.status = decisao
     termo.validado_por = usuario
     termo.data_validacao = timezone.now()
@@ -238,6 +256,6 @@ def analisar_termo(reserva, termo_id, usuario, decisao, motivo, tipo=TipoTermo.R
     else:
         termo.motivo_rejeicao = ''
     termo.save(update_fields=['status', 'validado_por', 'data_validacao', 'motivo_rejeicao'])
-    if tipo == TipoTermo.RESPONSABILIDADE:
+    if tipo == TipoTermo.RESPONSABILIDADE or tipo in (TipoTermo.RETIRADA_VEICULO, TipoTermo.DEVOLUCAO_VEICULO):
         reserva.status = novo_status
         Reserva.objects.filter(pk=reserva.pk).update(status=reserva.status)
