@@ -33,4 +33,4 @@ class GrupoDetailView(BuscarObjetoComPermissaoMixin, APIView):
         return atualizar(request, self.get_object(pk), GrupoSerializer, partial=True)
 
     def delete(self, request, pk):
-        return remover(self.get_object(pk))
+        return remover(request, self.get_object(pk))

@@ -7,6 +7,8 @@ from api.permissions.escrita_admin import EscritaAdmin
 from api.models.timetable.celula_timetable_model import CelulaTimetable
 from api.services.timetable.estrutura_timetable_service import EstruturaTimetableService
 from api.services.timetable.celulas_service import CelulasService
+from api.enumerations.auditoria_enumerations import AcaoAuditoria, EntidadeAuditoria
+from api.services.auditoria import registrar_auditoria
 
 
 class TimetableView(APIView):
@@ -57,6 +59,14 @@ class TimetableView(APIView):
 
                 celulas_service = CelulasService()
                 celulas_salvas = celulas_service.processar_e_salvar_aulas(tabelas_brutas)
+
+                registrar_auditoria(
+                    request.user,
+                    AcaoAuditoria.SINCRONIZAR,
+                    entidade=EntidadeAuditoria.TIMETABLE,
+                    descricao="Sincronização com o EduPage",
+                    depois={"total_aulas": len(celulas_salvas)},
+                )
 
             return Response(
                 {

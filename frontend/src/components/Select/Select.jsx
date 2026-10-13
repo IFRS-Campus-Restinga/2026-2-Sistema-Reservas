@@ -33,6 +33,7 @@ import styles from "./Select.module.css";
  * - aoAlterar: função chamada ao alterar a seleção
  * - ariaLabel (opcional): rótulo acessível do select
  * - required (opcional, default false): torna o select obrigatório
+ * - larguraTotal (opcional, default false): ocupa toda a largura do container 
  */
 
 function Select({
@@ -44,10 +45,11 @@ function Select({
   aoAlterar,
   ariaLabel,
   required = false,
+  larguraTotal = false,
 }) {
   return (
     <Form.Select
-      className={`rounded-3 ${styles.select}`}
+      className={`rounded-3 ${styles.select} ${larguraTotal ? styles.larguraTotal : ''}`}
       value={valor}
       onChange={(evento) => aoAlterar(evento.target.value)}
       aria-label={ariaLabel}

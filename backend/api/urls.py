@@ -7,6 +7,7 @@ from api.views.grupo_view import GrupoListCreateView, GrupoDetailView
 from api.views.membro_grupo_view import MembroGrupoListCreateView, MembroGrupoCandidatosView, MembroGrupoDetailView
 from api.views.veiculo_view import VeiculoCreateView, VeiculoDetailView
 from api.views.timetable_view import TimetableView
+from api.views.log_auditoria_view import LogAuditoriaListView, LogAuditoriaDetailView
 from api.views.reserva_recurso_geral_view import ReservaRecursoGeralListCreateView, ReservaRecursoGeralDetailView, DisponibilidadeRecursoGeralView
 from api.views.reserva_area_view import (
     ReservaAreaListCreateView,
@@ -18,7 +19,9 @@ from api.views.reserva_veiculo_view import (
     ReservaVeiculoDetailView,
     ReservaVeiculoListCreateView,
 )
+from api.views.recorrencia_view import RecorrenciaReservaAreaDetailView
 from api.views.agenda_reserva_view import AgendaReservasView
+from api.views.data_atual_view import DataAtualView
 
 
 urlpatterns = [
@@ -32,6 +35,8 @@ urlpatterns = [
     path("veiculos/", VeiculoCreateView.as_view(), name="veiculo-list"),
     path("veiculos/<int:pk>/", VeiculoDetailView.as_view(), name="veiculo-detail"),
     path('timetable/', TimetableView.as_view(), name='timetable-list'),
+    path('auditoria/', LogAuditoriaListView.as_view(), name='log-auditoria-list'),
+    path('auditoria/<int:pk>/', LogAuditoriaDetailView.as_view(), name='log-auditoria-detail'),
     path('grupos/', GrupoListCreateView.as_view(), name='grupo-list-create'),
     path('grupos/<int:pk>/', GrupoDetailView.as_view(), name='grupo-detail'),
     path('grupos/<int:grupo_pk>/membros/', MembroGrupoListCreateView.as_view(), name='membro-grupo-list-create'),
@@ -42,9 +47,11 @@ urlpatterns = [
     path("reservas/recursos-gerais/<int:pk>/", ReservaRecursoGeralDetailView.as_view(), name="reserva-recurso-geral-detail"),
     path("reservas/areas/", ReservaAreaListCreateView.as_view(), name="reserva-area-list-create"),
     path("reservas/areas/minhas/", MinhasReservasAreaListView.as_view(), name="reserva-area-minhas"),
+    path("reservas/areas/recorrencias/<int:pk>/", RecorrenciaReservaAreaDetailView.as_view(), name="reserva-area-recorrencia-detail"),
     path("reservas/areas/<int:pk>/", ReservaAreaDetailView.as_view(), name="reserva-area-detail"),
     path("reservas/veiculos/", ReservaVeiculoListCreateView.as_view(), name="reserva-veiculo-list-create"),
     path("reservas/veiculos/disponibilidade/", DisponibilidadeReservaVeiculoView.as_view(), name="disponibilidade-reserva-veiculo"),
+    path("data-atual/", DataAtualView.as_view(), name="data-atual"),
     path("reservas/agenda/", AgendaReservasView.as_view(), name="agenda-reservas"),
     path("reservas/veiculos/<int:pk>/", ReservaVeiculoDetailView.as_view(), name="reserva-veiculo-detail"),
 ]
