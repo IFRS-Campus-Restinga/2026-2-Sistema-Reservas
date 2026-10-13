@@ -1,0 +1,178 @@
+.detalhe {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.acao {
+  align-self: flex-start;
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background-color: #f3f4f6;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.acao[data-acao='CRIAR'] {
+  background-color: var(--cor-marca-clara);
+  color: #006b30;
+}
+
+.acao[data-acao='EDITAR'] {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+.acao[data-acao='EXCLUIR'] {
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+.acao[data-acao='CANCELAR'] {
+  background-color: #fff7ed;
+  color: #b45309;
+}
+
+.informacoes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+  margin: 0;
+}
+
+.informacoes div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.informacoes dt {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.informacoes dd {
+  margin: 0;
+  color: #1f2937;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.alteracoes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.alteracoesCabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.alteracoesCabecalho h3 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.somenteAlterados {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #374151;
+  font-size: 13px;
+}
+
+.somenteAlterados input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--cor-marca);
+}
+
+.tabelaContainer {
+  overflow-x: auto;
+  border: 1px solid #f3f4f6;
+  border-radius: 12px;
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.tabela thead {
+  background-color: #f9fafb;
+}
+
+.tabela th {
+  padding: 10px 16px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tabela td {
+  padding: 10px 16px;
+  border-top: 1px solid #f3f4f6;
+  color: #4b5563;
+  overflow-wrap: anywhere;
+}
+
+.tabela tr[data-alterado='true'] {
+  background-color: #fffbeb;
+}
+
+.tabela tr[data-alterado='true'] .antes {
+  color: #b91c1c;
+  text-decoration: line-through;
+}
+
+.tabela tr[data-alterado='true'] .depois {
+  color: #006b30;
+  font-weight: 600;
+}
+
+.nomeCampo {
+  width: 34%;
+  color: #374151;
+  font-weight: 500;
+}
+
+.vazio {
+  color: #9ca3af;
+  text-align: center;
+}
+
+.erro {
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background-color: #fef2f2;
+  color: #b91c1c;
+  font-size: 14px;
+}
+
+.carregando {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+@media (max-width: 479px) {
+  .informacoes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

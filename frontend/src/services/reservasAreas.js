@@ -11,14 +11,24 @@ async function tratarResposta(resposta) {
       ? primeiroErro
       : 'Não foi possível concluir a operação.';
 
-    throw new Error(dados.detail || mensagem);
+    const erro = new Error(dados.detail || mensagem);
+    erro.dados = dados;
+
+    throw erro;
   }
 
   return dados;
 }
 
-export async function listarReservasAreas() {
-  const resposta = await fetch(URL, {
+export async function listarReservasAreas({ dataInicio, dataFim } = {}) {
+  const parametros = new URLSearchParams();
+
+  if (dataInicio) parametros.set('data_inicio', dataInicio);
+  if (dataFim) parametros.set('data_fim', dataFim);
+
+  const consulta = parametros.size ? `?${parametros}` : '';
+
+  const resposta = await fetch(`${URL}${consulta}`, {
     credentials: 'include',
   });
 

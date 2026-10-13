@@ -1,7 +1,6 @@
 import { LockKeyhole } from "lucide-react";
 import styles from "./NaoAutenticado.module.css";
-
-const HUB_URL = "http://localhost:3000";
+import { HUB_URL } from "../../config/hub";
 
 function NaoAutenticado() {
   return (
