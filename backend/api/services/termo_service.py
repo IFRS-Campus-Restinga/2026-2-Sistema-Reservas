@@ -17,7 +17,7 @@ from api.permissions.regras_comuns import usuario_e_admin
 
 ABERTAS = (StatusReserva.AGUARDANDO_TERMO, StatusReserva.PENDENTE)
 RESERVAS_VEICULO_ABERTAS = ABERTAS + (StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO,)
-MODELOS = Path(__file__).resolve().parent.parent / 'templates' / 'termos'
+MODELOS = Path(__file__).resolve().parent.parent / 'documentos' / 'termos'
 
 MODELOS_POR_TIPO = {
     TipoTermo.RESPONSABILIDADE: {'veiculo': 'termo-veiculos.docx', 'recurso_geral': 'termo-recursos.docx'},
