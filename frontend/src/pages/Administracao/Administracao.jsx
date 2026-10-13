@@ -9,11 +9,16 @@ import BlocosAdmin from "../../components/Administracao/Blocos/BlocosAdmin";
 import AreasAdmin from "../../components/Administracao/Areas/AreasAdmin";
 import TimetableAdmin from "../../components/Administracao/Timetable/TimetableAdmin";
 import GruposGerenciador from "../../components/Grupos/GruposGerenciador/GruposGerenciador";
+import SolicitacoesAdmin from "../../components/Administracao/Solicitacoes/SolicitacoesAdmin";
 
 const abas = [
   {
     id: "visao-geral",
     rotulo: "Visão Geral",
+  },
+  { 
+    id: "solicitacoes", 
+    rotulo: "Solicitações" 
   },
   {
     id: "recursos",
@@ -58,6 +63,7 @@ function Administracao() {
       />
 
       <div className={styles.conteudo}>
+        {abaAtiva === "solicitacoes" && <SolicitacoesAdmin />}
         {abaAtiva === "visao-geral" && (
           <p className={styles.visaoGeral}>
             Visão geral da administração.
