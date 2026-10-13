@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle, Eye, FileText, FileWarning, Info, LoaderCircle, MapPin, Package, UserRound, XCircle } from 'lucide-react';
 import { listarSolicitacoes } from '../../../services/termos';
-import { STATUS_RESERVA_LABEL } from '../../../utils/reserva';
+import { STATUS_RESERVA_LABEL, statusReservaApresentado } from '../../../utils/reserva';
 import Select from '../../Select/Select';
 import ModalDetalheReserva from '../../ModalDetalheReserva/ModalDetalheReserva';
 import ModalTermo from '../../TermoReserva/ModalTermo';
@@ -124,17 +124,18 @@ export default function SolicitacoesAdmin() {
     conteudoLista = <>
       <div className={styles.lista}>
         {lista.results.map((reserva) => {
-          let situacao = STATUS_RESERVA_LABEL[reserva.status.toLowerCase()] || reserva.status;
+          const statusApresentado = statusReservaApresentado(reserva).toUpperCase();
+          let situacao = STATUS_RESERVA_LABEL[statusApresentado.toLowerCase()] || reserva.status;
           if (reserva.status === 'AGUARDANDO_TERMO') situacao = 'Termo pendente';
           return (
-            <article className={styles.cartao} data-status={reserva.status} key={reserva.id} aria-label={reserva.nome}>
+            <article className={styles.cartao} data-status={statusApresentado} key={reserva.id} aria-label={reserva.nome}>
               <div className={styles.informacoes}>
                 <header className={styles.titulo}>
                   <h3>{reserva.nome}</h3>
                   <span className={styles.etiqueta}>{modalidade(reserva)}</span>
                   {reserva.tipo_reserva === 'EXTERNA' && <span className={styles.externo}>Externo</span>}
-                  <span className={styles.situacao} data-status={reserva.status}>
-                    {reserva.status === 'AGUARDANDO_TERMO' && <FileWarning size={10} />}{situacao}
+                  <span className={styles.situacao} data-status={statusApresentado}>
+                    {(reserva.status === 'AGUARDANDO_TERMO' || statusApresentado === 'AGUARDANDO_TERMO_DEVOLUCAO') && <FileWarning size={10} />}{situacao}
                   </span>
                 </header>
                 <p className={styles.descricao}>{reserva.finalidade || reserva.descricao || reserva.item}</p>

@@ -25,7 +25,7 @@ import {
   listarReservasRecursosGerais,
   cancelarReservaRecursoGeral,
 } from '../../services/reservasRecursosGerais';
-import { STATUS_RESERVA_LABEL } from '../../utils/reserva';
+import { STATUS_RESERVA_LABEL, statusReservaApresentado } from '../../utils/reserva';
 import { ehAdministrador } from '../../utils/permissoes';
 import styles from './MinhasReservas.module.css';
 
@@ -331,7 +331,7 @@ function MinhasReservas() {
 
   const ordenadas = [...reservasDoTipo]
     .filter((reserva) => {
-      const status = String(reserva.status || '').toLowerCase();
+      const status = statusReservaApresentado(reserva);
       return filtroStatus === 'todos' ? status !== 'cancelada' : status === filtroStatus;
     })
     .sort((a, b) =>

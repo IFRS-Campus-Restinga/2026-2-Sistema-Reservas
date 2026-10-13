@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Clock, Globe, Info, MapPin, Pencil, Trash2, UserRound, X } from 'lucide-react';
 import useFocoModal from '../../hooks/useFocoModal';
 import TermoReserva from '../TermoReserva/TermoReserva';
-import { STATUS_RESERVA_LABEL } from '../../utils/reserva';
+import { STATUS_RESERVA_LABEL, statusReservaApresentado } from '../../utils/reserva';
 import styles from './ModalDetalheReserva.module.css';
 import ModalConfirmacao from '../Administracao/ModalConfirmacao/ModalConfirmacao';
 
@@ -38,7 +38,7 @@ function ModalDetalheReserva({
   if (!reserva) return null;
 
   const tipo = String(reserva.tipo_reserva || '').toLowerCase();
-  const status = String(reserva.status || '').toLowerCase();
+  const status = statusReservaApresentado(reserva);
   const podeCancelar = Boolean(aoCancelar);
 
   function fechar() {
