@@ -14,9 +14,15 @@ class UsuarioAutenticado(permissions.BasePermission):
     def tem_permissao(self, request, view):
         return True
 
-
 class SomenteAdministrador(UsuarioAutenticado):
     message = 'Somente administradores podem acessar esta funcionalidade.'
+
+    def tem_permissao(self, request, view):
+        return usuario_e_admin(request.user)
+
+
+class SomenteAdmin(UsuarioAutenticado):
+    message = "Apenas administradores podem acessar esta informação."
 
     def tem_permissao(self, request, view):
         return usuario_e_admin(request.user)
