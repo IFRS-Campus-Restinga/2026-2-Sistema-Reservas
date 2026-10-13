@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Eye } from 'lucide-react';
 import styles from './ReservasAdmin.module.css';
 
-import { listarReservasPendentes } from '../../../services';
+import { listarReservasPendentes, confirmarReservaPendente } from '../../../services';
 import CampoBusca from '../CampoBusca/CampoBusca';
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import Select from '../../Select/Select';
@@ -30,7 +30,10 @@ function ReservasAdmin() {
   const [modalidade, setModalidade] = useState('todas');
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
+  const [erroConfirmacao, setErroConfirmacao] = useState('');
+  const [mensagemSucesso, setMensagemSucesso] = useState('');
   const [reservaSelecionada, setReservaSelecionada] = useState(null);
+  const [confirmandoId, setConfirmandoId] = useState(null);
 
   useEffect(() => {
     let ativo = true;
@@ -61,6 +64,43 @@ function ReservasAdmin() {
       ativo = false;
     };
   }, []);
+
+  async function confirmarReserva(reserva) {
+    if (!reserva || confirmandoId) return;
+
+    try {
+      setConfirmandoId(reserva.id);
+      setErroConfirmacao('');
+      setMensagemSucesso('');
+
+      await confirmarReservaPendente(reserva.id);
+
+      setReservas((reservasAtuais) =>
+        reservasAtuais.filter((item) => item.id !== reserva.id)
+      );
+      setReservaSelecionada(null);
+      setMensagemSucesso(`Reserva "${reserva.nome}" confirmada com sucesso.`);
+    } catch (erro) {
+      console.error(erro);
+      setErroConfirmacao(
+        erro.message || 'Não foi possível confirmar a reserva.'
+      );
+    } finally {
+      setConfirmandoId(null);
+    }
+  }
+
+  function abrirDetalhes(reserva) {
+    setErroConfirmacao('');
+    setReservaSelecionada(reserva);
+  }
+
+  function fecharDetalhes() {
+    if (confirmandoId) return;
+
+    setErroConfirmacao('');
+    setReservaSelecionada(null);
+  }
 
   const reservasFiltradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
@@ -187,6 +227,10 @@ function ReservasAdmin() {
         />
       </div>
 
+      {mensagemSucesso && (
+        <p className={styles.sucesso} role="status">{mensagemSucesso}</p>
+      )}
+
       {erro && (
         <p className={styles.erro} role="alert">{erro}</p>
       )}
@@ -208,7 +252,10 @@ function ReservasAdmin() {
       <ModalReservaPendente
         reserva={reservaSelecionada}
         aberto={Boolean(reservaSelecionada)}
-        aoFechar={() => setReservaSelecionada(null)}
+        aoFechar={fecharDetalhes}
+        aoConfirmar={confirmarReserva}
+        confirmando={confirmandoId === reservaSelecionada?.id}
+        erroConfirmacao={erroConfirmacao}
       />
     </div>
   );

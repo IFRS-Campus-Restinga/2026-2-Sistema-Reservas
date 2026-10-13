@@ -1,3 +1,4 @@
+import { Check } from 'lucide-react';
 import Modal from '../../Modal/Modal';
 import styles from './ModalReservaPendente.module.css';
 
@@ -25,7 +26,7 @@ function CampoDetalhe({ rotulo, valor }) {
   );
 }
 
-function ModalReservaPendente({ aberto, reserva, aoFechar }) {
+function ModalReservaPendente({ aberto, reserva, aoFechar, aoConfirmar, confirmando = false, erroConfirmacao = ''}) {
   if (!reserva) return null;
 
   const detalhes = reserva.detalhes || {};
@@ -38,9 +39,16 @@ function ModalReservaPendente({ aberto, reserva, aoFechar }) {
       variante="largo"
       aoFechar={aoFechar}
       rodape={
-        <button type="button" className={styles.fechar} onClick={aoFechar}>
-          Fechar
-        </button>
+        <div className={styles.acoes}>
+          <button type="button" className={styles.fechar} onClick={aoFechar} disabled={confirmando}>
+            Fechar
+          </button>
+
+          <button type="button" className={styles.confirmar} onClick={() => aoConfirmar?.(reserva)} disabled={confirmando}>
+            <Check size={16} aria-hidden="true" />
+            {confirmando ? 'Confirmando...' : 'Confirmar reserva'}
+          </button>
+        </div>
       }
     >
       <div className={styles.conteudo}>
@@ -55,6 +63,10 @@ function ModalReservaPendente({ aberto, reserva, aoFechar }) {
 
           <span className={styles.status}>Pendente</span>
         </div>
+
+        {erroConfirmacao && (
+          <p className={styles.erro} role="alert">{erroConfirmacao}</p>
+        )}
 
         <section className={styles.secao}>
           <h4>Solicitante</h4>

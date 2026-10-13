@@ -58,4 +58,7 @@ export {
   consultarDisponibilidadeVeiculo,
   buscarAgendaVeiculo,
 } from './reservasVeiculos';
-export { listarReservasPendentes } from './reservasPendentes';
+export { 
+  listarReservasPendentes,
+  confirmarReservaPendente, 
+} from './reservasPendentes';
