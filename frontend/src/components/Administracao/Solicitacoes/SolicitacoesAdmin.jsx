@@ -9,6 +9,11 @@ import Paginacao from '../Paginacao/Paginacao';
 import styles from './SolicitacoesAdmin.module.css';
 
 const TIPOS = [{ valor: 'veiculo', rotulo: 'Veículos' }, { valor: 'recurso_geral', rotulo: 'Recursos' }];
+const DOCUMENTOS = [
+  { valor: 'responsabilidade', rotulo: 'Responsabilidade' },
+  { valor: 'retirada', rotulo: 'Retirada de veículo' },
+  { valor: 'devolucao', rotulo: 'Devolução de veículo' },
+];
 const STATUS = Object.entries(STATUS_RESERVA_LABEL).map(([valor, rotulo]) => ({ valor: valor.toUpperCase(), rotulo }));
 const TAMANHO_PAGINA = 20;
 const data = (valor) => new Date(`${valor}T12:00:00`).toLocaleDateString('pt-BR');
@@ -33,7 +38,9 @@ function modalidade(reserva) {
 }
 
 function AcoesSolicitacao({ reserva, aoVerTermo, aoVerDetalhes }) {
-  const aberta = ['PENDENTE', 'AGUARDANDO_TERMO'].includes(reserva.status);
+  const aberta = reserva.termo_tipo === 'responsabilidade'
+    ? ['PENDENTE', 'AGUARDANDO_TERMO'].includes(reserva.status)
+    : reserva.termo_status === 'PENDENTE';
   return (
     <div className={styles.acoes}>
       {aoVerDetalhes && <button type="button" onClick={aoVerDetalhes}><Eye size={13} />Detalhes</button>}
@@ -48,6 +55,7 @@ function AcoesSolicitacao({ reserva, aoVerTermo, aoVerDetalhes }) {
 
 export default function SolicitacoesAdmin() {
   const [tipo, setTipo] = useState('todos');
+  const [documento, setDocumento] = useState('todos');
   const [status, setStatus] = useState('todos');
   const [pagina, setPagina] = useState(1);
   const [lista, setLista] = useState({ results: [], count: 0 });
@@ -58,7 +66,7 @@ export default function SolicitacoesAdmin() {
 
   useEffect(() => {
     const controle = new AbortController();
-    listarSolicitacoes({ tipo, status, page: pagina, page_size: TAMANHO_PAGINA }, controle.signal)
+    listarSolicitacoes({ tipo, documento, status, page: pagina, page_size: TAMANHO_PAGINA }, controle.signal)
       .then((resultado) => {
         if (!controle.signal.aborted) setLista(resultado);
       })
@@ -69,7 +77,7 @@ export default function SolicitacoesAdmin() {
         if (!controle.signal.aborted) setCarregando(false);
       });
     return () => controle.abort();
-  }, [tipo, status, pagina, revisao]);
+  }, [tipo, documento, status, pagina, revisao]);
 
   function recarregar() {
     setErro('');
@@ -150,7 +158,8 @@ export default function SolicitacoesAdmin() {
   let modal;
   if (selecionada) {
     if (selecionada.mostrarTermo) {
-      modal = <ModalTermo key={selecionada.id} reserva={selecionada} rejeitar={selecionada.rejeitar}
+      modal = <ModalTermo key={`${selecionada.id}-${selecionada.termo_tipo}`} reserva={selecionada} tipoDocumento={selecionada.termo_tipo}
+        rejeitar={selecionada.rejeitar}
         aoFechar={() => setSelecionada(null)} aoAtualizar={atualizarSelecionada} />;
     } else {
       modal = <ModalDetalheReserva reserva={selecionada} modalidade={modalidade(selecionada)}
@@ -171,6 +180,8 @@ export default function SolicitacoesAdmin() {
   return (
     <section className={styles.pagina} aria-label="Solicitações de termos de responsabilidade">
       <div className={styles.filtros}>
+        <Select valor={documento} aoAlterar={(valor) => filtrar(setDocumento, valor)} opcoes={DOCUMENTOS}
+          valorTodos="todos" rotuloTodos="Todos os termos" ariaLabel="Tipo de documento" />
         <Select valor={tipo} aoAlterar={(valor) => filtrar(setTipo, valor)} opcoes={TIPOS}
           valorTodos="todos" rotuloTodos="Todos os tipos" ariaLabel="Tipo de solicitação" />
         <Select valor={status} aoAlterar={(valor) => filtrar(setStatus, valor)} opcoes={STATUS}
