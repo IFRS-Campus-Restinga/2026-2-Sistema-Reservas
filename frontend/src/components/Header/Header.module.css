@@ -1,128 +1,263 @@
 .header {
   height: 56px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  background-color: #ffffff;
-  border-bottom: 1px solid #f3f4f6;
 }
 
-.infoHeader {
+/* Permite o título truncar em telas pequenas */
+.titulos {
   min-width: 0;
 }
 
-.titulo {
-  margin: 0;
-  color: #1f2937;
-  font-size: 20px;
-  line-height: 1.25;
-  font-weight: 600;
-}
-
-.subTitulo {
-  margin: 2px 0 0;
-  color: #9ca3af;
-  font-size: 12px;
-  line-height: 1.25;
-}
-
-.acoes {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.relative {
-  position: relative;
-}
-
-.botaNovaReserva {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border: none;
-  border-radius: 8px;
-  background-color: #009a44;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.botaNovaReserva:hover {
-  background-color: #007832;
-}
-
 .botaoNotificacao {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: #6b7280;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.botaoNotificacao:hover {
-  background-color: #f3f4f6;
-}
-
-.containerPerfil {
-  position: relative;
-  padding-left: 8px;
-  border-left: 1px solid #f3f4f6;
-}
-
-.infoPerfil {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 6px 4px 4px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-}
-
-.dadosUsuario {
-  display: block;
-  text-align: right;
-}
-
-.nomeUsuario {
-  margin: 0;
-  color: #374151;
-  font-size: 14px;
-  line-height: 1.25;
-  font-weight: 600;
-  text-transform: capitalize;
+  --bs-btn-bg: transparent;
+  --bs-btn-hover-bg: #f3f4f6;
+  --bs-btn-active-bg: #f3f4f6;
+  --bs-btn-hover-color: #6c757d;
+  --bs-btn-active-color: #6c757d;
 }
 
 .perfilUsuario {
-  margin: 2px 0 0;
-  color: #009a44;
-  font-size: 12px;
-  line-height: 1.25;
+  color: var(--cor-marca);
 }
 
 .avatar {
   width: 32px;
   height: 32px;
   flex-shrink: 0;
+  background-color: var(--cor-marca);
+}
+
+@media (max-width: 767px) {
+  .header {
+    gap: 8px;
+    padding-inline: 12px;
+  }
+
+  .titulo {
+    overflow: hidden;
+    font-size: 16px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .subTitulo {
+    font-size: 10px;
+  }
+
+  .acoes {
+    flex-shrink: 0;
+    gap: 4px;
+  }
+
+  .botaNovaReserva {
+    padding: 8px;
+  }
+
+  .botaNovaReserva span,
+  .dadosUsuario {
+    display: none;
+  }
+
+  .containerPerfil {
+    padding-left: 0;
+  }
+
+  .infoPerfil {
+    padding-inline: 0;
+  }
+}
+
+.setaAberta {
+  transform: rotate(180deg);
+}
+
+.menuReserva {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  width: 190px;
+  padding: 6px 0;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background-color: #ffffff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+}
+
+.itemReserva {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  color: #374151;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.itemReserva svg {
+  flex-shrink: 0;
+  color: #009a44;
+}
+
+.itemReserva:hover,
+.itemReserva:focus-visible {
+  background-color: #f3f4f6;
+  outline: none;
+}
+
+.contadorNotificacoes {
+  position: absolute;
+  top: 2px;
+  right: 1px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background-color: #009a44;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: #dc2626;
   color: #ffffff;
-  font-size: 14px;
+  font-size: 9px;
+  line-height: 1;
   font-weight: 700;
 }
 
+.menuNotificacoes {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 70;
+  width: 350px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16);
+}
+
+.cabecalhoNotificacoes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 14px;
+  border-bottom: 1px solid #eef0f3;
+}
+
+.cabecalhoNotificacoes strong {
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.cabecalhoNotificacoes span {
+  color: #009a44;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.listaNotificacoes {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.itemNotificacao {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid #f1f3f5;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.itemNotificacao:last-child {
+  border-bottom: 0;
+}
+
+.itemNotificacao:hover,
+.itemNotificacao:focus-visible {
+  background: #f8fafc;
+  outline: none;
+}
+
+.itemNotificacao.naoLida {
+  background: #f0fdf4;
+}
+
+.itemNotificacao.naoLida:hover,
+.itemNotificacao.naoLida:focus-visible {
+  background: #e8f8ed;
+}
+
+.indicadorLeitura {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.naoLida .indicadorLeitura {
+  background: #009a44;
+}
+
+.conteudoNotificacao {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.conteudoNotificacao strong {
+  color: #1f2937;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.conteudoNotificacao > span {
+  margin-top: 3px;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conteudoNotificacao small {
+  margin-top: 5px;
+  color: #9ca3af;
+  font-size: 10px;
+}
+
+.estadoNotificacoes {
+  margin: 0;
+  padding: 24px 18px;
+  color: #94a3b8;
+  font-size: 12px;
+  text-align: center;
+}
+
+.erroNotificacoes {
+  color: #b91c1c;
+}
+
+@media (max-width: 650px) {
+  .menuNotificacoes {
+    position: fixed;
+    top: 62px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+  }
+}

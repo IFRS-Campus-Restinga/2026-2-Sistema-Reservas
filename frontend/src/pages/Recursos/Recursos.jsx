@@ -1,11 +1,13 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PackageSearch } from 'lucide-react';
+import CampoBusca from '../../components/Administracao/CampoBusca/CampoBusca';
 import CardRecurso from '../../components/CardRecurso/CardRecurso';
 import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/ReservaRecursoGeralModal';
+import Select from '../../components/Select/Select';
 import { listarRecursosGerais, listarTiposRecurso } from '../../services';
 import { CATEGORIA_RECURSO_LABEL } from '../../utils/categoriaRecurso';
+import { normalizar } from '../../utils/texto';
 import styles from './Recursos.module.css';
 
 const CATEGORIAS_ANTIGAS = {
@@ -21,13 +23,6 @@ const TIPOS_AUDIOVISUAL = [
   'Câmeras fotográficas',
   'Suportes para projetor',
 ];
-
-function normalizar(texto) {
-  return String(texto || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-}
 
 function categoriaDoTipo(tipo) {
   if (CATEGORIA_RECURSO_LABEL[tipo.categoria]) {
@@ -50,7 +45,8 @@ function Recursos() {
 
   const [recursos, setRecursos] = useState([]);
   const [tipos, setTipos] = useState([]);
-  const [categoria, setCategoria] = useState('');
+  const [busca, setBusca] = useState('');
+  const [categoria, setCategoria] = useState('todos');
   const [reserva, setReserva] = useState(null);
 
   useEffect(() => {
@@ -85,8 +81,19 @@ function Recursos() {
     grupos.map((tipo) => tipo.categoriaReserva)
   );
 
+  const opcoesCategoria = Object.entries(CATEGORIA_RECURSO_LABEL)
+      .filter(([codigo]) => categoriasDisponiveis.has(codigo))
+      .map(([codigo, nome]) => ({ valor: codigo, rotulo: nome }));
+  
+  const termo = normalizar(busca.trim());
   const tiposExibidos = grupos
-    .filter((tipo) => !categoria || tipo.categoriaReserva === categoria)
+    .filter((tipo) => {
+      const combinaBusca = normalizar(tipo.descricao).includes(termo);
+      const combinaCategoria =
+        categoria === 'todos' || tipo.categoriaReserva === categoria;
+    
+      return combinaBusca && combinaCategoria;
+    })
     .sort((a, b) => a.descricao.localeCompare(b.descricao, 'pt-BR'));
 
   function abrirReserva(tipo) {
@@ -103,46 +110,22 @@ function Recursos() {
 
   return (
     <div className={styles.pagina}>
-      <div className={styles.apresentacao}>
-        <p>
-          Escolha uma categoria para consultar os tipos de recurso disponíveis.
-        </p>
+      <div className="d-flex flex-wrap align-items-center justify-content-center gap-2">
+        <CampoBusca
+          valor={busca}
+          aoAlterar={setBusca}
+          placeholder="Buscar tipo de recurso"
+        />
+      
+        <Select
+          valor={categoria}
+          aoAlterar={setCategoria}
+          opcoes={opcoesCategoria}
+          valorTodos="todos"
+          rotuloTodos="Todas as categorias"
+          ariaLabel="Filtrar por categoria"
+        />
       </div>
-
-      <section
-        className={styles.filtros}
-        aria-label="Filtros de recursos"
-      >
-        <div className={styles.cabecalhoFiltros}>
-          <h2>Categorias</h2>
-          <span>Selecione uma para filtrar os tipos</span>
-        </div>
-
-        <div className={styles.categorias}>
-          <button
-            type="button"
-            className={`${styles.filtroCategoria} ${!categoria ? styles.ativo : ''}`}
-            onClick={() => setCategoria('')}
-            aria-pressed={!categoria}
-          >
-            Todas
-          </button>
-
-          {Object.entries(CATEGORIA_RECURSO_LABEL)
-            .filter(([codigo]) => categoriasDisponiveis.has(codigo))
-            .map(([codigo, nome]) => (
-              <button
-                type="button"
-                key={codigo}
-                className={`${styles.filtroCategoria} ${categoria === codigo ? styles.ativo : ''}`}
-                onClick={() => setCategoria(codigo)}
-                aria-pressed={categoria === codigo}
-              >
-                {nome}
-              </button>
-            ))}
-        </div>
-      </section>
 
       <section
         className={styles.resultados}
@@ -156,7 +139,7 @@ function Recursos() {
         {tiposExibidos.length === 0 ? (
           <div className={styles.vazio}>
             <PackageSearch size={30} aria-hidden="true" />
-            <p>Nenhum recurso disponível.</p>
+            <p>Nenhum recurso encontrado.</p>
           </div>
         ) : (
           <div className={styles.grade}>

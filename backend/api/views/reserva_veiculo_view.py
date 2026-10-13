@@ -12,6 +12,9 @@ from api.models.veiculo_model import Veiculo
 from api.permissions.regras_comuns import UsuarioAutenticado
 from api.permissions.reserva_permissions import PodeGerenciarReserva
 from api.serializers.reserva_veiculo_serializer import ReservaVeiculoSerializer
+from api.enumerations.auditoria_enumerations import AcaoAuditoria
+from api.services.auditoria import foto, registrar_auditoria
+from api.services.termo_service import invalidar_termo_apos_edicao
 from api.services.reserva_veiculo_service import (
     validar_cancelamento,
     validar_disponibilidade,
@@ -81,6 +84,7 @@ class ReservaVeiculoDetailView(BuscarObjetoComPermissaoMixin, APIView):
                 ReservaVeiculo.objects.select_for_update(), pk=pk
             )
             self.check_object_permissions(request, reserva)
+            antes = foto(reserva)
 
             if alteracao_status:
                 if request.data.get("status") != StatusReserva.CANCELADA:
@@ -90,6 +94,7 @@ class ReservaVeiculoDetailView(BuscarObjetoComPermissaoMixin, APIView):
                 validar_cancelamento(request.user, reserva)
                 reserva.status = StatusReserva.CANCELADA
                 reserva.save(update_fields=["status"])
+                registrar_auditoria(request.user, AcaoAuditoria.CANCELAR, reserva, antes=antes, depois=foto(reserva))
                 return Response(ReservaVeiculoSerializer(reserva).data)
 
             if not request.data or set(request.data) - CAMPOS_EDICAO:
@@ -108,7 +113,9 @@ class ReservaVeiculoDetailView(BuscarObjetoComPermissaoMixin, APIView):
             )
             dados["veiculo"] = veiculo
             validar_reserva(request.user, dados, reserva)
+            invalidar_termo_apos_edicao(reserva, dados)
             serializer.save()
+            registrar_auditoria(request.user, AcaoAuditoria.EDITAR, reserva, antes=antes, depois=foto(reserva))
 
         return Response(serializer.data)
 
@@ -138,6 +145,7 @@ class DisponibilidadeReservaVeiculoView(APIView):
         if excluir:
             reserva = get_object_or_404(ReservaVeiculo, pk=excluir)
             self.check_object_permissions(request, reserva)
+            antes = foto(reserva)
         validar_disponibilidade(dados, reserva, request.user)
         return Response({"disponivel": True})
 

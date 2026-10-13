@@ -49,6 +49,7 @@ Permissões que já existem:
 | Permissão | Quem passa |
 |---|---|
 | `EscritaAdmin` | Leitura: qualquer usuário logado. Escrita: só admin. Use nos cadastros (veículos, áreas, recursos...) |
+| `SomenteAdministrador` | Leitura e escrita: só admin. Use em APIs administrativas restritas, como solicitações e análise de termos |
 | `PodeCriarGrupo` | Leitura: qualquer usuário logado. Criar: admin e servidor, conforme o tipo do grupo |
 | `PodeGerenciarGrupo` | O criador do grupo ou admin |
 | `PodeGerenciarMembrosGrupo` | O criador do grupo ou admin |
@@ -114,14 +115,34 @@ if not pode_reservar(request.user, TipoRecursoReservavel.RECURSO_GERAL, recurso.
 - **Ao editar**, confira a autorização do **dono da reserva** (`reserva.usuario`), não de quem está editando. Um admin pode editar a reserva de um aluno, mas o que importa é se o aluno pode reservar aquilo.
 - Exemplo pronto: `validar_autorizacao` em `api/validators/reserva_recurso_geral_validator.py`.
 
-Para veículos, somente administradores e servidores autorizados podem reservar. `pode_reservar` exige cobertura contínua de grupo/vínculo em todos os dias da viagem; alunos não recebem essa autorização, inclusive por configurações antigas. Na edição, revalide o dono. No cancelamento, use `validar_cancelamento` de `services/reserva_veiculo_service.py`, que não exige autorização de grupo vigente. Veja [as regras de veículos](RESERVAS_VEICULOS.md).
+Quando a reserva depende de grupo, `pode_reservar` exige cobertura contínua de grupo/vínculo em todos os dias do período, incluindo retirada e devolução. Grupos consecutivos ou sobrepostos podem se complementar, mas nenhum dia pode ficar sem autorização. Só contam grupos compatíveis com o papel do usuário e a categoria reservada; para recursos gerais, também deve coincidir o `tipo_recurso_id`. A cobertura termina na primeira expiração entre grupo e vínculo do membro. Grupos e membros excluídos não autorizam reservas.
+
+Para veículos, somente administradores e servidores autorizados podem reservar; alunos não recebem essa autorização, inclusive por configurações antigas. Na edição, revalide o dono. No cancelamento, use `validar_cancelamento` de `services/reserva_veiculo_service.py`, que não exige autorização de grupo vigente. Veja [as regras de veículos](RESERVAS_VEICULOS.md).
+
+### 4. Grupos e membros têm exclusão lógica
+
+Excluir um grupo ou remover um membro **não apaga** o registro: só preenche `excluido_em`. Excluir um grupo marca também todos os seus membros. Readicionar um membro removido cria um registro novo; o antigo fica como histórico.
+
+| Para | Use | Traz |
+|---|---|---|
+| Regras, permissões, telas | `Grupo.objects` / `MembroGrupo.objects` | Só os ativos |
+| Histórico, auditoria | `Grupo.todos` / `MembroGrupo.todos` | Tudo, inclusive excluídos |
+
+- Para checar se alguém tem autorização, use `pode_reservar` ou `autorizacoes_vigentes`. Elas já ignoram os excluídos.
+- Filtros que atravessam a relação pelo outro lado **não** ignoram os excluídos. Ex.: `HubUser.objects.filter(autorizacoes_grupo__grupo=grupo)` traz também quem já foi removido. Nesses casos, parta do `MembroGrupo.objects`:
+
+```python
+usuarios_do_grupo = MembroGrupo.objects.filter(grupo=grupo).values('usuario_id')
+```
 
 ## Frontend
 
-O `/session/me/` já traz as permissões calculadas, e elas ficam disponíveis em qualquer página:
+O `/session/me/` já traz as permissões calculadas. O `MainLayout` carrega o usuário uma vez e o disponibiliza para qualquer componente (páginas, sidebar, modais) pelo `UsuarioContext`:
 
 ```jsx
-const { usuario } = useOutletContext();
+import { useUsuario } from '../../hooks/useUsuario';
+
+const usuario = useUsuario();
 ```
 
 ```json
@@ -138,9 +159,40 @@ const { usuario } = useOutletContext();
 }
 ```
 
-- Use as funções de `src/utils/permissoes.js` (`ehAdministrador`, `podeCriarGrupo`, `podeGerenciarGrupos`) ou leia `usuario.permissoes`.
+- Use as funções de `src/utils/permissoes.js`: `ehAdministrador`, `podeCriarGrupo`, `podeGerenciarGrupos`, `podeReservar(usuario, tipo)`, `podeReservarArea`, `podeReservarVeiculo`, `podeReservarRecursoGeral`. Os tipos ficam em `src/utils/tipoRecursoReservavel.js`.
 - **Não** faça `usuario.papel === 'admin'` nas telas. Se a regra mudar no backend, o front acompanha sozinho.
 - Esconder um botão não protege nada. Trate o erro **403** da API e mostre a mensagem que vier nele.
+
+### Telas e tabs do menu: declare a permissão em `src/config/rotas.js`
+
+Cada tela é uma entrada em `ROTAS`. A mesma entrada gera a rota, a tab da sidebar e a proteção:
+
+```js
+{
+  id: "veiculos",
+  path: "/veiculos",
+  componente: Veiculos,
+  permissao: podeReservarVeiculo,
+  menu: { titulo: "Veículos", icone: Car },
+},
+```
+
+- `permissao`: a função que decide quem acessa. Sem ela, qualquer usuário logado acessa.
+- `menu`: só nas telas que aparecem na sidebar. Telas de detalhe (`/veiculos/:id`) não têm `menu`, mas **precisam** repetir a `permissao` da tela principal.
+- Quem não tem permissão não vê a tab e, se digitar a URL, é redirecionado para a Home (`src/routes/RotaProtegida.jsx`).
+
+Não adicione rotas direto no `AppRoutes.jsx`: ele só percorre o `ROTAS`.
+
+### Botões e ações dentro da tela
+
+```jsx
+import { usePermissao } from '../../hooks/usePermissao';
+import { podeGerenciarGrupos } from '../../utils/permissoes';
+
+const podeCriar = usePermissao(podeGerenciarGrupos);
+```
+
+Se o código estiver depois de um `return` antecipado (ex.: `if (carregando) return ...`), hooks não podem ser chamados ali. Nesse caso, chame a função direto: `podeGerenciarGrupos(usuario)`.
 
 ## Precisa mudar uma regra?
 
@@ -148,11 +200,23 @@ const { usuario } = useOutletContext();
 |---|---|
 | O que cada papel reserva sem grupo | `TIPOS_RESERVA_LIVRE_POR_PAPEL` em `regras_reserva.py` |
 | Quem cria qual tipo de grupo | `PAPEIS_QUE_PODEM_CRIAR_POR_TIPO_MEMBRO` em `grupo_permissions.py` |
+| Quem vê cada tela/tab no front | `permissao` da rota em `src/config/rotas.js` |
 
 Mude só ali. O `/me`, as permissões e a validação dos grupos já usam esses valores.
+
+Telas e tabs hoje:
+
+| Tela | Quem vê |
+|---|---|
+| Home, Minhas Reservas | Qualquer usuário logado |
+| Áreas, Recursos, Veículos | Quem pode reservar aquele tipo (sem grupo ou por grupo vigente) |
+| Meus Grupos | Quem pode criar grupos (admin e servidor) |
+| Administração | Só admin |
 
 ## Checklist antes do PR
 
 - [ ] Toda view nova tem `permission_classes` com uma permissão que herda de `UsuarioAutenticado`
 - [ ] Criação e edição de reserva chamam `pode_reservar`
+- [ ] Consultas de grupos e membros partem de `objects` (ativos), nunca de um filtro pelo lado do usuário
 - [ ] Nenhuma comparação `papel == 'admin'`, nem no back nem no front
+- [ ] Toda tela nova está em `src/config/rotas.js` com a `permissao` certa (inclusive as de detalhe)

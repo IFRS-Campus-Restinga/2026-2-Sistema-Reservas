@@ -1,0 +1,198 @@
+.pagina {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.legendaCor {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.legendaCor[data-tipo="interna"],
+.reserva[data-tipo="interna"] {
+  --cor-reserva: var(--cor-marca, #009a44);
+  --cor-borda-reserva: var(--cor-marca-escura, #007832);
+}
+
+.legendaCor[data-tipo="externa"],
+.reserva[data-tipo="externa"] {
+  --cor-reserva: #2563eb;
+  --cor-borda-reserva: #1d4ed8;
+}
+
+.legendaCor {
+  background: var(--cor-reserva);
+}
+
+/* Único container rolável: cabeçalho e coluna de horas ficam fixos */
+.grade {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: #fff;
+}
+
+.conteudoGrade {
+  min-width: fit-content;
+}
+
+.linhaCabecalho {
+  display: flex;
+  background: #fff;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.corpo {
+  display: flex;
+}
+
+.colunaHoras {
+  position: sticky;
+  left: 0;
+  z-index: 11;
+  flex-shrink: 0;
+  width: 64px;
+  background: #fff;
+  border-right: 1px solid #f3f4f6;
+}
+
+.cantoHoras {
+  position: sticky;
+  left: 0;
+  z-index: 11;
+  flex-shrink: 0;
+  width: 64px;
+  background: #fff;
+  border-right: 1px solid #f3f4f6;
+}
+
+.hora {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 8px 0 0;
+  border-bottom: 1px solid #f3f4f6;
+  color: #9ca3af;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.coluna {
+  position: relative;
+  flex: 1 0 160px;
+  min-width: 160px;
+  border-right: 1px solid #f3f4f6;
+}
+
+.coluna:last-child {
+  border-right: none;
+}
+
+.cabecalhoColuna {
+  padding: 10px 12px;
+}
+
+.slot {
+  position: absolute;
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #f3f4f6;
+  background: transparent;
+  padding: 0;
+  cursor: default;
+}
+
+.slot::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-bottom: 1px solid #f9fafb;
+}
+
+.slot:enabled {
+  cursor: pointer;
+}
+
+.slot:enabled:hover {
+  background: rgba(232, 245, 238, 0.5);
+}
+
+.slotRotulo {
+  position: relative;
+  z-index: 1;
+  display: none;
+  border: 1px solid var(--cor-marca, #009a44);
+  border-radius: 999px;
+  background: #fff;
+  padding: 2px 8px;
+  color: var(--cor-marca, #009a44);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.slot:enabled:hover .slotRotulo {
+  display: inline-block;
+}
+
+.reserva {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  left: 3px;
+  right: 3px;
+  z-index: 5;
+  overflow: hidden;
+  border: none;
+  border-left: 3px solid var(--cor-borda-reserva);
+  border-radius: 6px;
+  background: var(--cor-reserva);
+  padding: 3px 8px;
+  color: #fff;
+  text-align: left;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: filter 0.15s ease;
+}
+
+.reserva:hover {
+  filter: brightness(0.95);
+}
+
+/* Reserva que faz parte de uma recorrência: ícone no canto superior direito */
+.recorrente {
+  padding-right: 28px;
+}
+
+.iconeRecorrencia {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  display: flex;
+  opacity: 0.9;
+}
+
+.reservaTitulo,
+.reservaDetalhe {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.reservaTitulo {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.reservaDetalhe {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  opacity: 0.85;
+}

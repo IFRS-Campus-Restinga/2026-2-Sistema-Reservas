@@ -6,11 +6,13 @@ from django.db.models import Q
 from accounts.enumerations import Papel
 from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
 from api.validators.grupo_validator import validar_nome_grupo
-from .base_model import BaseModel
+from .exclusao_logica_model import ExclusaoLogicaModel
 from .tipo_recurso_model import TipoRecurso
 
 
-class Grupo(BaseModel):
+class Grupo(ExclusaoLogicaModel):
+    relacoes_exclusao_em_cascata = ('membros',)
+
     nome = models.CharField(
         max_length=100,
         validators=[validar_nome_grupo],

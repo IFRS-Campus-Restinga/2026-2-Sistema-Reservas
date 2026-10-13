@@ -56,6 +56,7 @@ function ReservaVeiculoModal({
   const [descricao, setDescricao] = useState('');
   const [data, setData] = useState('');
   const [dataRetorno, setDataRetorno] = useState('');
+  const [selecionandoRetorno, setSelecionandoRetorno] = useState(false);
   const [mesSaida, setMesSaida] = useState(new Date());
   const [horarioInicio, setHorarioInicio] = useState('');
   const [horarioFim, setHorarioFim] = useState('');
@@ -78,6 +79,7 @@ function ReservaVeiculoModal({
     setDescricao(reservaEdicao?.descricao || '');
     setData(saida);
     setDataRetorno(retorno);
+    setSelecionandoRetorno(false);
     setMesSaida(saida ? new Date(`${saida}T12:00:00`) : new Date());
     setHorarioInicio(reservaEdicao?.horario_inicio?.slice(0, 5) || '');
     setHorarioFim(reservaEdicao?.horario_fim?.slice(0, 5) || '');
@@ -137,21 +139,17 @@ function ReservaVeiculoModal({
     setDisponivel(null);
     setErro('');
 
-    if (!data || dataRetorno) {
+    if (!selecionandoRetorno || novaData < data) {
       setData(novaData);
-      setDataRetorno('');
+      setDataRetorno(novaData);
+      setSelecionandoRetorno(true);
       setHorarioInicio('');
       setHorarioFim('');
       return;
     }
 
-    if (novaData < data) {
-      setData(novaData);
-      setHorarioInicio('');
-      return;
-    }
-
     setDataRetorno(novaData);
+    setSelecionandoRetorno(false);
     setHorarioFim('');
   }
 
@@ -173,8 +171,12 @@ function ReservaVeiculoModal({
       setErro('O horário de retirada deve ser futuro.');
       return;
     }
-    if (!veiculo || ocupantes < 1 || ocupantes > veiculo.capacidade) {
-      setErro(`Informe de 1 a ${veiculo?.capacidade || 1} ocupantes, incluindo o motorista.`);
+    if (!veiculoId || !veiculo) {
+      setErro('Selecione um veículo.');
+      return;
+    }
+    if (ocupantes < 1 || ocupantes > veiculo.capacidade) {
+      setErro(`Informe de 1 a ${veiculo.capacidade} ocupantes, incluindo o motorista.`);
       return;
     }
 
@@ -215,8 +217,6 @@ function ReservaVeiculoModal({
     }
   }
 
-  if (!veiculoInicial && !reservaEdicao) return null;
-
   const opcoesVeiculos = veiculos.filter((item) =>
     item.status === 'ATIVO' || String(item.id) === veiculoId
   );
@@ -245,6 +245,7 @@ function ReservaVeiculoModal({
             setVeiculoId(evento.target.value);
             setDisponivel(null);
           }}>
+            <option value="">Selecione um veículo</option>
             {opcoesVeiculos.map((item) => (
               <option key={item.id} value={item.id} disabled={item.status !== 'ATIVO'}>
                 {item.nome} · {item.placa}{item.status !== 'ATIVO' ? ` (${STATUS_RECURSO_LABEL[item.status]})` : ''}
@@ -266,8 +267,8 @@ function ReservaVeiculoModal({
           <small>
             {!data
               ? 'Selecione a data de retirada.'
-              : !dataRetorno
-                ? 'Agora selecione a data de retorno.'
+              : selecionandoRetorno
+                ? `Retirada e retorno em ${data.split('-').reverse().join('/')}. Para devolver em outro dia, selecione uma data posterior.`
                 : `Retirada em ${data.split('-').reverse().join('/')} e retorno em ${dataRetorno.split('-').reverse().join('/')}. Clique em outra data para escolher um novo período.`}
           </small>
         </div>

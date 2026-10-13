@@ -12,6 +12,8 @@ from api.models.grupo_model import Grupo
 from api.models.membro_grupo_model import MembroGrupo
 from api.permissions.grupo_permissions import PodeGerenciarMembrosGrupo
 from api.serializers.membro_grupo_serializer import MembroGrupoSerializer, CandidatoMembroSerializer
+from api.enumerations.auditoria_enumerations import AcaoAuditoria
+from api.services.auditoria import foto, registrar_auditoria
 from .view_helpers import BuscarObjetoComPermissaoMixin, listar, detalhar, atualizar, remover
 
 class MembroGrupoListCreateView(APIView):
@@ -33,7 +35,9 @@ class MembroGrupoListCreateView(APIView):
         if len(usuarios) != len(set(usuarios)):
             return Response({'detail': 'Há usuários repetidos na seleção.'}, status=status.HTTP_400_BAD_REQUEST)
         with transaction.atomic():
-            serializer.save(grupo=grupo)
+            membros = serializer.save(grupo=grupo)
+            for membro in membros:
+                registrar_auditoria(request.user, AcaoAuditoria.CRIAR, membro, depois=foto(membro))
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -53,7 +57,7 @@ class MembroGrupoCandidatosView(APIView):
         candidatos = (
             HubUser.objects
             .filter(Q(nome__icontains=busca) | Q(email__icontains=busca), is_active=True, papel=grupo.tipo_membro_permitido)
-            .exclude(autorizacoes_grupo__grupo=grupo)
+            .exclude(id__in=MembroGrupo.objects.filter(grupo=grupo).values('usuario_id'))
             .exclude(id__in=self.ler_ids_excluidos(request.query_params.get('excluir', '')))
             .annotate(relevancia=Case(
                 When(nome__istartswith=busca, then=Value(0)),
@@ -63,7 +67,6 @@ class MembroGrupoCandidatosView(APIView):
             ))
             .order_by('relevancia', 'nome')
         )
-        # Busca um a mais que o limite só para saber se há outros resultados além dos exibidos.
         encontrados = list(candidatos[:limite + 1])
         return Response({
             'resultados': CandidatoMembroSerializer(encontrados[:limite], many=True).data,
@@ -99,4 +102,4 @@ class MembroGrupoDetailView(BuscarObjetoComPermissaoMixin, APIView):
         return atualizar(request, self.get_object(pk), MembroGrupoSerializer, partial=True)
 
     def delete(self, request, grupo_pk, pk):
-        return remover(self.get_object(pk))
+        return remover(request, self.get_object(pk))

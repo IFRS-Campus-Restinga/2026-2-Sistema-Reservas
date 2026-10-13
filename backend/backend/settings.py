@@ -165,6 +165,9 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+MEDIA_ROOT = BASE_DIR / 'private_media'
+TERMO_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
     'http://localhost:5174',

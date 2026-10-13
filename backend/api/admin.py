@@ -4,6 +4,7 @@ from api.models.bloco_model import Bloco
 from api.models.area_model import Area
 from api.models.grupo_model import Grupo
 from api.models.membro_grupo_model import MembroGrupo
+from api.models.recorrencia_model import Recorrencia
 
 """
 Registro de models do app 'api'
@@ -13,3 +14,4 @@ admin.site.register(Bloco)
 admin.site.register(Area)
 admin.site.register(Grupo)
 admin.site.register(MembroGrupo)
+admin.site.register(Recorrencia)

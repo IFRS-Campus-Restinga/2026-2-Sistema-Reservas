@@ -1,13 +1,14 @@
 
 import { useEffect, useState } from 'react';
-import { useLocation, useOutletContext } from 'react-router-dom';
-import { Row, Col } from 'react-bootstrap';
-import { CalendarCheck, ClipboardList } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { useUsuario } from '../../hooks/useUsuario';
+import { ClipboardList, Info, Package, UserRound } from 'lucide-react';
 import CartaoReserva from '../../components/CartaoReserva/CartaoReserva';
 import ModalDetalheReserva from '../../components/ModalDetalheReserva/ModalDetalheReserva';
 import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/ReservaRecursoGeralModal';
 import ReservaAreaModal from '../../components/ReservaArea/ReservaAreaModal';
 import ReservaVeiculoModal from '../../components/ReservaVeiculo/ReservaVeiculoModal';
+import TermoReserva from '../../components/TermoReserva/TermoReserva';
 import Select from '../../components/Select/Select';
 import {
   listarRecursosGerais,
@@ -24,8 +25,7 @@ import {
   listarReservasRecursosGerais,
   cancelarReservaRecursoGeral,
 } from '../../services/reservasRecursosGerais';
-import { STATUS_RESERVA_LABEL } from '../../utils/reserva';
-import { STATUS_RECURSO_LABEL } from '../../utils/statusRecurso';
+import { STATUS_RESERVA_LABEL, statusReservaApresentado } from '../../utils/reserva';
 import { ehAdministrador } from '../../utils/permissoes';
 import styles from './MinhasReservas.module.css';
 
@@ -54,15 +54,6 @@ const OPCOES_STATUS = Object.entries(STATUS_RESERVA_LABEL).map(([valor, rotulo])
   rotulo,
 }));
 
-const STATUS_VARIANTE = {
-  confirmada: 'success',
-  pendente: 'warning',
-  cancelada: 'secondary',
-  rejeitada: 'danger',
-  aguardando_termo: 'info',
-  concluida: 'primary',
-};
-
 function formatarData(data) {
   if (!data) return '';
 
@@ -70,7 +61,7 @@ function formatarData(data) {
 }
 
 function MinhasReservas() {
-  const { usuario } = useOutletContext();
+  const usuario = useUsuario();
   const location = useLocation();
 
   const [reservas, setReservas] = useState([]);
@@ -160,22 +151,13 @@ function MinhasReservas() {
       return [
         {
           rotulo: 'Finalidade',
-          valor: 'Empréstimo de recurso',
-          icone: ClipboardList,
+          valor: reserva.descricao || 'Empréstimo de recurso',
+          icone: Info,
         },
         {
           rotulo: 'Quantidade',
-          valor: reserva.quantidades,
-          icone: ClipboardList,
-        },
-        {
-          rotulo: 'Devolução prevista',
-          valor: formatarData(reserva.data_devolucao_prevista),
-          icone: CalendarCheck,
-        },
-        {
-          rotulo: 'Observações',
-          valor: reserva.descricao || 'Nenhuma',
+          valor: `${reserva.quantidades} unidade(s) · devolução até ${formatarData(reserva.data_devolucao_prevista)}`,
+          icone: Package,
         },
       ];
     }
@@ -195,20 +177,14 @@ function MinhasReservas() {
     }
 
     if (reserva.modalidade === 'veiculo') {
-      const veiculo = veiculos.find((item) => String(item.id) === String(reserva.veiculo));
       return [
-        { rotulo: 'Destino', valor: reserva.destino },
-        { rotulo: 'Finalidade', valor: reserva.finalidade, icone: ClipboardList },
+        { rotulo: 'Finalidade', valor: reserva.finalidade, icone: Info },
         {
-          rotulo: 'Ocupantes, incluindo motorista',
-          valor: reserva.quantidade_passageiros,
-          icone: ClipboardList,
+          rotulo: 'Destino e ocupantes',
+          valor: `${reserva.destino} · ${reserva.quantidade_passageiros} ocupante(s), incluindo motorista`,
+          icone: UserRound,
         },
-        { rotulo: 'Observações', valor: reserva.descricao || 'Nenhuma' },
-        {
-          rotulo: 'Situação do veículo',
-          valor: veiculo ? STATUS_RECURSO_LABEL[veiculo.status] : 'Não informada',
-        },
+        { rotulo: 'Observações', valor: reserva.descricao },
       ];
     }
 
@@ -353,28 +329,31 @@ function MinhasReservas() {
     ? reservas
     : reservas.filter((reserva) => reserva.modalidade === filtroTipo);
 
-  const contagemPorStatus = reservasDoTipo.reduce((contagem, reserva) => {
-    const status = String(reserva.status || '').toLowerCase();
-    contagem[status] = (contagem[status] || 0) + 1;
-    return contagem;
-  }, {});
-
   const ordenadas = [...reservasDoTipo]
-    .filter((reserva) =>
-      filtroStatus === 'todos' || String(reserva.status || '').toLowerCase() === filtroStatus
-    )
+    .filter((reserva) => {
+      const status = statusReservaApresentado(reserva);
+      return filtroStatus === 'todos' ? status !== 'cancelada' : status === filtroStatus;
+    })
     .sort((a, b) =>
       `${b.data} ${b.horario_inicio}`.localeCompare(
         `${a.data} ${a.horario_inicio}`
       )
     );
 
-  const recurso =
-    selecionada?.modalidade === 'recurso_geral'
-      ? recursoDaReserva(selecionada)
-      : null;
-
-  const ehRecurso = selecionada?.modalidade === 'recurso_geral';
+  function atualizarSituacaoTermo(dados) {
+    setReservas((atuais) => atuais.map((reserva) => {
+      if (reserva.id === dados.reserva) {
+        return { ...reserva, status: dados.status_reserva };
+      }
+      return reserva;
+    }));
+    setSelecionada((atual) => {
+      if (atual?.id === dados.reserva) {
+        return { ...atual, status: dados.status_reserva };
+      }
+      return atual;
+    });
+  }
 
   return (
     <div className={styles.pagina}>
@@ -405,27 +384,10 @@ function MinhasReservas() {
           aoAlterar={setFiltroStatus}
           opcoes={OPCOES_STATUS}
           valorTodos="todos"
-          rotuloTodos="Todos os status"
+          rotuloTodos="Todas"
           ariaLabel="Filtrar por status"
         />
       </div>
-
-      <Row xs={2} md={3} xl={6} className="g-3">
-        {Object.entries(STATUS_RESERVA_LABEL).map(([status, rotulo]) => {
-          const variante = STATUS_VARIANTE[status] || 'secondary';
-
-          return (
-            <Col key={status}>
-              <div className={`rounded-4 p-4 text-center bg-${variante}-subtle`}>
-                <div className={`fs-2 fw-bold text-${variante}-emphasis`}>
-                  {contagemPorStatus[status] || 0}
-                </div>
-                <div className={`small text-${variante}-emphasis`}>{rotulo}</div>
-              </div>
-            </Col>
-          );
-        })}
-      </Row>
 
       <section className={styles.lista} aria-label="Minhas reservas">
         {ordenadas.length === 0 && (
@@ -444,6 +406,7 @@ function MinhasReservas() {
             modalidade={MODALIDADES[reserva.modalidade] || 'Reserva'}
             periodo={periodoVeiculo(reserva)}
             mostrarStatus={true}
+            mostrarDisponibilidadeRetirada={reserva.modalidade === 'veiculo'}
             aoClicar={() => setSelecionada(reserva)}
           />
         ))}
@@ -456,11 +419,14 @@ function MinhasReservas() {
           item={nomeItem(selecionada)}
           responsavel={nomeResponsavel(selecionada)}
           periodo={periodoVeiculo(selecionada)}
-          exigeTermo={
-            ehRecurso
-              ? Boolean(recurso?.tem_termo_de_responsabilidade)
-              : Boolean(selecionada.exigeTermo)
-          }
+          exigeTermo={selecionada.modalidade === 'veiculo' || Boolean(recursoDaReserva(selecionada)?.tem_termo_de_responsabilidade)}
+          aoAtualizarTermo={atualizarSituacaoTermo}
+          conteudoExtra={selecionada.modalidade === 'veiculo' ? (
+            <>
+              <TermoReserva reservaId={selecionada.id} modalidade="veiculo" tipoDocumento="retirada" ocultarIndisponivel />
+              <TermoReserva reservaId={selecionada.id} modalidade="veiculo" tipoDocumento="devolucao" ocultarIndisponivel />
+            </>
+          ) : null}
           detalhes={detalhesDaReserva(selecionada)}
           aoEditar={podeAlterar(selecionada) ? () => abrirEdicao(selecionada) : undefined}
           aoCancelar={podeAlterar(selecionada) ? cancelarSelecionada : undefined}
