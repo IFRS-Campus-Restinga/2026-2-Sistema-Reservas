@@ -114,7 +114,9 @@ if not pode_reservar(request.user, TipoRecursoReservavel.RECURSO_GERAL, recurso.
 - **Ao editar**, confira a autorização do **dono da reserva** (`reserva.usuario`), não de quem está editando. Um admin pode editar a reserva de um aluno, mas o que importa é se o aluno pode reservar aquilo.
 - Exemplo pronto: `validar_autorizacao` em `api/validators/reserva_recurso_geral_validator.py`.
 
-Para veículos, somente administradores e servidores autorizados podem reservar. `pode_reservar` exige cobertura contínua de grupo/vínculo em todos os dias da viagem; alunos não recebem essa autorização, inclusive por configurações antigas. Na edição, revalide o dono. No cancelamento, use `validar_cancelamento` de `services/reserva_veiculo_service.py`, que não exige autorização de grupo vigente. Veja [as regras de veículos](RESERVAS_VEICULOS.md).
+Quando a reserva depende de grupo, `pode_reservar` exige cobertura contínua de grupo/vínculo em todos os dias do período, incluindo retirada e devolução. Grupos consecutivos ou sobrepostos podem se complementar, mas nenhum dia pode ficar sem autorização. Só contam grupos compatíveis com o papel do usuário e a categoria reservada; para recursos gerais, também deve coincidir o `tipo_recurso_id`. A cobertura termina na primeira expiração entre grupo e vínculo do membro. Grupos e membros excluídos não autorizam reservas.
+
+Para veículos, somente administradores e servidores autorizados podem reservar; alunos não recebem essa autorização, inclusive por configurações antigas. Na edição, revalide o dono. No cancelamento, use `validar_cancelamento` de `services/reserva_veiculo_service.py`, que não exige autorização de grupo vigente. Veja [as regras de veículos](RESERVAS_VEICULOS.md).
 
 ### 4. Grupos e membros têm exclusão lógica
 

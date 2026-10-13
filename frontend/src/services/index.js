@@ -45,6 +45,7 @@ export {
   cancelarReservaRecursoGeral,
 } from './reservasRecursosGerais';
 export {
+  listarReservasAreas,
   listarMinhasReservasAreas,
   criarReservaArea,
   cancelarReservaArea,
@@ -67,3 +68,8 @@ export {
   listarNotificacoes,
   marcarNotificacaoComoLida,
 } from './notificacoes';
+export { buscarDataAtual } from './dataAtual';
+export {
+  buscarLogsAuditoria,
+  buscarLogAuditoria,
+} from './auditoria';

@@ -1,143 +1,239 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useUsuario } from "../../hooks/useUsuario";
 import { Calendar, ArrowRight } from "lucide-react";
 import styles from "./Home.module.css";
 import Banner from "../../components/Banner/Banner";
 import CartaoReserva from "../../components/CartaoReserva/CartaoReserva";
-import { formatarDataCurta } from "../../utils/data";
-import { STATUS_RESERVA_LABEL } from "../../utils/reserva";
+import { dataParaISO, formatarDataCurta, somarDias } from "../../utils/data";
 import { PAPEL_USUARIO_LABEL } from "../../utils/usuario";
+import {
+  buscarDataAtual,
+  listarMinhasReservasAreas,
+  buscarVeiculos,
+  listarReservasVeiculos,
+  listarRecursosGerais,
+} from "../../services";
+import { listarReservasRecursosGerais } from "../../services/reservasRecursosGerais";
 
-function formatarDataISO(data) {
-  return data.toISOString().slice(0, 10);
-}
+const LIMITE_PROXIMAS = 4;
+const LIMITE_ATIVIDADE = 3;
+const STATUS_INATIVOS = ["cancelada", "rejeitada"];
 
-function adicionarDias(data, dias) {
-  const resultado = new Date(data);
-  resultado.setDate(resultado.getDate() + dias);
-  return resultado;
+const MODALIDADES = {
+  recurso_geral: "Recurso geral",
+  veiculo: "Veículo",
+  area: "Área",
+};
+
+// "2026-09-17" -> Date local, sem deslocamento de fuso
+function dataDeISO(dataISO) {
+  const [ano, mes, dia] = dataISO.split("-").map(Number);
+  return new Date(ano, mes - 1, dia);
 }
 
 function obterDiasDaSemana(hoje) {
+  const hojeISO = dataParaISO(hoje);
   return Array.from({ length: 7 }, (_, indice) => {
-    const data = adicionarDias(hoje, indice);
+    const dataISO = somarDias(hojeISO, indice);
+    const data = dataDeISO(dataISO);
     return {
-      data: formatarDataISO(data),
-      rotulo: data.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""),
+      data: dataISO,
+      rotulo: data
+        .toLocaleDateString("pt-BR", { weekday: "short" })
+        .replace(".", ""),
       dia: data.getDate(),
       hoje: indice === 0,
     };
   });
 }
 
-const reservas = [
-    {
-      id: 1,
-      nome: "Reunião de Planejamento",
-      descricao: "Sala de Reuniões 3 · Bloco Administrativo",
-      status: "confirmada",
-      tipo_reserva: "interna",
-      data: "2026-09-20",
-      horario_inicio: "09:00",
-      horario_fim: "10:30",
-      duracao: 90,
-    },
-    {
-      id: 2,
-      nome: "Aula de Extensão",
-      descricao: "Auditório Central",
-      status: "pendente",
-      tipo_reserva: "externa",
-      data: "2026-09-20",
-      horario_inicio: "14:00",
-      horario_fim: "16:00",
-      duracao: 120,
-    },
-    {
-      id: 3,
-      nome: "Transporte Visita Técnica",
-      descricao: "Van Institucional · Estacionamento B",
-      status: "confirmada",
-      tipo_reserva: "interna",
-      data: "2026-09-14",
-      horario_inicio: "07:30",
-      horario_fim: "12:00",
-      duracao: 270,
-    },
-    {
-      id: 4,
-      nome: "Defesa de TCC",
-      descricao: "Sala 204 · Bloco B",
-      status: "pendente",
-      tipo_reserva: "interna",
-      data: "2026-09-15",
-      horario_inicio: "13:00",
-      horario_fim: "15:00",
-      duracao: 120,
-    },
-    {
-      id: 5,
-      nome: "Workshop Externo",
-      descricao: "Laboratório de Informática 2",
-      status: "confirmada",
-      tipo_reserva: "externa",
-      data: "2026-09-16",
-      horario_inicio: "08:00",
-      horario_fim: "11:00",
-      duracao: 180,
-    }, 
-  ];
+function hora(valor) {
+  return String(valor || "").slice(0, 5);
+}
 
+function inicioDaReserva(reserva) {
+  return `${reserva.data} ${hora(reserva.horario_inicio)}`;
+}
+
+function periodoVeiculo(reserva) {
+  if (reserva.modalidade !== "veiculo") return undefined;
+  return `${formatarDataCurta(reserva.data)} · ${hora(reserva.horario_inicio)} até ${formatarDataCurta(reserva.data_devolucao_prevista)} · ${hora(reserva.horario_fim)}`;
+}
 
 function Home() {
   const usuario = useUsuario();
+  const navigate = useNavigate();
 
-  const hoje = new Date();
-  const hojeISO = formatarDataISO(hoje);
+  const [agora, setAgora] = useState(null);
+  const [reservas, setReservas] = useState([]);
+  const [recursos, setRecursos] = useState([]);
+  const [veiculos, setVeiculos] = useState([]);
+  const [erro, setErro] = useState("");
 
-  const proximasReservas = [...reservas]
-    .filter((reserva) => reserva.data >= hojeISO)
-    .sort((a, b) => (a.data + a.horario_inicio).localeCompare(b.data + b.horario_inicio))
-    .slice(0, 5);
+  useEffect(() => {
+    Promise.allSettled([
+      buscarDataAtual(),
+      listarReservasRecursosGerais(),
+      listarMinhasReservasAreas(),
+      listarReservasVeiculos(),
+      listarRecursosGerais(),
+      buscarVeiculos(),
+    ]).then(
+      ([
+        dataAtual,
+        reservasRecurso,
+        reservasArea,
+        reservasVeiculo,
+        listaRecursos,
+        listaVeiculos,
+      ]) => {
+        const validaRetorno = (resultado) =>
+          resultado.status === "fulfilled" ? resultado.value : [];
 
-  const atividadeRecente = [...reservas]
-    .filter((reserva) => reserva.data < hojeISO)
-    .sort((a, b) => b.id - a.id)
-    .slice(0, 3);
+        const secoesComFalha = [
+          [reservasRecurso, "recursos gerais"],
+          [reservasArea, "áreas"],
+          [reservasVeiculo, "veículos"],
+        ]
+          .filter(([resultado]) => resultado.status === "rejected")
+          .map(([, rotulo]) => rotulo);
 
-  const diasDaSemana = obterDiasDaSemana(hoje).map((dia) => ({
-    ...dia,
-    temReserva: reservas.some((reserva) => reserva.data === dia.data),
-  }));
+        if (dataAtual.status === "rejected") {
+          setErro(dataAtual.reason.message);
+        } else if (secoesComFalha.length) {
+          setErro(
+            `Não foi possível carregar as reservas de: ${secoesComFalha.join(", ")}.`,
+          );
+        } else {
+          setErro("");
+        }
+        setAgora(dataAtual.status === "fulfilled" ? dataAtual.value : null);
+        setRecursos(validaRetorno(listaRecursos));
+        setVeiculos(validaRetorno(listaVeiculos));
+        setReservas([
+          ...validaRetorno(reservasRecurso).map((reserva) => ({
+            ...reserva,
+            modalidade: "recurso_geral",
+          })),
+          ...validaRetorno(reservasArea).map((reserva) => ({
+            ...reserva,
+            modalidade: "area",
+          })),
+          ...validaRetorno(reservasVeiculo).map((reserva) => ({
+            ...reserva,
+            modalidade: "veiculo",
+          })),
+        ]);
+      },
+    );
+  }, []);
 
-  const rotuloHoje = hoje.toLocaleDateString("pt-BR", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-  });
+  function nomeItem(reserva) {
+    if (reserva.modalidade === "recurso_geral") {
+      const recurso = recursos.find(
+        (item) => String(item.id) === String(reserva.recurso_geral),
+      );
+      return recurso?.nome || `Recurso #${reserva.recurso_geral}`;
+    }
+
+    if (reserva.modalidade === "area") {
+      return reserva.area_detalhe?.nome || `Área #${reserva.area}`;
+    }
+
+    const veiculo = veiculos.find(
+      (item) => String(item.id) === String(reserva.veiculo),
+    );
+    return veiculo
+      ? `${veiculo.nome} · ${veiculo.placa}`
+      : `Veículo #${reserva.veiculo}`;
+  }
+
+  const hoje = agora ? dataDeISO(agora.data) : null;
+  const referencia = agora ? `${agora.data} ${agora.hora}` : null;
+
+  const ativas = reservas.filter(
+    (reserva) =>
+      !STATUS_INATIVOS.includes(String(reserva.status).toLowerCase()),
+  );
+
+  const proximasReservas = referencia
+    ? ativas
+        .filter((reserva) => inicioDaReserva(reserva) >= referencia)
+        .sort((a, b) => inicioDaReserva(a).localeCompare(inicioDaReserva(b)))
+        .slice(0, LIMITE_PROXIMAS)
+    : [];
+
+  const atividadeRecente = referencia
+    ? ativas
+        .filter((reserva) => inicioDaReserva(reserva) < referencia)
+        .sort((a, b) => inicioDaReserva(b).localeCompare(inicioDaReserva(a)))
+        .slice(0, LIMITE_ATIVIDADE)
+    : [];
+
+  const diasDaSemana = hoje
+    ? obterDiasDaSemana(hoje).map((dia) => ({
+        ...dia,
+        temReserva: ativas.some((reserva) => reserva.data === dia.data),
+      }))
+    : [];
+
+  const rotuloHoje = hoje
+    ? hoje.toLocaleDateString("pt-BR", {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+      })
+    : "";
 
   return (
     <div className={styles.pagina}>
       <Banner
         saudacao="Bem-vindo,"
         nome={usuario.nome}
-        subtitulo={`${PAPEL_USUARIO_LABEL[usuario.papel] ?? usuario.papel} · ${rotuloHoje}`}
+        subtitulo={[
+          PAPEL_USUARIO_LABEL[usuario.papel] ?? usuario.papel,
+          rotuloHoje,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
       />
+
+      {erro && (
+        <p role="alert" className={styles.estadoVazio}>
+          {erro}
+        </p>
+      )}
 
       <div className={styles.grade}>
         <section className={styles.painelReservas}>
           <div className={styles.cabecalhoPainel}>
             <h3 className={styles.tituloPainel}>Minhas próximas reservas</h3>
-            <button type="button" className={styles.botaoVerTodas}>
+            <button
+              type="button"
+              className={styles.botaoVerTodas}
+              onClick={() => navigate("/minhas-reservas")}
+            >
               Ver todas <ArrowRight size={12} />
             </button>
           </div>
 
           <div className={styles.listaReservas}>
             {proximasReservas.map((reserva) => (
-              <CartaoReserva key={reserva.id} reserva={reserva} />
+              <CartaoReserva
+                key={`${reserva.modalidade}-${reserva.id}`}
+                reserva={{
+                  ...reserva,
+                  descricao: nomeItem(reserva),
+                  horario_inicio: hora(reserva.horario_inicio),
+                  horario_fim: hora(reserva.horario_fim),
+                }}
+                modalidade={MODALIDADES[reserva.modalidade]}
+                periodo={periodoVeiculo(reserva)}
+              />
             ))}
 
-            {proximasReservas.length === 0 && (
+            {agora && proximasReservas.length === 0 && (
               <div className={styles.estadoVazio}>
                 <Calendar size={32} className={styles.iconeVazio} />
                 Nenhuma reserva agendada.
@@ -166,18 +262,20 @@ function Home() {
             <h3 className={styles.tituloSecundario}>Atividade recente</h3>
             <div className={styles.listaAtividade}>
               {atividadeRecente.map((reserva) => (
-                <div key={reserva.id} className={styles.itemAtividade}>
-                  <span className={styles.marcadorStatus} data-status={reserva.status} />
-                  <div>
-                    <p className={styles.nomeAtividade}>{reserva.nome}</p>
-                    <p className={styles.detalheAtividade}>
-                      {formatarDataCurta(reserva.data)} · {STATUS_RESERVA_LABEL[reserva.status]}
-                    </p>
-                  </div>
-                </div>
+                <CartaoReserva
+                  key={`${reserva.modalidade}-${reserva.id}`}
+                  reserva={{
+                    ...reserva,
+                    descricao: nomeItem(reserva),
+                    horario_inicio: hora(reserva.horario_inicio),
+                    horario_fim: hora(reserva.horario_fim),
+                  }}
+                  modalidade={MODALIDADES[reserva.modalidade]}
+                  periodo={periodoVeiculo(reserva)}
+                />
               ))}
 
-              {atividadeRecente.length === 0 && (
+              {agora && atividadeRecente.length === 0 && (
                 <p className={styles.textoVazio}>Nenhuma atividade recente.</p>
               )}
             </div>

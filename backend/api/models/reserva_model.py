@@ -39,6 +39,13 @@ class Reserva(BaseModel):
         blank=True,
         related_name="reservas_canceladas",
         verbose_name="Cancelada por",
+    recorrencia = models.ForeignKey(
+        "Recorrencia",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="reservas",
+        verbose_name="Recorrência",
     )
 
     class Meta:

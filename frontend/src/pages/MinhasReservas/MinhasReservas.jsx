@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useUsuario } from '../../hooks/useUsuario';
-import { Row, Col } from 'react-bootstrap';
 import { CalendarCheck, ClipboardList } from 'lucide-react';
 import CartaoReserva from '../../components/CartaoReserva/CartaoReserva';
 import ModalDetalheReserva from '../../components/ModalDetalheReserva/ModalDetalheReserva';
@@ -54,15 +53,6 @@ const OPCOES_STATUS = Object.entries(STATUS_RESERVA_LABEL).map(([valor, rotulo])
   valor,
   rotulo,
 }));
-
-const STATUS_VARIANTE = {
-  confirmada: 'success',
-  pendente: 'warning',
-  cancelada: 'secondary',
-  rejeitada: 'danger',
-  aguardando_termo: 'info',
-  concluida: 'primary',
-};
 
 function formatarData(data) {
   if (!data) return '';
@@ -354,16 +344,11 @@ function MinhasReservas() {
     ? reservas
     : reservas.filter((reserva) => reserva.modalidade === filtroTipo);
 
-  const contagemPorStatus = reservasDoTipo.reduce((contagem, reserva) => {
-    const status = String(reserva.status || '').toLowerCase();
-    contagem[status] = (contagem[status] || 0) + 1;
-    return contagem;
-  }, {});
-
   const ordenadas = [...reservasDoTipo]
-    .filter((reserva) =>
-      filtroStatus === 'todos' || String(reserva.status || '').toLowerCase() === filtroStatus
-    )
+    .filter((reserva) => {
+      const status = String(reserva.status || '').toLowerCase();
+      return filtroStatus === 'todos' ? status !== 'cancelada' : status === filtroStatus;
+    })
     .sort((a, b) =>
       `${b.data} ${b.horario_inicio}`.localeCompare(
         `${a.data} ${a.horario_inicio}`
@@ -406,27 +391,10 @@ function MinhasReservas() {
           aoAlterar={setFiltroStatus}
           opcoes={OPCOES_STATUS}
           valorTodos="todos"
-          rotuloTodos="Todos os status"
+          rotuloTodos="Todas"
           ariaLabel="Filtrar por status"
         />
       </div>
-
-      <Row xs={2} md={3} xl={6} className="g-3">
-        {Object.entries(STATUS_RESERVA_LABEL).map(([status, rotulo]) => {
-          const variante = STATUS_VARIANTE[status] || 'secondary';
-
-          return (
-            <Col key={status}>
-              <div className={`rounded-4 p-4 text-center bg-${variante}-subtle`}>
-                <div className={`fs-2 fw-bold text-${variante}-emphasis`}>
-                  {contagemPorStatus[status] || 0}
-                </div>
-                <div className={`small text-${variante}-emphasis`}>{rotulo}</div>
-              </div>
-            </Col>
-          );
-        })}
-      </Row>
 
       <section className={styles.lista} aria-label="Minhas reservas">
         {ordenadas.length === 0 && (

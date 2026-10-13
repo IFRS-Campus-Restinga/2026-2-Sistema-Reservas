@@ -19,14 +19,18 @@ def validar_autorizacao(usuario, dados):
         )
 
 
-def validar_disponibilidade_area(dados, excluir_reserva=None):
-    area = dados["area"]
-
+def validar_area_ativa(area):
     if area.status != StatusRecurso.ATIVO:
         raise ValidationError({"area": "A área não está ativa para reservas."})
 
     if not area.disponibilidade:
         raise ValidationError({"area": "A área não está disponível para reservas no momento."})
+
+
+def validar_disponibilidade_area(dados, excluir_reserva=None):
+    area = dados["area"]
+
+    validar_area_ativa(area)
 
     inicio = datetime.combine(dados["data"], dados["horario_inicio"])
     fim = datetime.combine(dados["data"], dados["horario_fim"])
