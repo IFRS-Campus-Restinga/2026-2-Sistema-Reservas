@@ -22,6 +22,7 @@ function ModalDetalheReserva({
   aoAtualizarTermo,
   administrativo = false,
   acoesAdministrativas,
+  conteudoExtra,
   aoEditar,
   aoCancelar,
   motivoAcoesIndisponiveis,
@@ -130,6 +131,8 @@ function ModalDetalheReserva({
               administrativo={administrativo} somenteResumo={administrativo}
               aoAtualizar={aoAtualizarTermo} aoProcessar={setEnviandoTermo} />
           )}
+
+          {conteudoExtra}
 
           {erro && <p className={styles.erro} role="alert">{erro}</p>}
           {!erro && motivoAcoesIndisponiveis && (

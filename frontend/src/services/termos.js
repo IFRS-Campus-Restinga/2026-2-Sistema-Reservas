@@ -28,3 +28,20 @@ export function analisarTermo(id, termoId, status, motivo) {
 export function listarSolicitacoes(parametros, signal) {
   return requisitar(`/api/solicitacoes/termos/?${new URLSearchParams(parametros)}`, { signal });
 }
+
+export function buscarTermoOperacional(id, tipo) {
+  return requisitar(`/api/reservas/${id}/termo-operacional/${tipo}/`);
+}
+
+export function enviarTermoOperacional(id, tipo, arquivo) {
+  const dados = new FormData();
+  dados.append('arquivo', arquivo);
+  return requisitar(`/api/reservas/${id}/termo-operacional/${tipo}/`, { method: 'POST', body: dados });
+}
+
+export function analisarTermoOperacional(id, tipo, termoId, status, motivo) {
+  return requisitar(`/api/reservas/${id}/termo-operacional/${tipo}/analise/`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ termo_id: termoId, status, motivo }),
+  });
+}

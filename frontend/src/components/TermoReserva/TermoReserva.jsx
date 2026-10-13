@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { CheckCircle, Download, FileText, FileWarning, LoaderCircle, Upload, XCircle } from 'lucide-react';
-import { analisarTermo, buscarTermo, enviarTermo } from '../../services/termos';
+import { analisarTermo, analisarTermoOperacional, buscarTermo, buscarTermoOperacional, enviarTermo, enviarTermoOperacional } from '../../services/termos';
 import styles from './TermoReserva.module.css';
 
 const SITUACOES = { PENDENTE: 'Aguardando análise', APROVADO: 'Aprovado', REJEITADO: 'Rejeitado' };
@@ -28,6 +28,8 @@ function HistoricoTermos({ termos }) {
 export default function TermoReserva({
   reservaId, modalidade, administrativo = false, somenteResumo = false,
   rejeitarInicialmente = false, aoAtualizar, aoProcessar,
+  tipoDocumento = 'responsabilidade',
+  ocultarIndisponivel = false,
 }) {
   const [dados, setDados] = useState(null);
   const [erro, setErro] = useState('');
@@ -41,13 +43,16 @@ export default function TermoReserva({
 
   useEffect(() => {
     let ativo = true;
-    buscarTermo(reservaId).then((resultado) => {
+    const buscar = tipoDocumento === 'responsabilidade'
+      ? buscarTermo(reservaId)
+      : buscarTermoOperacional(reservaId, tipoDocumento);
+    buscar.then((resultado) => {
       if (ativo) setDados(resultado);
     }).catch((falha) => {
       if (ativo) setErro(falha.message);
     });
     return () => { ativo = false; };
-  }, [reservaId, tentativa]);
+  }, [reservaId, tentativa, tipoDocumento]);
 
   useEffect(() => {
     if (rejeitando && dados?.pode_analisar) motivoRef.current?.focus();
@@ -83,13 +88,19 @@ export default function TermoReserva({
       setErro(`Envie um PDF não vazio de até ${dados.limite_bytes / 1024 / 1024} MB.`);
       return;
     }
-    executar(() => enviarTermo(reservaId, arquivo), 'Termo enviado. Aguarde a análise de um administrador.');
+    const enviar = tipoDocumento === 'responsabilidade'
+      ? () => enviarTermo(reservaId, arquivo)
+      : () => enviarTermoOperacional(reservaId, tipoDocumento, arquivo);
+    executar(enviar, 'Termo enviado. Aguarde a análise de um administrador.');
   }
 
   function rejeitar(evento) {
     evento.preventDefault();
     if (!motivo.trim() || ocupado) return;
-    executar(() => analisarTermo(reservaId, dados.atual.id, 'REJEITADO', motivo.trim()),
+    const analisar = tipoDocumento === 'responsabilidade'
+      ? () => analisarTermo(reservaId, dados.atual.id, 'REJEITADO', motivo.trim())
+      : () => analisarTermoOperacional(reservaId, tipoDocumento, dados.atual.id, 'REJEITADO', motivo.trim());
+    executar(analisar,
       'Termo rejeitado. O responsável poderá enviar um novo documento.');
   }
 
@@ -103,6 +114,9 @@ export default function TermoReserva({
       }}>Tentar novamente</button>;
     }
   } else {
+    if (ocultarIndisponivel && tipoDocumento !== 'responsabilidade' && !dados.atual && !dados.pode_enviar) {
+      return null;
+    }
     const atual = dados.atual;
     let situacao = 'Aguardando envio do termo assinado.';
     let estado = 'NAO_ENVIADO';
@@ -125,11 +139,19 @@ export default function TermoReserva({
       nomeModelo = 'Termo de responsabilidade — veículos.docx';
       tituloDocumento = 'Termo deste veículo';
     }
+    if (tipoDocumento === 'retirada') {
+      nomeModelo = 'Termo de retirada de veículo';
+      tituloDocumento = 'Termo de retirada';
+    }
+    if (tipoDocumento === 'devolucao') {
+      nomeModelo = 'Termo de devolução de veículo';
+      tituloDocumento = 'Termo de devolução';
+    }
 
     const resumo = (
       <div className={styles.alerta} data-status={estado}>
         <IconeSituacao size={14} />
-        <div><strong>Termo de responsabilidade</strong><p>{situacao}</p></div>
+        <div><strong>{tituloDocumento}</strong><p>{situacao}</p></div>
       </div>
     );
 
@@ -171,7 +193,12 @@ export default function TermoReserva({
             <XCircle size={13} />Rejeitar termo
           </button>
           <button type="button" className={styles.aprovar} disabled={ocupado}
-            onClick={() => executar(() => analisarTermo(reservaId, atual.id, 'APROVADO', ''), 'Termo aprovado e reserva confirmada.')}>
+            onClick={() => executar(() => {
+              if (tipoDocumento === 'responsabilidade') {
+                return analisarTermo(reservaId, atual.id, 'APROVADO', '');
+              }
+              return analisarTermoOperacional(reservaId, tipoDocumento, atual.id, 'APROVADO', '');
+            }, 'Termo aprovado pelo administrador.')}>
             <CheckCircle size={13} />Validar termo
           </button>
         </div>
@@ -230,7 +257,7 @@ export default function TermoReserva({
   }
 
   return (
-    <section className={styles.termo} aria-label="Termo de responsabilidade" aria-busy={ocupado}>
+    <section className={styles.termo} aria-label={tipoDocumento === 'responsabilidade' ? 'Termo de responsabilidade' : `Termo de ${tipoDocumento}`} aria-busy={ocupado}>
       {conteudo}
       {ocupado && administrativo && <p role="status" className={styles.carregando}><LoaderCircle size={14} className={styles.girando} />Salvando análise…</p>}
       {erro && <p role="alert" className={styles.erro}>{erro}</p>}

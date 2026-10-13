@@ -2,12 +2,13 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useUsuario } from '../../hooks/useUsuario';
-import { ClipboardList, CalendarCheck, Info, Package, UserRound } from 'lucide-react';
+import { ClipboardList, Info, Package, UserRound } from 'lucide-react';
 import CartaoReserva from '../../components/CartaoReserva/CartaoReserva';
 import ModalDetalheReserva from '../../components/ModalDetalheReserva/ModalDetalheReserva';
 import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/ReservaRecursoGeralModal';
 import ReservaAreaModal from '../../components/ReservaArea/ReservaAreaModal';
 import ReservaVeiculoModal from '../../components/ReservaVeiculo/ReservaVeiculoModal';
+import TermoReserva from '../../components/TermoReserva/TermoReserva';
 import Select from '../../components/Select/Select';
 import {
   listarRecursosGerais,
@@ -419,6 +420,12 @@ function MinhasReservas() {
           periodo={periodoVeiculo(selecionada)}
           exigeTermo={selecionada.modalidade === 'veiculo' || Boolean(recursoDaReserva(selecionada)?.tem_termo_de_responsabilidade)}
           aoAtualizarTermo={atualizarSituacaoTermo}
+          conteudoExtra={selecionada.modalidade === 'veiculo' ? (
+            <>
+              <TermoReserva reservaId={selecionada.id} modalidade="veiculo" tipoDocumento="retirada" ocultarIndisponivel />
+              <TermoReserva reservaId={selecionada.id} modalidade="veiculo" tipoDocumento="devolucao" ocultarIndisponivel />
+            </>
+          ) : null}
           detalhes={detalhesDaReserva(selecionada)}
           aoEditar={podeAlterar(selecionada) ? () => abrirEdicao(selecionada) : undefined}
           aoCancelar={podeAlterar(selecionada) ? cancelarSelecionada : undefined}
