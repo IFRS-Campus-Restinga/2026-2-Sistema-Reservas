@@ -4,6 +4,7 @@ from django.db.models import F, Q
 from django.utils import timezone
 
 from accounts.enumerations import Papel
+from api.enumerations.status_reserva import StatusReserva
 from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
 from api.models.membro_grupo_model import MembroGrupo
 from .regras_comuns import usuario_e_admin
@@ -12,6 +13,11 @@ TIPOS_RESERVA_LIVRE_POR_PAPEL = {
     Papel.SERVIDOR: (TipoRecursoReservavel.AREA, TipoRecursoReservavel.RECURSO_GERAL),
 }
 
+def status_inicial_reserva(usuario):
+    if usuario_e_admin(usuario) or getattr(usuario, "papel", None) == Papel.SERVIDOR:
+        return StatusReserva.CONFIRMADA
+
+    return StatusReserva.PENDENTE
 
 def tipos_reserva_livre(usuario):
     if usuario_e_admin(usuario):

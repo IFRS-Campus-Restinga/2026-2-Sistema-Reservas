@@ -14,6 +14,21 @@ from api.serializers.reserva_pendente_serializer import ReservaPendenteSerialize
 from api.services.auditoria import foto, registrar_auditoria
 from api.services.notificacao_service import criar_notificacao_cancelamento, criar_notificacao_confirmacao
 
+def _reserva_exige_termo(reserva):
+    if getattr(reserva, "reservaveiculo", None) is not None:
+        return True
+
+    reserva_recurso = getattr(
+        reserva,
+        "reservarecursogeral",
+        None,
+    )
+
+    return bool(
+        reserva_recurso
+        and reserva_recurso.recurso_geral.tem_termo_de_responsabilidade
+    )
+
 def _entidade_reserva(reserva):
     if getattr(reserva, "reservaarea", None) is not None:
         return EntidadeAuditoria.RESERVA_AREA
@@ -30,6 +45,8 @@ class ReservasPendentesListView(APIView):
         reservas = (
             Reserva.objects
             .filter(status=StatusReserva.PENDENTE)
+            .exclude(reservaveiculo__isnull=False)
+            .exclude(reservarecursogeral__recurso_geral__tem_termo_de_responsabilidade=True)
             .select_related(
                 "usuario",
                 "reservaarea__area__bloco",
@@ -59,6 +76,14 @@ class ConfirmarReservaView(APIView):
             if reserva.status != StatusReserva.PENDENTE:
                 raise ValidationError({
                     "status": "Somente reservas pendentes podem ser confirmadas."
+                })
+
+            if _reserva_exige_termo(reserva):
+                raise ValidationError({
+                    "detail": (
+                        "Reservas que exigem termo devem ser analisadas "
+                        "em Solicitações."
+                    )
                 })
 
             entidade = _entidade_reserva(reserva)
@@ -112,10 +137,17 @@ class CancelarReservaAdminView(APIView):
                 pk=pk,
             )
 
+            if _reserva_exige_termo(reserva):
+                raise ValidationError({
+                    "detail": (
+                        "Reservas que exigem termo devem ser analisadas "
+                        "em Solicitações."
+                    )
+                })
+
             status_cancelaveis = {
                 StatusReserva.PENDENTE,
                 StatusReserva.CONFIRMADA,
-                StatusReserva.AGUARDANDO_TERMO,
             }
 
             if reserva.status not in status_cancelaveis:

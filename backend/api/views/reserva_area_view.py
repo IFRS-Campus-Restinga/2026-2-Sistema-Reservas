@@ -10,6 +10,7 @@ from api.models.area_model import Area
 from api.models.reserva_area_model import ReservaArea
 from api.permissions.regras_comuns import UsuarioAutenticado
 from api.permissions.reserva_permissions import PodeGerenciarReserva
+from api.permissions.regras_reserva import status_inicial_reserva
 from api.serializers.reserva_area_serializer import ReservaAreaSerializer, serializar_recorrencia
 from api.services.recorrencia_service import criar_reservas_recorrentes
 from api.validators.reserva_area_validator import validar_autorizacao, validar_disponibilidade_area
@@ -89,7 +90,7 @@ class ReservaAreaListCreateView(APIView):
 
             validar_autorizacao(request.user, dados)
             validar_disponibilidade_area(dados)
-            serializer.save(usuario=request.user, status=StatusReserva.CONFIRMADA)
+            serializer.save(usuario=request.user, status=status_inicial_reserva(request.user))
 
         return Response(
             serializer.data,

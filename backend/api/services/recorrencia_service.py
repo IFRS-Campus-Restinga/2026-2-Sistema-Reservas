@@ -9,6 +9,7 @@ from api.models.recorrencia_model import Recorrencia
 from api.models.reserva_area_model import ReservaArea
 from api.serializers.reserva_area_serializer import ReservaAreaSerializer
 from api.services.auditoria import foto
+from api.permissions.regras_reserva import status_inicial_reserva
 from api.validators.reserva_area_validator import (
     validar_area_ativa,
     validar_autorizacao,
@@ -70,7 +71,10 @@ def reservas_alteraveis(recorrencia):
     return (
         ReservaArea.objects.filter(
             recorrencia=recorrencia,
-            status=StatusReserva.CONFIRMADA,
+            status__in=[
+                StatusReserva.PENDENTE,
+                StatusReserva.CONFIRMADA,
+            ],
         )
         .filter(filtro_reservas_futuras())
         .order_by("data", "horario_inicio")
@@ -125,7 +129,7 @@ def criar_reservas_recorrentes(usuario, dados, dados_recorrencia):
         ReservaArea.objects.create(
             **{**dados, "data": data},
             usuario=usuario,
-            status=StatusReserva.CONFIRMADA,
+            status=status_inicial_reserva(usuario),
             recorrencia=recorrencia,
         )
 
@@ -137,7 +141,7 @@ def editar_recorrencia(recorrencia, dados_edicao):
 
     if not reservas:
         raise ValidationError({
-            "detail": "Não há reservas futuras confirmadas nesta recorrência."
+            "detail": "Não há reservas futuras alteráveis nesta recorrência."
         })
 
     serializers = []
@@ -194,7 +198,7 @@ def cancelar_recorrencia(recorrencia):
 
     if not reservas:
         raise ValidationError({
-            "detail": "Não há reservas futuras confirmadas nesta recorrência."
+            "detail": "Não há reservas futuras alteráveis nesta recorrência."
         })
 
     canceladas = []

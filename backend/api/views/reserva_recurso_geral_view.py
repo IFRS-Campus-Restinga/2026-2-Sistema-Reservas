@@ -10,6 +10,7 @@ from api.models.recurso_geral_model import RecursoGeral
 from api.models.reserva_recurso_geral_model import ReservaRecursoGeral
 from api.permissions.regras_comuns import UsuarioAutenticado, usuario_e_admin
 from api.permissions.reserva_permissions import PodeGerenciarReserva
+from api.permissions.regras_reserva import status_inicial_reserva
 from api.serializers.reserva_recurso_geral_serializer import ReservaRecursoGeralSerializer
 from api.validators.reserva_recurso_geral_validator import STATUS_RESERVAS_ATIVAS, validar_autorizacao, validar_disponibilidade, quantidade_disponivel
 from api.enumerations.auditoria_enumerations import AcaoAuditoria
@@ -58,7 +59,7 @@ class ReservaRecursoGeralListCreateView(APIView):
             dados["recurso_geral"] = recurso
             validar_autorizacao(request.user, dados)
             validar_disponibilidade(dados)
-            serializer.save(usuario=request.user)
+            serializer.save(usuario=request.user, status=status_inicial_reserva(request.user))
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
