@@ -37,25 +37,24 @@ class ReservasTimetableService:
     def obter_usuario_responsavel(usuario=None):
         """
         Retorna o usuário responsável pelas reservas automáticas da Timetable.
-        Prioriza o usuário autenticado que disparou a ação, seguido por um Admin existente,
-        ou cria um usuário de sistema dedicado.
+        Sempre utiliza um usuário institucional de sistema dedicado (EduPage / Timetable),
+        garantindo que as reservas da grade horária não fiquem atribuídas ao administrador
+        ou usuário que acionou a sincronização.
         """
-        if usuario and getattr(usuario, "is_authenticated", False):
-            return usuario
-
-        admin = HubUser.objects.filter(papel=Papel.ADMIN, is_active=True).first()
-        if admin:
-            return admin
-
         usuario_sistema, _ = HubUser.objects.get_or_create(
             email="timetable.sistema@ifrs.edu.br",
             defaults={
                 "id": uuid.uuid4(),
-                "nome": "Sistema EduPage / Timetable",
+                "nome": "EduPage (Timetable)",
+                "perfil_acesso": "servidor",
                 "papel": Papel.ADMIN,
-                "is_active": True,
+                "is_active": False,
             },
         )
+        if usuario_sistema.nome != "EduPage (Timetable)":
+            usuario_sistema.nome = "EduPage (Timetable)"
+            usuario_sistema.save(update_fields=["nome"])
+
         return usuario_sistema
 
     @classmethod
