@@ -17,6 +17,12 @@
   --cor-borda-reserva: var(--cor-marca-escura, #007832);
 }
 
+.legendaCor[data-tipo="aula"],
+.reserva[data-tipo="aula"] {
+  --cor-reserva: #009a44b0;
+  --cor-borda-reserva: #3a9d64;
+}
+
 .legendaCor[data-tipo="externa"],
 .reserva[data-tipo="externa"] {
   --cor-reserva: #2563eb;

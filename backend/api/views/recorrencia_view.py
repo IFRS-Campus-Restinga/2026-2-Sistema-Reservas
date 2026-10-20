@@ -41,6 +41,14 @@ class RecorrenciaReservaAreaDetailView(BuscarObjetoComPermissaoMixin, APIView):
 
             self.check_object_permissions(request, recorrencia)
 
+            if recorrencia.reservas.filter(celula_timetable__isnull=False).exists():
+                return Response(
+                    {
+                        "detail": "Aulas da grade horária (Timetable) são gerenciadas exclusivamente pela sincronização com o EduPage e não podem ser alteradas ou canceladas manualmente."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             if "status" in request.data:
                 if (
                     set(request.data) != {"status"}

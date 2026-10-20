@@ -14,6 +14,7 @@ function CartaoReserva({ reserva, modalidade, periodo, mostrarStatus = true, mos
   const tipo = String(reserva.tipo_reserva || '').toLowerCase();
   const status = statusReservaApresentado(reserva, agora);
   const nomeTipo = modalidade || TIPO_RESERVA_LABEL[tipo] || tipo;
+  const ehRecorrente = Boolean(reserva.recorrencia);
   const Componente = aoClicar ? 'button' : 'div';
 
   useEffect(() => {
@@ -48,6 +49,12 @@ function CartaoReserva({ reserva, modalidade, periodo, mostrarStatus = true, mos
           <span className={styles.tagTipo} data-tipo={modalidade ? 'modalidade' : tipo}>
             {nomeTipo}
           </span>
+          {ehRecorrente && (
+            <span className={styles.tagRecorrente} title="Reserva com repetição agendada">
+              <Repeat size={11} />
+              Recorrente
+            </span>
+          )}
           <span className={styles.nome}>{reserva.nome}</span>
         </span>
         <span className={styles.descricao}>{reserva.descricao}</span>
