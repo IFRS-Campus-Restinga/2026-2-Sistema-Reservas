@@ -219,3 +219,5 @@ __marimo__/
 
 backend/frontend/*
 !backend/frontend/.gitkeep
+
+backend/private_media/

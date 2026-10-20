@@ -14,6 +14,7 @@ from api.permissions.reserva_permissions import PodeGerenciarReserva
 from api.serializers.reserva_veiculo_serializer import ReservaVeiculoSerializer
 from api.enumerations.auditoria_enumerations import AcaoAuditoria
 from api.services.auditoria import foto, registrar_auditoria
+from api.services.termo_service import invalidar_termo_apos_edicao
 from api.services.reserva_veiculo_service import (
     validar_cancelamento,
     validar_disponibilidade,
@@ -112,6 +113,7 @@ class ReservaVeiculoDetailView(BuscarObjetoComPermissaoMixin, APIView):
             )
             dados["veiculo"] = veiculo
             validar_reserva(request.user, dados, reserva)
+            invalidar_termo_apos_edicao(reserva, dados)
             serializer.save()
             registrar_auditoria(request.user, AcaoAuditoria.EDITAR, reserva, antes=antes, depois=foto(reserva))
 

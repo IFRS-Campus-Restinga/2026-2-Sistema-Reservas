@@ -1,14 +1,34 @@
+import { useEffect, useState } from 'react';
+import { FileText } from 'lucide-react';
 import styles from './CartaoReserva.module.css';
 import { formatarDataCurta } from '../../utils/data';
-import { STATUS_RESERVA_LABEL, TIPO_RESERVA_LABEL } from '../../utils/reserva';
-import { Repeat } from 'lucide-react';
+import {
+  STATUS_RESERVA_LABEL,
+  TIPO_RESERVA_LABEL,
+  statusReservaApresentado,
+  termoRetiradaDisponivel,
+} from '../../utils/reserva';
 
-function CartaoReserva({ reserva, modalidade, periodo, mostrarStatus = true, aoClicar }) {
+function CartaoReserva({ reserva, modalidade, periodo, mostrarStatus = true, mostrarDisponibilidadeRetirada = false, aoClicar }) {
+  const [agora, setAgora] = useState(() => new Date());
   const tipo = String(reserva.tipo_reserva || '').toLowerCase();
-  const status = String(reserva.status || '').toLowerCase();
+  const status = statusReservaApresentado(reserva, agora);
   const nomeTipo = modalidade || TIPO_RESERVA_LABEL[tipo] || tipo;
   const ehRecorrente = Boolean(reserva.recorrencia);
   const Componente = aoClicar ? 'button' : 'div';
+
+  useEffect(() => {
+    if (!mostrarDisponibilidadeRetirada || String(reserva.status || '').toUpperCase() !== 'CONFIRMADA') return undefined;
+
+    const inicio = new Date(`${reserva.data}T${reserva.horario_inicio}`);
+    const horarioDisponibilidade = inicio.getTime() - 60 * 60 * 1000;
+    if (Number.isNaN(horarioDisponibilidade) || horarioDisponibilidade <= Date.now()) return undefined;
+
+    const temporizador = setTimeout(() => setAgora(new Date()), horarioDisponibilidade - Date.now() + 25);
+    return () => clearTimeout(temporizador);
+  }, [mostrarDisponibilidadeRetirada, reserva.status, reserva.data, reserva.horario_inicio]);
+
+  const termoDisponivel = mostrarDisponibilidadeRetirada && termoRetiradaDisponivel(reserva, agora);
 
   return (
     <Componente
@@ -41,6 +61,11 @@ function CartaoReserva({ reserva, modalidade, periodo, mostrarStatus = true, aoC
         <span className={styles.horario}>
           {periodo || `${formatarDataCurta(reserva.data)} · ${reserva.horario_inicio}–${reserva.horario_fim}`}
         </span>
+        {termoDisponivel && (
+          <span className={styles.avisoRetirada} role="status">
+            <FileText size={13} /> Termo de retirada disponível para envio
+          </span>
+        )}
       </span>
 
       {mostrarStatus && (

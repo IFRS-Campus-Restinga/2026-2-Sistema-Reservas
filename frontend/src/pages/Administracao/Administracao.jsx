@@ -4,17 +4,27 @@ import styles from "./Administracao.module.css";
 
 import AbasAdmin from "../../components/Administracao/AbasAdmin/AbasAdmin";
 import VeiculosAdmin from "../../components/Administracao/Veiculos/VeiculosAdmin";
+import ReservasAdmin from "../../components/Administracao/Reservas/ReservasAdmin";
 import RecursosAdmin from "../../components/Administracao/Recursos/RecursosAdmin";
 import BlocosAdmin from "../../components/Administracao/Blocos/BlocosAdmin";
 import AreasAdmin from "../../components/Administracao/Areas/AreasAdmin";
 import TimetableAdmin from "../../components/Administracao/Timetable/TimetableAdmin";
 import GruposGerenciador from "../../components/Grupos/GruposGerenciador/GruposGerenciador";
 import AuditoriaAdmin from "../../components/Administracao/Auditoria/AuditoriaAdmin";
+import SolicitacoesAdmin from "../../components/Administracao/Solicitacoes/SolicitacoesAdmin";
 
 const abas = [
   {
     id: "visao-geral",
     rotulo: "Visão Geral",
+  },
+  { 
+    id: "solicitacoes", 
+    rotulo: "Solicitações" 
+  },
+  {
+    id: "reservas",
+    rotulo: "Reservas",
   },
   {
     id: "recursos",
@@ -63,11 +73,16 @@ function Administracao() {
       />
 
       <div className={styles.conteudo}>
+        {abaAtiva === "solicitacoes" && <SolicitacoesAdmin />}
         {abaAtiva === "visao-geral" && (
           <p className={styles.visaoGeral}>
             Visão geral da administração.
           </p>
         )}
+
+        {abaAtiva === "reservas" && (
+                  <ReservasAdmin />
+                )}
 
         {abaAtiva === "recursos" && (
           <RecursosAdmin />

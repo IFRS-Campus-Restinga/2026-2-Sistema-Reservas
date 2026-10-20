@@ -85,6 +85,10 @@
     max-width: 720px;
 }
 
+.termo .modal {
+    max-width: 384px;
+}
+
 .confirmacao .cabecalho {
     position: relative;
     justify-content: center;

@@ -49,6 +49,7 @@ Permissões que já existem:
 | Permissão | Quem passa |
 |---|---|
 | `EscritaAdmin` | Leitura: qualquer usuário logado. Escrita: só admin. Use nos cadastros (veículos, áreas, recursos...) |
+| `SomenteAdministrador` | Leitura e escrita: só admin. Use em APIs administrativas restritas, como solicitações e análise de termos |
 | `PodeCriarGrupo` | Leitura: qualquer usuário logado. Criar: admin e servidor, conforme o tipo do grupo |
 | `PodeGerenciarGrupo` | O criador do grupo ou admin |
 | `PodeGerenciarMembrosGrupo` | O criador do grupo ou admin |
