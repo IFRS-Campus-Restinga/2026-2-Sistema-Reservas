@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useUsuario } from '../../hooks/useUsuario';
-import { CalendarCheck, ClipboardList } from 'lucide-react';
+import { CalendarCheck, ClipboardList, Repeat } from 'lucide-react';
 import CartaoReserva from '../../components/CartaoReserva/CartaoReserva';
 import ModalDetalheReserva from '../../components/ModalDetalheReserva/ModalDetalheReserva';
 import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/ReservaRecursoGeralModal';
@@ -25,6 +25,7 @@ import {
   cancelarReservaRecursoGeral,
 } from '../../services/reservasRecursosGerais';
 import { STATUS_RESERVA_LABEL } from '../../utils/reserva';
+import { TIPO_RECORRENCIA_LABEL } from '../../utils/recorrencia';
 import { STATUS_RECURSO_LABEL } from '../../utils/statusRecurso';
 import { ehAdministrador } from '../../utils/permissoes';
 import styles from './MinhasReservas.module.css';
@@ -172,17 +173,40 @@ function MinhasReservas() {
     }
 
     if (reserva.modalidade === 'area') {
-      return [
+      const detalhes = [
         {
           rotulo: 'Finalidade',
           valor: reserva.aula ? 'Aula regular' : 'Atividade Acadêmica',
           icone: ClipboardList,
         },
-        {
-          rotulo: 'Observações',
-          valor: reserva.descricao || 'Nenhuma',
-        },
       ];
+
+      if (reserva.recorrencia) {
+        const tipoLabel = TIPO_RECORRENCIA_LABEL[reserva.recorrencia.tipo] || reserva.recorrencia.tipo || 'Recorrente';
+        const inicio = formatarData(reserva.primeira_data || reserva.data);
+        const fim = formatarData(reserva.ultima_data || reserva.recorrencia.data_fim || reserva.data);
+
+        detalhes.push({
+          rotulo: 'Recorrência',
+          valor: `${tipoLabel} (${inicio} a ${fim})`,
+          icone: Repeat,
+        });
+
+        if (reserva.total_ocorrencias > 1) {
+          detalhes.push({
+            rotulo: 'Total de repetições',
+            valor: `${reserva.total_ocorrencias} datas agendadas`,
+            icone: CalendarCheck,
+          });
+        }
+      }
+
+      detalhes.push({
+        rotulo: 'Observações',
+        valor: reserva.descricao || 'Nenhuma',
+      });
+
+      return detalhes;
     }
 
     if (reserva.modalidade === 'veiculo') {
@@ -335,6 +359,21 @@ function MinhasReservas() {
     setAviso('Reserva atualizada.');
   }
 
+  function formatarPeriodoCartao(reserva) {
+    if (reserva?.modalidade === 'veiculo') {
+      return `${formatarData(reserva.data)} · ${String(reserva.horario_inicio).slice(0, 5)} até ${formatarData(reserva.data_devolucao_prevista)} · ${String(reserva.horario_fim).slice(0, 5)}`;
+    }
+
+    if (reserva?.recorrencia) {
+      const inicio = formatarData(reserva.primeira_data || reserva.data);
+      const fim = formatarData(reserva.ultima_data || reserva.recorrencia.data_fim || reserva.data);
+      const horario = `${String(reserva.horario_inicio).slice(0, 5)}–${String(reserva.horario_fim).slice(0, 5)}`;
+      return `${inicio} até ${fim} · ${horario}`;
+    }
+
+    return undefined;
+  }
+
   function periodoVeiculo(reserva) {
     if (reserva?.modalidade !== 'veiculo') return undefined;
     return `${formatarData(reserva.data)} · ${String(reserva.horario_inicio).slice(0, 5)} até ${formatarData(reserva.data_devolucao_prevista)} · ${String(reserva.horario_fim).slice(0, 5)}`;
@@ -344,16 +383,48 @@ function MinhasReservas() {
     ? reservas
     : reservas.filter((reserva) => reserva.modalidade === filtroTipo);
 
-  const ordenadas = [...reservasDoTipo]
+  // Agrupa ocorrências da mesma série de recorrência para não poluir "Minhas Reservas"
+  const mapaRecorrencias = new Map();
+  const reservasAgrupadas = [];
+
+  for (const reserva of reservasDoTipo) {
+    const idRecorrencia = reserva.recorrencia?.id;
+
+    if (idRecorrencia && reserva.modalidade === 'area') {
+      if (!mapaRecorrencias.has(idRecorrencia)) {
+        const itemAgrupado = {
+          ...reserva,
+          primeira_data: reserva.data,
+          ultima_data: reserva.data,
+          total_ocorrencias: 1,
+        };
+        mapaRecorrencias.set(idRecorrencia, itemAgrupado);
+        reservasAgrupadas.push(itemAgrupado);
+      } else {
+        const itemExistente = mapaRecorrencias.get(idRecorrencia);
+        itemExistente.total_ocorrencias += 1;
+        if (reserva.data < itemExistente.primeira_data) {
+          itemExistente.primeira_data = reserva.data;
+        }
+        if (reserva.data > itemExistente.ultima_data) {
+          itemExistente.ultima_data = reserva.data;
+        }
+      }
+    } else {
+      reservasAgrupadas.push(reserva);
+    }
+  }
+
+  const ordenadas = [...reservasAgrupadas]
     .filter((reserva) => {
       const status = String(reserva.status || '').toLowerCase();
       return filtroStatus === 'todos' ? status !== 'cancelada' : status === filtroStatus;
     })
-    .sort((a, b) =>
-      `${b.data} ${b.horario_inicio}`.localeCompare(
-        `${a.data} ${a.horario_inicio}`
-      )
-    );
+    .sort((a, b) => {
+      const dataA = a.primeira_data || a.data;
+      const dataB = b.primeira_data || b.data;
+      return `${dataB} ${b.horario_inicio}`.localeCompare(`${dataA} ${a.horario_inicio}`);
+    });
 
   const recurso =
     selecionada?.modalidade === 'recurso_geral'
@@ -411,7 +482,7 @@ function MinhasReservas() {
               descricao: nomeItem(reserva),
             }}
             modalidade={MODALIDADES[reserva.modalidade] || 'Reserva'}
-            periodo={periodoVeiculo(reserva)}
+            periodo={formatarPeriodoCartao(reserva)}
             mostrarStatus={true}
             aoClicar={() => setSelecionada(reserva)}
           />

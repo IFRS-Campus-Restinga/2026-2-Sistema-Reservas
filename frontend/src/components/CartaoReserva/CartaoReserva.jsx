@@ -1,11 +1,13 @@
 import styles from './CartaoReserva.module.css';
 import { formatarDataCurta } from '../../utils/data';
 import { STATUS_RESERVA_LABEL, TIPO_RESERVA_LABEL } from '../../utils/reserva';
+import { Repeat } from 'lucide-react';
 
 function CartaoReserva({ reserva, modalidade, periodo, mostrarStatus = true, aoClicar }) {
   const tipo = String(reserva.tipo_reserva || '').toLowerCase();
   const status = String(reserva.status || '').toLowerCase();
   const nomeTipo = modalidade || TIPO_RESERVA_LABEL[tipo] || tipo;
+  const ehRecorrente = Boolean(reserva.recorrencia);
   const Componente = aoClicar ? 'button' : 'div';
 
   return (
@@ -27,6 +29,12 @@ function CartaoReserva({ reserva, modalidade, periodo, mostrarStatus = true, aoC
           <span className={styles.tagTipo} data-tipo={modalidade ? 'modalidade' : tipo}>
             {nomeTipo}
           </span>
+          {ehRecorrente && (
+            <span className={styles.tagRecorrente} title="Reserva com repetição agendada">
+              <Repeat size={11} />
+              Recorrente
+            </span>
+          )}
           <span className={styles.nome}>{reserva.nome}</span>
         </span>
         <span className={styles.descricao}>{reserva.descricao}</span>
