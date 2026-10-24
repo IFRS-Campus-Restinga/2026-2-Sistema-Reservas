@@ -7,8 +7,10 @@ import ModalDetalheReserva from '../../ModalDetalheReserva/ModalDetalheReserva';
 import ModalTermo from '../../TermoReserva/ModalTermo';
 import Paginacao from '../Paginacao/Paginacao';
 import styles from './SolicitacoesAdmin.module.css';
+import {confirmarReservaPendente, cancelarReservaAdmin} from '../../../services';
+import ModalReservaPendente from '../Reservas/ModalReservaPendente/ModalReservaPendente';
 
-const TIPOS = [{ valor: 'veiculo', rotulo: 'Veículos' }, { valor: 'recurso_geral', rotulo: 'Recursos' }];
+const TIPOS = [{ valor: 'area', rotulo: 'Áreas' }, { valor: 'veiculo', rotulo: 'Veículos' }, { valor: 'recurso_geral', rotulo: 'Recursos' }];
 const DOCUMENTOS = [
   { valor: 'responsabilidade', rotulo: 'Responsabilidade' },
   { valor: 'retirada', rotulo: 'Retirada de veículo' },
@@ -33,11 +35,23 @@ function periodo(reserva) {
 }
 
 function modalidade(reserva) {
+  if (reserva.modalidade === 'area') return 'Área';
   if (reserva.modalidade === 'veiculo') return 'Veículo';
   return 'Recurso';
 }
 
 function AcoesSolicitacao({ reserva, aoVerTermo, aoVerDetalhes }) {
+  if (reserva.origem_solicitacao === 'RESERVA') {
+    return (
+      <div className={styles.acoes}>
+        <button type="button" onClick={aoVerDetalhes}>
+          <Eye size={13} />
+          Analisar reserva
+        </button>
+      </div>
+    );
+  }
+
   const aberta = reserva.termo_tipo === 'responsabilidade'
     ? ['PENDENTE', 'AGUARDANDO_TERMO'].includes(reserva.status)
     : reserva.termo_status === 'PENDENTE';
@@ -63,6 +77,9 @@ export default function SolicitacoesAdmin() {
   const [erro, setErro] = useState('');
   const [revisao, setRevisao] = useState(0);
   const [selecionada, setSelecionada] = useState(null);
+  const [confirmandoId, setConfirmandoId] = useState(null);
+  const [cancelandoId, setCancelandoId] = useState(null);
+  const [erroReserva, setErroReserva] = useState('');
 
   useEffect(() => {
     const controle = new AbortController();
@@ -111,6 +128,48 @@ export default function SolicitacoesAdmin() {
     recarregar();
   }
 
+  async function confirmarReserva(reserva) {
+    if (!reserva || confirmandoId || cancelandoId) return;
+
+    try {
+      setConfirmandoId(reserva.id);
+      setErroReserva('');
+
+      await confirmarReservaPendente(reserva.id);
+
+      setSelecionada(null);
+      setPagina(1);
+      recarregar();
+    } catch (falha) {
+      setErroReserva(
+        falha.message || 'Não foi possível confirmar a reserva.'
+      );
+    } finally {
+      setConfirmandoId(null);
+    }
+  }
+
+  async function cancelarReserva(reserva, motivo) {
+    if (!reserva || confirmandoId || cancelandoId) return;
+
+    try {
+      setCancelandoId(reserva.id);
+      setErroReserva('');
+
+      await cancelarReservaAdmin(reserva.id, motivo);
+
+      setSelecionada(null);
+      setPagina(1);
+      recarregar();
+    } catch (falha) {
+      setErroReserva(
+        falha.message || 'Não foi possível cancelar a reserva.'
+      );
+    } finally {
+      setCancelandoId(null);
+    }
+  }
+
   let conteudoLista;
   if (carregando) {
     conteudoLista = <div className={styles.estado} role="status"><LoaderCircle size={28} className={styles.girando} /><p>Carregando solicitações…</p></div>;
@@ -133,6 +192,9 @@ export default function SolicitacoesAdmin() {
                 <header className={styles.titulo}>
                   <h3>{reserva.nome}</h3>
                   <span className={styles.etiqueta}>{modalidade(reserva)}</span>
+                  <span className={`${styles.origem} ${ reserva.origem_solicitacao === 'TERMO' ? styles.origemTermo : styles.origemReserva}`}>
+                    {reserva.origem_solicitacao === 'TERMO' ? 'Termo' : 'Reserva'}
+                  </span>
                   {reserva.tipo_reserva === 'EXTERNA' && <span className={styles.externo}>Externo</span>}
                   <span className={styles.situacao} data-status={statusApresentado}>
                     {(reserva.status === 'AGUARDANDO_TERMO' || statusApresentado === 'AGUARDANDO_TERMO_DEVOLUCAO') && <FileWarning size={10} />}{situacao}
@@ -158,7 +220,26 @@ export default function SolicitacoesAdmin() {
 
   let modal;
   if (selecionada) {
-    if (selecionada.mostrarTermo) {
+    if (selecionada.origem_solicitacao === 'RESERVA') {
+      modal = (
+        <ModalReservaPendente
+          aberto
+          reserva={selecionada.reserva_pendente}
+          aoFechar={() => {
+            setErroReserva('');
+            setSelecionada(null);
+          }}
+          aoConfirmar={confirmarReserva}
+          confirmando={confirmandoId === selecionada.id}
+          erroConfirmacao={erroReserva}
+          aoCancelar={cancelarReserva}
+          cancelando={cancelandoId === selecionada.id}
+          erroCancelamento={erroReserva}
+        />
+      );
+    }
+
+    else if (selecionada.mostrarTermo) {
       modal = <ModalTermo key={`${selecionada.id}-${selecionada.termo_tipo}`} reserva={selecionada} tipoDocumento={selecionada.termo_tipo}
         rejeitar={selecionada.rejeitar}
         aoFechar={() => setSelecionada(null)} aoAtualizar={atualizarSelecionada} />;
@@ -179,10 +260,10 @@ export default function SolicitacoesAdmin() {
   }
 
   return (
-    <section className={styles.pagina} aria-label="Solicitações de termos de responsabilidade">
+    <section className={styles.pagina} aria-label="Solicitações">
       <div className={styles.filtros}>
         <Select valor={documento} aoAlterar={(valor) => filtrar(setDocumento, valor)} opcoes={DOCUMENTOS}
-          valorTodos="todos" rotuloTodos="Todos os termos" ariaLabel="Tipo de documento" />
+          valorTodos="todos" rotuloTodos="Termos e reservas" ariaLabel="Tipo de documento" />
         <Select valor={tipo} aoAlterar={(valor) => filtrar(setTipo, valor)} opcoes={TIPOS}
           valorTodos="todos" rotuloTodos="Todos os tipos" ariaLabel="Tipo de solicitação" />
         <Select valor={status} aoAlterar={(valor) => filtrar(setStatus, valor)} opcoes={STATUS}

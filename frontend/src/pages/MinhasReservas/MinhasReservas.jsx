@@ -30,7 +30,7 @@ import { ehAdministrador } from '../../utils/permissoes';
 import styles from './MinhasReservas.module.css';
 
 const STATUS_ALTERAVEIS = {
-  recurso_geral: ['PENDENTE', 'AGUARDANDO_TERMO'],
+  recurso_geral: ['PENDENTE', 'CONFIRMADA', 'AGUARDANDO_TERMO'],
   area: ['PENDENTE', 'CONFIRMADA'],
   veiculo: ['PENDENTE', 'AGUARDANDO_TERMO', 'CONFIRMADA'],
 };

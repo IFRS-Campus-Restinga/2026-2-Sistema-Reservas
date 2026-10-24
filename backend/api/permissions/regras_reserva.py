@@ -14,10 +14,10 @@ TIPOS_RESERVA_LIVRE_POR_PAPEL = {
 }
 
 def status_inicial_reserva(usuario):
-    if usuario_e_admin(usuario) or getattr(usuario, "papel", None) == Papel.SERVIDOR:
-        return StatusReserva.CONFIRMADA
+    if getattr(usuario, "papel", None) == Papel.CONVIDADO:
+        return StatusReserva.PENDENTE
 
-    return StatusReserva.PENDENTE
+    return StatusReserva.CONFIRMADA
 
 def tipos_reserva_livre(usuario):
     if usuario_e_admin(usuario):

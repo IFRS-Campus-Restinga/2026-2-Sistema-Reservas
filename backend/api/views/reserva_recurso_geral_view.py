@@ -21,6 +21,7 @@ from .view_helpers import BuscarObjetoComPermissaoMixin
 STATUS_ALTERAVEIS = [
     StatusReserva.PENDENTE,
     StatusReserva.AGUARDANDO_TERMO,
+    StatusReserva.AGUARDANDO_TERMO,
 ]
 
 CAMPOS_EDICAO = {

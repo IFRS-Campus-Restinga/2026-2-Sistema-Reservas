@@ -13,6 +13,7 @@ from api.enumerations import StatusReserva, TipoTermo
 from api.enumerations.status_termo import StatusTermo
 from api.models import Reserva, TermoResponsabilidade
 from api.permissions.regras_comuns import usuario_e_admin
+from api.permissions.regras_reserva import status_inicial_reserva
 
 
 ABERTAS = (StatusReserva.AGUARDANDO_TERMO, StatusReserva.PENDENTE)
@@ -187,7 +188,7 @@ def invalidar_termo_apos_edicao(reserva, dados):
     if exige_termo:
         reserva.status = StatusReserva.AGUARDANDO_TERMO
     else:
-        reserva.status = StatusReserva.PENDENTE
+        reserva.status = status_inicial_reserva(reserva.usuario)
     reserva.save(update_fields=['status'])
 
 
