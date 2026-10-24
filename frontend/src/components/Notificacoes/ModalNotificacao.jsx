@@ -86,6 +86,17 @@ function ModalNotificacao({ notificacao, aoFechar }) {
             </div>
           )}
 
+          {termoRejeitado && (
+            <div className={styles.motivoCancelamento}>
+              <span>Motivo da recusa</span>
+
+              <strong>
+                {notificacao.motivo_rejeicao_termo ||
+                  "Não informado"}
+              </strong>
+            </div>
+          )}
+
           {reserva && (
             <div className={styles.detalhes}>
               <div className={styles.linha}>

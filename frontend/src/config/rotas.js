@@ -7,6 +7,7 @@ import {
   DoorOpen,
   Car,
   CalendarDays,
+  Bell,
 } from "lucide-react";
 
 import Home from "../pages/Home/Home";
@@ -19,6 +20,7 @@ import Recursos from "../pages/Recursos/Recursos";
 import MinhasReservas from "../pages/MinhasReservas/MinhasReservas";
 import Grupos from "../pages/Grupos/Grupos";
 import Administracao from "../pages/Administracao/Administracao";
+import Notificacoes from "../pages/Notificacoes/Notificacoes";
 import {
   ehAdministrador,
   podeGerenciarGrupos,
@@ -78,6 +80,15 @@ export const ROTAS = [
     path: "/minhas-reservas",
     componente: MinhasReservas,
     menu: { titulo: "Minhas Reservas", icone: ClipboardList },
+  },
+  {
+  id: "notificacoes",
+  path: "/notificacoes",
+  componente: Notificacoes,
+  menu: {
+    titulo: "Notificações",
+    icone: Bell,
+  },
   },
   {
     id: "grupos",

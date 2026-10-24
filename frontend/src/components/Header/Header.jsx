@@ -183,6 +183,23 @@ function Header({
     };
   }, []);
 
+  useEffect(() => {
+    function atualizarNotificacoes() {
+      carregarNotificacoes();
+    }
+
+    window.addEventListener(
+      "notificacoes-atualizadas",
+      atualizarNotificacoes
+    );
+
+    return () => {
+      window.removeEventListener(
+        "notificacoes-atualizadas",
+        atualizarNotificacoes
+      );
+    };
+  }, [carregarNotificacoes]);
 
   function escolherReserva(acao) {
     setMenuReservaAberto(false);
@@ -201,55 +218,58 @@ function Header({
     }
   }
 
-async function abrirNotificacao(notificacao) {
-  setNotificacoesAbertas(false);
+  async function abrirNotificacao(notificacao) {
+    setNotificacoesAbertas(false);
 
-  let atualizada = notificacao;
+    let atualizada = notificacao;
 
-  if (!notificacao.lida) {
-    try {
-      atualizada = await marcarNotificacaoComoLida(
-        notificacao.id
-      );
+    if (!notificacao.lida) {
+      try {
+        atualizada = await marcarNotificacaoComoLida(
+          notificacao.id
+        );
 
-      setNotificacoes((atuais) =>
-        atuais.map((item) =>
-          item.id === atualizada.id ? atualizada : item
-        )
-      );
+        setNotificacoes((atuais) =>
+          atuais.map((item) =>
+            item.id === atualizada.id ? atualizada : item
+          )
+        );
 
-      setNaoLidas((quantidade) =>
-        Math.max(0, quantidade - 1)
-      );
-    } catch (erro) {
-      console.error(erro);
+        setNaoLidas((quantidade) =>
+          Math.max(0, quantidade - 1)
+        );
+        window.dispatchEvent(
+          new Event("notificacoes-atualizadas")
+        );
+      } catch (erro) {
+        console.error(erro);
+      }
     }
-  }
 
-  const notificacaoDeTermoParaAdmin =
-    usuario?.papel === "admin" &&
-    (
-      atualizada.tipo === "TERMO_ENVIADO" ||
-      atualizada.tipo === "TERMO_REENVIADO"
-    );
+    const notificacaoDeTermoParaAdmin =
+      usuario?.papel === "admin" &&
+      (
+        atualizada.tipo === "TERMO_ENVIADO" ||
+        atualizada.tipo === "TERMO_REENVIADO"
+      );
 
-  if (notificacaoDeTermoParaAdmin) {
-    navigate("/admin", {
-      state: {
-        aba: "solicitacoes",
-        solicitacaoInicial: {
-          id: atualizada.reserva.id,
-          modalidade: atualizada.reserva.modalidade,
-          termo_tipo: "responsabilidade",
+    if (notificacaoDeTermoParaAdmin) {
+      navigate("/admin", {
+        state: {
+          aba: "solicitacoes",
+          solicitacaoInicial: {
+            id: atualizada.reserva.id,
+            modalidade: atualizada.reserva.modalidade,
+            termo_tipo: "responsabilidade",
+          },
         },
-      },
-    });
+      });
 
-    return;
-  }
+      return;
+    }
 
-  setNotificacaoSelecionada(atualizada);
-  }
+    setNotificacaoSelecionada(atualizada);
+    }
 
 
   async function marcarTodasComoLidas() {
@@ -268,6 +288,10 @@ async function abrirNotificacao(notificacao) {
       );
 
       setNaoLidas(0);
+
+      window.dispatchEvent(
+        new Event("notificacoes-atualizadas")
+      );
     } catch (erro) {
       setErroNotificacoes(
         erro.message ||
@@ -506,17 +530,17 @@ async function abrirNotificacao(notificacao) {
                   )}
                 </div>
 
-
-                {/* Só visual por enquanto */}
                 {notificacoes.length > 0 && (
-                  <button
-                    type="button"
-                    className={
-                      styles.verTodasNotificacoes
-                    }
-                  >
-                    Ver todas as notificações →
-                  </button>
+                <button
+                  type="button"
+                  className={styles.verTodasNotificacoes}
+                  onClick={() => {
+                    setNotificacoesAbertas(false);
+                    navigate("/notificacoes");
+                  }}
+                >
+                  Ver todas as notificações →
+                </button>
                 )}
               </div>
             )}
