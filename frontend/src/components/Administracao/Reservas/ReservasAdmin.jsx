@@ -1,12 +1,37 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Eye } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
+
 import styles from './ReservasAdmin.module.css';
 
-import { listarReservasPendentes, confirmarReservaPendente, cancelarReservaAdmin } from '../../../services';
+import {
+  buscarAreas,
+  buscarBlocos,
+  buscarVeiculos,
+  cancelarReservaAdmin,
+  listarRecursosGerais,
+  listarReservasAdmin,
+  listarTiposRecurso,
+} from '../../../services';
+
 import CampoBusca from '../CampoBusca/CampoBusca';
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
+import ModalConfirmacao from '../ModalConfirmacao/ModalConfirmacao';
 import Select from '../../Select/Select';
-import ModalReservaPendente from './ModalReservaPendente/ModalReservaPendente';
+
+import ModalDetalheReserva
+  from '../../ModalDetalheReserva/ModalDetalheReserva';
+
+import ReservaAreaModal
+  from '../../ReservaArea/ReservaAreaModal';
+
+import ReservaRecursoGeralModal
+  from '../../ReservaRecursoGeral/ReservaRecursoGeralModal';
+
+import ReservaVeiculoModal
+  from '../../ReservaVeiculo/ReservaVeiculoModal';
+
+import { STATUS_RESERVA_LABEL } from '../../../utils/reserva';
+
 
 const MODALIDADE_LABEL = {
   area: 'Área',
@@ -14,137 +39,319 @@ const MODALIDADE_LABEL = {
   recurso_geral: 'Recurso geral',
 };
 
+
+const STATUS_GERENCIAVEIS = new Set([
+  'PENDENTE',
+  'CONFIRMADA',
+  'AGUARDANDO_TERMO',
+  'AGUARDANDO_TERMO_DEVOLUCAO',
+]);
+
+
 function formatarData(data) {
   if (!data) return '—';
 
-  return new Date(`${data}T00:00:00`).toLocaleDateString('pt-BR');
+  return new Date(
+    `${data}T12:00:00`
+  ).toLocaleDateString('pt-BR');
 }
 
+
 function formatarHorario(horario) {
-  return horario ? horario.slice(0, 5) : '—';
+  return horario
+    ? horario.slice(0, 5)
+    : '—';
 }
+
+
+function labelStatus(status) {
+  return (
+    STATUS_RESERVA_LABEL[
+      String(status || '').toLowerCase()
+    ] || status
+  );
+}
+
+
+function descricaoItem(reserva) {
+  const item = reserva.item || {};
+
+  if (reserva.modalidade === 'area') {
+    return item.nome || 'Área não informada';
+  }
+
+  if (reserva.modalidade === 'veiculo') {
+    return item.nome || 'Veículo não informado';
+  }
+
+  return item.nome || 'Recurso não informado';
+}
+
+
+function detalheSecundario(reserva) {
+  const item = reserva.item || {};
+
+  if (reserva.modalidade === 'area') {
+    return item.bloco
+      ? `Bloco ${item.bloco}`
+      : '—';
+  }
+
+  if (reserva.modalidade === 'veiculo') {
+    return item.placa || '—';
+  }
+
+  return item.tipo || '—';
+}
+
+
+function dadosParaEdicao(reserva) {
+  const detalhes = reserva.detalhes || {};
+  const item = reserva.item || {};
+
+  const base = {
+    id: reserva.id,
+    nome: reserva.nome,
+    descricao: reserva.descricao,
+    status: reserva.status,
+    data: reserva.data,
+    horario_inicio: reserva.horario_inicio,
+    horario_fim: reserva.horario_fim,
+    tipo_reserva: reserva.tipo_reserva,
+  };
+
+  if (reserva.modalidade === 'area') {
+    return {
+      ...base,
+      area: item.id,
+      aula: detalhes.aula,
+    };
+  }
+
+  if (reserva.modalidade === 'veiculo') {
+    return {
+      ...base,
+      veiculo: item.id,
+      destino: detalhes.destino,
+      finalidade: detalhes.finalidade,
+      quantidade_passageiros:
+        detalhes.quantidade_passageiros,
+      data_devolucao_prevista:
+        detalhes.data_devolucao_prevista,
+    };
+  }
+
+  return {
+    ...base,
+    recurso_geral: item.id,
+    quantidades: detalhes.quantidades,
+    data_devolucao_prevista:
+      detalhes.data_devolucao_prevista,
+  };
+}
+
 
 function ReservasAdmin() {
   const [reservas, setReservas] = useState([]);
+
+  const [areas, setAreas] = useState([]);
+  const [blocos, setBlocos] = useState([]);
+  const [veiculos, setVeiculos] = useState([]);
+  const [recursos, setRecursos] = useState([]);
+  const [tiposRecurso, setTiposRecurso] = useState([]);
+
   const [busca, setBusca] = useState('');
   const [modalidade, setModalidade] = useState('todas');
+
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
-  const [erroConfirmacao, setErroConfirmacao] = useState('');
-  const [erroCancelamento, setErroCancelamento] = useState('');
-  const [mensagemSucesso, setMensagemSucesso] = useState('');
-  const [reservaSelecionada, setReservaSelecionada] = useState(null);
-  const [confirmandoId, setConfirmandoId] = useState(null);
-  const [cancelandoId, setCancelandoId] = useState(null);
+  const [mensagemSucesso, setMensagemSucesso] =
+    useState('');
+
+  const [reservaDetalhes, setReservaDetalhes] =
+    useState(null);
+
+  const [reservaEditando, setReservaEditando] =
+    useState(null);
+
+  const [reservaCancelando, setReservaCancelando] =
+    useState(null);
+
+  const [motivoCancelamento, setMotivoCancelamento] =
+    useState('');
+
+  const [erroCancelamento, setErroCancelamento] =
+    useState('');
+
+  const [cancelando, setCancelando] = useState(false);
+
 
   useEffect(() => {
-    let ativo = true;
-
-    async function carregarReservas() {
-      try {
-        const dados = await listarReservasPendentes();
-
-        if (ativo) {
-          setReservas(Array.isArray(dados) ? dados : []);
-        }
-      } catch (erro) {
-        console.error(erro);
-
-        if (ativo) {
-          setErro(erro.message || 'Não foi possível carregar as reservas pendentes.');
-        }
-      } finally {
-        if (ativo) {
-          setCarregando(false);
-        }
-      }
-    }
-
-    carregarReservas();
-
-    return () => {
-      ativo = false;
-    };
+    carregarDados();
   }, []);
 
-  async function confirmarReserva(reserva) {
-    if (!reserva || confirmandoId) return;
 
+  async function carregarDados() {
     try {
-      setConfirmandoId(reserva.id);
-      setErroConfirmacao('');
-      setMensagemSucesso('');
+      setCarregando(true);
+      setErro('');
 
-      await confirmarReservaPendente(reserva.id);
+      const [
+        listaReservas,
+        listaAreas,
+        listaBlocos,
+        listaVeiculos,
+        listaRecursos,
+        listaTipos,
+      ] = await Promise.all([
+        listarReservasAdmin(),
+        buscarAreas(),
+        buscarBlocos(),
+        buscarVeiculos(),
+        listarRecursosGerais(),
+        listarTiposRecurso(),
+      ]);
 
-      setReservas((reservasAtuais) =>
-        reservasAtuais.filter((item) => item.id !== reserva.id)
-      );
-      setReservaSelecionada(null);
-      setMensagemSucesso(`Reserva "${reserva.nome}" confirmada com sucesso.`);
-    } catch (erro) {
-      console.error(erro);
-      setErroConfirmacao(
-        erro.message || 'Não foi possível confirmar a reserva.'
+      setReservas(listaReservas || []);
+      setAreas(listaAreas || []);
+      setBlocos(listaBlocos || []);
+      setVeiculos(listaVeiculos || []);
+      setRecursos(listaRecursos || []);
+      setTiposRecurso(listaTipos || []);
+    } catch (falha) {
+      console.error(falha);
+
+      setErro(
+        falha.message ||
+        'Não foi possível carregar as reservas.'
       );
     } finally {
-      setConfirmandoId(null);
+      setCarregando(false);
     }
   }
 
-  async function cancelarReserva(reserva, motivo) {
-    if (!reserva || confirmandoId || cancelandoId) return;
 
-    try {
-      setCancelandoId(reserva.id);
-      setErroCancelamento('');
-      setErroConfirmacao('');
-      setMensagemSucesso('');
+  function podeGerenciar(reserva) {
+    if (!STATUS_GERENCIAVEIS.has(reserva.status)) {
+      return false;
+    }
 
-      await cancelarReservaAdmin(reserva.id, motivo);
+    if (
+      reserva.modalidade === 'area' &&
+      reserva.detalhes?.celula_timetable
+    ) {
+      return false;
+    }
 
-      setReservas((reservasAtuais) =>
-        reservasAtuais.filter((item) => item.id !== reserva.id)
+    return true;
+  }
+
+
+  function abrirEdicao(reserva) {
+    setMensagemSucesso('');
+    setReservaEditando(reserva);
+  }
+
+
+  function fecharEdicao() {
+    setReservaEditando(null);
+  }
+
+
+  async function reservaAtualizada() {
+    const nome = reservaEditando?.nome;
+
+    setReservaEditando(null);
+
+    await carregarDados();
+
+    setMensagemSucesso(
+      nome
+        ? `Reserva "${nome}" atualizada com sucesso.`
+        : 'Reserva atualizada com sucesso.'
+    );
+  }
+
+
+  function solicitarCancelamento(reserva) {
+    setMensagemSucesso('');
+    setErroCancelamento('');
+    setMotivoCancelamento('');
+    setReservaCancelando(reserva);
+  }
+
+
+  function fecharCancelamento() {
+    if (cancelando) return;
+
+    setReservaCancelando(null);
+    setMotivoCancelamento('');
+    setErroCancelamento('');
+  }
+
+
+  async function confirmarCancelamento() {
+    if (!reservaCancelando || cancelando) {
+      return;
+    }
+
+    const motivo = motivoCancelamento.trim();
+
+    if (!motivo) {
+      setErroCancelamento(
+        'Informe o motivo do cancelamento.'
       );
 
-      setReservaSelecionada(null);
+      return;
+    }
+
+    try {
+      setCancelando(true);
+      setErroCancelamento('');
+
+      await cancelarReservaAdmin(
+        reservaCancelando.id,
+        motivo
+      );
+
+      const nome = reservaCancelando.nome;
+
+      setReservaCancelando(null);
+      setMotivoCancelamento('');
+
+      await carregarDados();
 
       setMensagemSucesso(
-        `Reserva "${reserva.nome}" cancelada com sucesso.`
+        `Reserva "${nome}" cancelada com sucesso.`
       );
-    } catch (erro) {
-      console.error(erro);
+    } catch (falha) {
+      console.error(falha);
 
       setErroCancelamento(
-        erro.message || 'Não foi possível cancelar a reserva.'
+        falha.message ||
+        'Não foi possível cancelar a reserva.'
       );
     } finally {
-      setCancelandoId(null);
+      setCancelando(false);
     }
   }
 
-  function abrirDetalhes(reserva) {
-    setErroConfirmacao('');
-    setErroCancelamento('');
-    setReservaSelecionada(reserva);
-  }
-
-  function fecharDetalhes() {
-    if (confirmandoId || cancelandoId) return;
-    setErroConfirmacao('');
-    setErroCancelamento('');
-    setReservaSelecionada(null);
-  }
 
   const reservasFiltradas = useMemo(() => {
     const termo = busca.trim().toLowerCase();
 
     return reservas.filter((reserva) => {
-      const correspondeModalidade =
-        modalidade === 'todas' || reserva.modalidade === modalidade;
+      const tipoCorreto =
+        modalidade === 'todas' ||
+        reserva.modalidade === modalidade;
 
-      if (!correspondeModalidade) return false;
-      if (!termo) return true;
+      if (!tipoCorreto) {
+        return false;
+      }
+
+      if (!termo) {
+        return true;
+      }
 
       const campos = [
         reserva.nome,
@@ -153,98 +360,206 @@ function ReservasAdmin() {
         reserva.item?.nome,
         reserva.item?.tipo,
         reserva.item?.placa,
+        reserva.item?.bloco,
         MODALIDADE_LABEL[reserva.modalidade],
+        labelStatus(reserva.status),
       ];
 
       return campos.some((campo) =>
-        String(campo ?? '').toLowerCase().includes(termo)
+        String(campo ?? '')
+          .toLowerCase()
+          .includes(termo)
       );
     });
   }, [reservas, busca, modalidade]);
 
+
   const colunas = [
     {
-      chave: 'solicitante',
-      titulo: 'Solicitante',
-      renderizar: (reserva) => (
-        <div className={styles.dadoPrincipal}>
-          <span>{reserva.usuario?.nome || 'Não informado'}</span>
-          <small>{reserva.usuario?.email || '—'}</small>
-        </div>
-      ),
-    },
-    {
-      chave: 'item',
+      chave: 'nome',
       titulo: 'Reserva',
       renderizar: (reserva) => (
-        <div className={styles.dadoPrincipal}>
-          <span>{reserva.item?.nome || reserva.nome}</span>
-          <small>{reserva.nome}</small>
-        </div>
+        <button
+          type="button"
+          className={styles.nomeReserva}
+          onClick={() =>
+            setReservaDetalhes(reserva)
+          }
+        >
+          {reserva.nome}
+        </button>
       ),
     },
     {
       chave: 'modalidade',
       titulo: 'Tipo',
       renderizar: (reserva) => (
-        <span className={styles.modalidade} data-modalidade={reserva.modalidade}>
-          {MODALIDADE_LABEL[reserva.modalidade] || 'Reserva'}
+        <span
+          className={styles.modalidade}
+          data-modalidade={reserva.modalidade}
+        >
+          {MODALIDADE_LABEL[reserva.modalidade] ||
+            'Reserva'}
         </span>
       ),
     },
     {
-      chave: 'data',
-      titulo: 'Data',
-      renderizar: (reserva) => formatarData(reserva.data),
-    },
-    {
-      chave: 'horario',
-      titulo: 'Horário',
-      renderizar: (reserva) =>
-        `${formatarHorario(reserva.horario_inicio)} - ${formatarHorario(reserva.horario_fim)}`,
+      chave: 'item',
+      titulo: 'Item reservado',
+      renderizar: (reserva) => (
+        <div className={styles.dadoPrincipal}>
+          <span>
+            {descricaoItem(reserva)}
+          </span>
+
+          <small>
+            {detalheSecundario(reserva)}
+          </small>
+        </div>
+      ),
     },
     {
       chave: 'status',
       titulo: 'Status',
-      renderizar: () => (
-        <span className={styles.status}>Pendente</span>
+      renderizar: (reserva) => (
+        <span
+          className={styles.status}
+          data-status={reserva.status}
+        >
+          {labelStatus(reserva.status)}
+        </span>
       ),
     },
     {
-      chave: 'acao',
-      titulo: 'Ação',
+      chave: 'usuario',
+      titulo: 'Usuário',
       renderizar: (reserva) => (
-        <button
-          type="button"
-          className={styles.detalhes}
-          onClick={() => setReservaSelecionada(reserva)}
-          title="Ver detalhes"
-          aria-label={`Ver detalhes da reserva ${reserva.nome}`}
-        >
-          <Eye size={15} />
-        </button>
+        <div className={styles.dadoPrincipal}>
+          <span>
+            {reserva.usuario?.nome ||
+              'Não informado'}
+          </span>
+
+          <small>
+            {reserva.usuario?.email || '—'}
+          </small>
+        </div>
       ),
     },
+    {
+      chave: 'acoes',
+      titulo: 'Ações',
+      renderizar: (reserva) => {
+        const gerenciavel =
+          podeGerenciar(reserva);
+
+        const motivoBloqueio =
+          reserva.detalhes?.celula_timetable
+            ? 'Reservas do Timetable são gerenciadas pela sincronização.'
+            : 'Esta reserva não pode mais ser alterada.';
+
+        return (
+          <div className={styles.acoes}>
+            <button
+              type="button"
+              className={styles.editar}
+              disabled={!gerenciavel}
+              onClick={() => abrirEdicao(reserva)}
+              title={
+                gerenciavel
+                  ? 'Editar reserva'
+                  : motivoBloqueio
+              }
+              aria-label={`Editar reserva ${reserva.nome}`}
+            >
+              <Pencil size={14} />
+            </button>
+
+            <button
+              type="button"
+              className={styles.cancelar}
+              disabled={!gerenciavel}
+              onClick={() =>
+                solicitarCancelamento(reserva)
+              }
+              title={
+                gerenciavel
+                  ? 'Cancelar reserva'
+                  : motivoBloqueio
+              }
+              aria-label={`Cancelar reserva ${reserva.nome}`}
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        );
+      },
+    },
   ];
+
+
+  const reservaEdicao = reservaEditando
+    ? dadosParaEdicao(reservaEditando)
+    : null;
+
+
+  const areaInicial =
+    reservaEditando?.modalidade === 'area'
+      ? areas.find(
+          (area) =>
+            String(area.id) ===
+            String(reservaEditando.item?.id)
+        )
+      : null;
+
+
+  const veiculoInicial =
+    reservaEditando?.modalidade === 'veiculo'
+      ? veiculos.find(
+          (veiculo) =>
+            String(veiculo.id) ===
+            String(reservaEditando.item?.id)
+        )
+      : null;
+
+
+  const recursoInicial =
+    reservaEditando?.modalidade ===
+    'recurso_geral'
+      ? recursos.find(
+          (recurso) =>
+            String(recurso.id) ===
+            String(reservaEditando.item?.id)
+        )
+      : null;
+
 
   return (
     <div className={styles.reservas}>
       <div className={styles.cabecalhoSecao}>
         <div>
-          <h2>Reservas pendentes</h2>
-          <p>Solicitações que ainda aguardam análise do administrador.</p>
+          <h2>Reservas</h2>
+
+          <p>
+            Consulte e gerencie todas as reservas
+            do sistema.
+          </p>
         </div>
 
         <span className={styles.contador}>
-          {reservasFiltradas.length} {reservasFiltradas.length === 1 ? 'reserva' : 'reservas'}
+          {reservasFiltradas.length}{' '}
+          {reservasFiltradas.length === 1
+            ? 'reserva'
+            : 'reservas'}
         </span>
       </div>
+
 
       <div className={styles.filtros}>
         <CampoBusca
           valor={busca}
           aoAlterar={setBusca}
-          placeholder="Buscar por usuário, reserva ou recurso..."
+          placeholder="Buscar reserva..."
         />
 
         <Select
@@ -254,48 +569,241 @@ function ReservasAdmin() {
           rotuloTodos="Todos os tipos"
           ariaLabel="Filtrar reservas por tipo"
           opcoes={[
-            { valor: 'area', rotulo: 'Áreas' },
-            { valor: 'veiculo', rotulo: 'Veículos' },
-            { valor: 'recurso_geral', rotulo: 'Recursos gerais' },
+            {
+              valor: 'area',
+              rotulo: 'Áreas',
+            },
+            {
+              valor: 'veiculo',
+              rotulo: 'Veículos',
+            },
+            {
+              valor: 'recurso_geral',
+              rotulo: 'Recursos gerais',
+            },
           ]}
         />
       </div>
 
+
       {mensagemSucesso && (
-        <p className={styles.sucesso} role="status">{mensagemSucesso}</p>
+        <p
+          className={styles.sucesso}
+          role="status"
+        >
+          {mensagemSucesso}
+        </p>
       )}
+
 
       {erro && (
-        <p className={styles.erro} role="alert">{erro}</p>
+        <p
+          className={styles.erro}
+          role="alert"
+        >
+          {erro}
+        </p>
       )}
 
+
       {carregando ? (
-        <p className={styles.carregando} role="status">Carregando reservas pendentes...</p>
+        <p
+          className={styles.carregando}
+          role="status"
+        >
+          Carregando reservas...
+        </p>
       ) : (
         <TabelaAdministracao
           colunas={colunas}
           dados={reservasFiltradas}
           mensagemVazia={
-            busca.trim() || modalidade !== 'todas'
-              ? 'Nenhuma reserva pendente encontrada para os filtros selecionados.'
-              : 'Nenhuma reserva pendente no momento.'
+            busca.trim() ||
+            modalidade !== 'todas'
+              ? 'Nenhuma reserva encontrada para os filtros selecionados.'
+              : 'Nenhuma reserva cadastrada.'
           }
         />
       )}
 
-      <ModalReservaPendente
-        reserva={reservaSelecionada}
-        aberto={Boolean(reservaSelecionada)}
-        aoFechar={fecharDetalhes}
-        aoConfirmar={confirmarReserva}
-        confirmando={confirmandoId === reservaSelecionada?.id}
-        erroConfirmacao={erroConfirmacao}
-        aoCancelar={cancelarReserva}
-        cancelando={cancelandoId === reservaSelecionada?.id}
-        erroCancelamento={erroCancelamento}
+
+      <ModalDetalheReserva
+        reserva={reservaDetalhes}
+        modalidade={
+          MODALIDADE_LABEL[
+            reservaDetalhes?.modalidade
+          ] || 'Reserva'
+        }
+        item={
+          reservaDetalhes
+            ? descricaoItem(reservaDetalhes)
+            : ''
+        }
+        responsavel={
+          reservaDetalhes?.usuario
+            ? `${reservaDetalhes.usuario.nome} · ${reservaDetalhes.usuario.email}`
+            : ''
+        }
+        periodo={
+          reservaDetalhes
+            ? `${formatarData(
+                reservaDetalhes.data
+              )} · ${formatarHorario(
+                reservaDetalhes.horario_inicio
+              )} às ${formatarHorario(
+                reservaDetalhes.horario_fim
+              )}`
+            : ''
+        }
+        detalhes={
+          reservaDetalhes
+            ? [
+                {
+                  rotulo: 'Descrição',
+                  valor:
+                    reservaDetalhes.descricao,
+                },
+                {
+                  rotulo: 'Detalhe do item',
+                  valor:
+                    detalheSecundario(
+                      reservaDetalhes
+                    ),
+                },
+                {
+                  rotulo: 'Quantidade',
+                  valor:
+                    reservaDetalhes.detalhes
+                      ?.quantidades,
+                },
+                {
+                  rotulo: 'Destino',
+                  valor:
+                    reservaDetalhes.detalhes
+                      ?.destino,
+                },
+                {
+                  rotulo: 'Finalidade',
+                  valor:
+                    reservaDetalhes.detalhes
+                      ?.finalidade,
+                },
+                {
+                  rotulo: 'Passageiros',
+                  valor:
+                    reservaDetalhes.detalhes
+                      ?.quantidade_passageiros,
+                },
+                {
+                  rotulo: 'Devolução prevista',
+                  valor:
+                    reservaDetalhes.detalhes
+                      ?.data_devolucao_prevista
+                      ? formatarData(
+                          reservaDetalhes.detalhes
+                            .data_devolucao_prevista
+                        )
+                      : null,
+                },
+              ]
+            : []
+        }
+        administrativo
+        aoFechar={() =>
+          setReservaDetalhes(null)
+        }
       />
+
+
+      {reservaEditando?.modalidade === 'area' && (
+        <ReservaAreaModal
+          aberto
+          areaInicial={areaInicial}
+          areas={areas}
+          blocos={blocos}
+          usuario={reservaEditando.usuario}
+          reservaEdicao={reservaEdicao}
+          aoFechar={fecharEdicao}
+          aoReservar={reservaAtualizada}
+        />
+      )}
+
+
+      {reservaEditando?.modalidade ===
+        'recurso_geral' && (
+        <ReservaRecursoGeralModal
+          aberto
+          recursoInicial={recursoInicial}
+          tipos={tiposRecurso}
+          recursos={recursos}
+          reservaEdicao={reservaEdicao}
+          aoFechar={fecharEdicao}
+          aoReservar={reservaAtualizada}
+        />
+      )}
+
+
+      {reservaEditando?.modalidade ===
+        'veiculo' && (
+        <ReservaVeiculoModal
+          aberto
+          veiculoInicial={veiculoInicial}
+          veiculos={veiculos}
+          reservaEdicao={reservaEdicao}
+          aoFechar={fecharEdicao}
+          aoReservar={reservaAtualizada}
+        />
+      )}
+
+
+      <ModalConfirmacao
+        aberto={Boolean(reservaCancelando)}
+        titulo="Cancelar reserva?"
+        mensagem={
+          reservaCancelando
+            ? `Tem certeza que deseja cancelar a reserva "${reservaCancelando.nome}"?`
+            : ''
+        }
+        aviso={erroCancelamento}
+        textoConfirmar={
+          cancelando
+            ? 'Cancelando...'
+            : 'Cancelar reserva'
+        }
+        aoCancelar={fecharCancelamento}
+        aoConfirmar={confirmarCancelamento}
+      >
+        <div className={styles.campoMotivo}>
+          <label htmlFor="motivo-cancelamento">
+            Motivo do cancelamento *
+          </label>
+
+          <textarea
+            id="motivo-cancelamento"
+            value={motivoCancelamento}
+            maxLength={500}
+            rows={4}
+            disabled={cancelando}
+            placeholder="Informe o motivo do cancelamento..."
+            onChange={(evento) => {
+              setMotivoCancelamento(
+                evento.target.value
+              );
+
+              if (erroCancelamento) {
+                setErroCancelamento('');
+              }
+            }}
+          />
+
+          <small>
+            {motivoCancelamento.length}/500
+          </small>
+        </div>
+      </ModalConfirmacao>
     </div>
   );
 }
+
 
 export default ReservasAdmin;

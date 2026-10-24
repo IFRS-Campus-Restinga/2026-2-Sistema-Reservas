@@ -74,3 +74,6 @@ export {
   buscarLogsAuditoria,
   buscarLogAuditoria,
 } from './auditoria';
+export {
+  listarReservasAdmin,
+} from './reservasAdmin';

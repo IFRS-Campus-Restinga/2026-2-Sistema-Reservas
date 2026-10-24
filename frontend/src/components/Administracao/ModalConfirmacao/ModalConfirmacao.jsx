@@ -7,6 +7,7 @@ function ModalConfirmacao({
     titulo = 'Excluir item?',
     mensagem,
     aviso,
+    children,
     icone: Icone = Trash2,
     textoConfirmar = 'Excluir',
     variante = 'perigo',
@@ -49,7 +50,7 @@ function ModalConfirmacao({
         >
             <div className={styles.conteudo}>
                 <p className={styles.mensagem}>{mensagem}</p>
-
+                {children}
                 {aviso && (
                     <p className={styles.aviso}>{aviso}</p>
                 )}

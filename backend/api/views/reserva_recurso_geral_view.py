@@ -20,7 +20,7 @@ from .view_helpers import BuscarObjetoComPermissaoMixin
 
 STATUS_ALTERAVEIS = [
     StatusReserva.PENDENTE,
-    StatusReserva.AGUARDANDO_TERMO,
+    StatusReserva.CONFIRMADA,
     StatusReserva.AGUARDANDO_TERMO,
 ]
 

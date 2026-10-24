@@ -38,6 +38,28 @@ def _entidade_reserva(reserva):
         return EntidadeAuditoria.RESERVA_RECURSO_GERAL
     return None
 
+class ReservasAdminListView(APIView):
+    permission_classes = [SomenteAdmin]
+
+    def get(self, request):
+        reservas = (
+            Reserva.objects
+            .select_related(
+                "usuario",
+                "reservaarea__area__bloco",
+                "reservaveiculo__veiculo",
+                "reservarecursogeral__recurso_geral__tipo_recurso",
+            )
+            .order_by("-data", "-horario_inicio", "-pk")
+        )
+
+        return Response(
+            ReservaPendenteSerializer(
+                reservas,
+                many=True,
+            ).data
+        )
+
 class ReservasPendentesListView(APIView):
     permission_classes = [SomenteAdmin]
 
@@ -137,17 +159,11 @@ class CancelarReservaAdminView(APIView):
                 pk=pk,
             )
 
-            if _reserva_exige_termo(reserva):
-                raise ValidationError({
-                    "detail": (
-                        "Reservas que exigem termo devem ser analisadas "
-                        "em Solicitações."
-                    )
-                })
-
             status_cancelaveis = {
                 StatusReserva.PENDENTE,
                 StatusReserva.CONFIRMADA,
+                StatusReserva.AGUARDANDO_TERMO,
+                StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO,
             }
 
             if reserva.status not in status_cancelaveis:

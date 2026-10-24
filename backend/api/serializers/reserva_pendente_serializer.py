@@ -87,6 +87,7 @@ class ReservaPendenteSerializer(serializers.ModelSerializer):
         if atributo == "reservaarea":
             return {
                 "aula": especifica.aula,
+                "celula_timetable": especifica.celula_timetable_id,
             }
 
         if atributo == "reservaveiculo":
