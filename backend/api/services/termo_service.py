@@ -14,6 +14,7 @@ from api.enumerations.status_termo import StatusTermo
 from api.models import Reserva, TermoResponsabilidade
 from api.permissions.regras_comuns import usuario_e_admin
 from api.permissions.regras_reserva import status_inicial_reserva
+from api.services.notificacao_service import criar_notificacao_termo_aprovado, criar_notificacao_termo_enviado, criar_notificacao_termo_rejeitado
 
 
 ABERTAS = (StatusReserva.AGUARDANDO_TERMO, StatusReserva.PENDENTE)
@@ -153,6 +154,7 @@ def enviar_termo(reserva, usuario, arquivo, tipo=TipoTermo.RESPONSABILIDADE):
         validar_termo_operacional(reserva, tipo)
     validar_pdf(arquivo)
     atual = reserva.termos.filter(tipo=tipo, atual=True).first()
+    reenviado = bool(atual and atual.status == StatusTermo.REJEITADO)
     if atual and atual.status != StatusTermo.REJEITADO:
         raise ValidationError('Já existe um termo em análise ou aprovado para esta reserva.')
     modelo = modelo_da_reserva(reserva, tipo)
@@ -164,6 +166,11 @@ def enviar_termo(reserva, usuario, arquivo, tipo=TipoTermo.RESPONSABILIDADE):
             termo.arquivo_assinado.save(arquivo.name, arquivo, save=False)
             termo.save()
             if tipo == TipoTermo.RESPONSABILIDADE:
+                criar_notificacao_termo_enviado(
+                    termo,
+                    reenviado=reenviado,
+                )
+            elif tipo == TipoTermo.RESPONSABILIDADE:
                 reserva.status = StatusReserva.PENDENTE
                 Reserva.objects.filter(pk=reserva.pk).update(status=reserva.status)
             elif tipo == TipoTermo.DEVOLUCAO_VEICULO:
@@ -266,4 +273,16 @@ def analisar_termo(reserva, termo_id, usuario, decisao, motivo, tipo=TipoTermo.R
     termo.save(update_fields=['status', 'validado_por', 'data_validacao', 'motivo_rejeicao'])
     if tipo == TipoTermo.RESPONSABILIDADE or tipo in (TipoTermo.RETIRADA_VEICULO, TipoTermo.DEVOLUCAO_VEICULO):
         reserva.status = novo_status
-        Reserva.objects.filter(pk=reserva.pk).update(status=reserva.status)
+        Reserva.objects.filter(pk=reserva.pk).update(
+            status=reserva.status
+        )
+
+    if tipo == TipoTermo.RESPONSABILIDADE:
+        if decisao == StatusTermo.APROVADO:
+            criar_notificacao_termo_aprovado(reserva)
+
+        elif decisao == StatusTermo.REJEITADO:
+            criar_notificacao_termo_rejeitado(
+                reserva,
+                motivo,
+            )

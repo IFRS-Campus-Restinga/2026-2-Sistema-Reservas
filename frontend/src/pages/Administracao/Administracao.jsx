@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Shield } from "lucide-react";
 import styles from "./Administracao.module.css";
 
@@ -57,7 +58,17 @@ const abas = [
 ];
 
 function Administracao() {
-  const [abaAtiva, setAbaAtiva] = useState("visao-geral");
+  const location = useLocation();
+
+  const [abaAtiva, setAbaAtiva] = useState(
+    location.state?.aba || "visao-geral"
+  );
+
+  useEffect(() => {
+    if (location.state?.aba) {
+      setAbaAtiva(location.state.aba);
+    }
+  }, [location.state]);
 
   return (
     <div className={styles.pagina}>
@@ -73,7 +84,7 @@ function Administracao() {
       />
 
       <div className={styles.conteudo}>
-        {abaAtiva === "solicitacoes" && <SolicitacoesAdmin />}
+        {abaAtiva === "solicitacoes" && (<SolicitacoesAdmin solicitacaoInicial={location.state?.solicitacaoInicial}/>)}
         {abaAtiva === "visao-geral" && (
           <p className={styles.visaoGeral}>
             Visão geral da administração.

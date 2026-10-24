@@ -41,3 +41,20 @@ class MarcarNotificacaoLidaView(APIView):
             notificacao.save(update_fields=["lida", "lida_em"])
 
         return Response(NotificacaoSerializer(notificacao).data)
+
+class MarcarTodasNotificacoesLidasView(APIView):
+    permission_classes = [UsuarioAutenticado]
+
+    def patch(self, request):
+        Notificacao.objects.filter(
+            usuario=request.user,
+            lida=False,
+        ).update(
+            lida=True,
+            lida_em=timezone.now(),
+        )
+
+        return Response({
+            "detail": "Todas as notificações foram marcadas como lidas.",
+            "nao_lidas": 0,
+        })

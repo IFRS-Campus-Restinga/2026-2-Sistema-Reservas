@@ -67,7 +67,7 @@ function AcoesSolicitacao({ reserva, aoVerTermo, aoVerDetalhes }) {
   );
 }
 
-export default function SolicitacoesAdmin() {
+export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
   const [tipo, setTipo] = useState('todos');
   const [documento, setDocumento] = useState('todos');
   const [status, setStatus] = useState('todos');
@@ -77,6 +77,18 @@ export default function SolicitacoesAdmin() {
   const [erro, setErro] = useState('');
   const [revisao, setRevisao] = useState(0);
   const [selecionada, setSelecionada] = useState(null);
+  useEffect(() => {
+    if (!solicitacaoInicial?.id) return;
+
+    setSelecionada({
+      id: solicitacaoInicial.id,
+      modalidade: solicitacaoInicial.modalidade,
+      termo_tipo:
+        solicitacaoInicial.termo_tipo || "responsabilidade",
+      mostrarTermo: true,
+      rejeitar: false,
+    });
+  }, [solicitacaoInicial]);
   const [confirmandoId, setConfirmandoId] = useState(null);
   const [cancelandoId, setCancelandoId] = useState(null);
   const [erroReserva, setErroReserva] = useState('');

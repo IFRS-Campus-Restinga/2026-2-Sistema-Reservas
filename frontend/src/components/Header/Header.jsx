@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
+
 import {
   Bell,
   Box,
@@ -7,6 +9,9 @@ import {
   Car,
   ChevronDown,
   Plus,
+  CheckCircle2,
+  FileText,
+  XCircle,
 } from "lucide-react";
 
 import styles from "./Header.module.css";
@@ -16,6 +21,7 @@ import { PAPEL_USUARIO_LABEL } from "../../utils/usuario";
 import {
   listarNotificacoes,
   marcarNotificacaoComoLida,
+  marcarTodasNotificacoesComoLidas,
 } from "../../services";
 
 import ModalNotificacao from "../Notificacoes/ModalNotificacao";
@@ -43,6 +49,35 @@ function formatarDataHora(dataHora) {
 }
 
 
+function configuracaoNotificacao(tipo) {
+  if (
+    tipo === "CANCELAMENTO_RESERVA" ||
+    tipo === "REJEICAO_RESERVA" ||
+    tipo === "TERMO_REJEITADO"
+  ) {
+    return {
+      Icone: XCircle,
+      classe: "iconeErro",
+    };
+  }
+
+  if (
+    tipo === "CONFIRMACAO_RESERVA" ||
+    tipo === "TERMO_APROVADO"
+  ) {
+    return {
+      Icone: CheckCircle2,
+      classe: "iconeSucesso",
+    };
+  }
+
+  return {
+    Icone: FileText,
+    classe: "iconeTermo",
+  };
+}
+
+
 function Header({
   titulo,
   usuario,
@@ -66,7 +101,7 @@ function Header({
 
   const containerReservaRef = useRef(null);
   const containerNotificacoesRef = useRef(null);
-
+  const navigate = useNavigate();
 
   const carregarNotificacoes = useCallback(async () => {
     if (!usuario) return;
@@ -132,14 +167,12 @@ function Header({
       }
     }
 
-
     function fecharComEsc(evento) {
       if (evento.key === "Escape") {
         setMenuReservaAberto(false);
         setNotificacoesAbertas(false);
       }
     }
-
 
     document.addEventListener("mousedown", fecharAoClicarFora);
     document.addEventListener("keydown", fecharComEsc);
@@ -168,19 +201,16 @@ function Header({
     }
   }
 
+async function abrirNotificacao(notificacao) {
+  setNotificacoesAbertas(false);
 
-  async function abrirNotificacao(notificacao) {
-    setNotificacaoSelecionada(notificacao);
-    setNotificacoesAbertas(false);
+  let atualizada = notificacao;
 
-    if (notificacao.lida) return;
-
+  if (!notificacao.lida) {
     try {
-      const atualizada = await marcarNotificacaoComoLida(
+      atualizada = await marcarNotificacaoComoLida(
         notificacao.id
       );
-
-      setNotificacaoSelecionada(atualizada);
 
       setNotificacoes((atuais) =>
         atuais.map((item) =>
@@ -193,6 +223,56 @@ function Header({
       );
     } catch (erro) {
       console.error(erro);
+    }
+  }
+
+  const notificacaoDeTermoParaAdmin =
+    usuario?.papel === "admin" &&
+    (
+      atualizada.tipo === "TERMO_ENVIADO" ||
+      atualizada.tipo === "TERMO_REENVIADO"
+    );
+
+  if (notificacaoDeTermoParaAdmin) {
+    navigate("/admin", {
+      state: {
+        aba: "solicitacoes",
+        solicitacaoInicial: {
+          id: atualizada.reserva.id,
+          modalidade: atualizada.reserva.modalidade,
+          termo_tipo: "responsabilidade",
+        },
+      },
+    });
+
+    return;
+  }
+
+  setNotificacaoSelecionada(atualizada);
+  }
+
+
+  async function marcarTodasComoLidas() {
+    if (naoLidas === 0) return;
+
+    try {
+      setErroNotificacoes("");
+
+      await marcarTodasNotificacoesComoLidas();
+
+      setNotificacoes((atuais) =>
+        atuais.map((notificacao) => ({
+          ...notificacao,
+          lida: true,
+        }))
+      );
+
+      setNaoLidas(0);
+    } catch (erro) {
+      setErroNotificacoes(
+        erro.message ||
+          "Não foi possível marcar as notificações como lidas."
+      );
     }
   }
 
@@ -264,10 +344,8 @@ function Header({
                   role="menuitem"
                 >
                   <Building2 size={16} />
-
                   <span>Reservar espaço</span>
                 </button>
-
 
                 <button
                   type="button"
@@ -278,10 +356,8 @@ function Header({
                   role="menuitem"
                 >
                   <Car size={16} />
-
                   <span>Reservar veículo</span>
                 </button>
-
 
                 <button
                   type="button"
@@ -294,7 +370,6 @@ function Header({
                   role="menuitem"
                 >
                   <Box size={16} />
-
                   <span>Reservar recurso geral</span>
                 </button>
               </div>
@@ -345,23 +420,20 @@ function Header({
                   <strong>Notificações</strong>
 
                   {naoLidas > 0 && (
-                    <span>
-                      {naoLidas} não lida
-                      {naoLidas === 1 ? "" : "s"}
-                    </span>
+                    <button
+                      type="button"
+                      className={styles.marcarTodasLidas}
+                      onClick={marcarTodasComoLidas}
+                    >
+                      Marcar todas como lidas
+                    </button>
                   )}
                 </div>
 
 
-                <div
-                  className={styles.listaNotificacoes}
-                >
+                <div className={styles.listaNotificacoes}>
                   {carregandoNotificacoes ? (
-                    <p
-                      className={
-                        styles.estadoNotificacoes
-                      }
-                    >
+                    <p className={styles.estadoNotificacoes}>
                       Carregando...
                     </p>
                   ) : erroNotificacoes ? (
@@ -371,59 +443,81 @@ function Header({
                       {erroNotificacoes}
                     </p>
                   ) : notificacoes.length === 0 ? (
-                    <p
-                      className={
-                        styles.estadoNotificacoes
-                      }
-                    >
+                    <p className={styles.estadoNotificacoes}>
                       Nenhuma notificação por enquanto.
                     </p>
                   ) : (
-                    notificacoes.map((notificacao) => (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        key={notificacao.id}
-                        className={`${
-                          styles.itemNotificacao
-                        } ${
-                          notificacao.lida
-                            ? ""
-                            : styles.naoLida
-                        }`}
-                        onClick={() =>
-                          abrirNotificacao(notificacao)
-                        }
-                      >
-                        <span
-                          className={
-                            styles.indicadorLeitura
-                          }
-                        />
+                    notificacoes.map((notificacao) => {
+                      const { Icone, classe } =
+                        configuracaoNotificacao(
+                          notificacao.tipo
+                        );
 
-                        <span
-                          className={
-                            styles.conteudoNotificacao
+                      return (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          key={notificacao.id}
+                          className={`${
+                            styles.itemNotificacao
+                          } ${
+                            notificacao.lida
+                              ? ""
+                              : styles.naoLida
+                          }`}
+                          onClick={() =>
+                            abrirNotificacao(notificacao)
                           }
                         >
-                          <strong>
-                            {notificacao.titulo}
-                          </strong>
-
-                          <span>
-                            {notificacao.mensagem}
+                          <span
+                            className={`${styles.iconeNotificacao} ${styles[classe]}`}
+                          >
+                            <Icone size={16} />
                           </span>
 
-                          <small>
-                            {formatarDataHora(
-                              notificacao.criada_em
-                            )}
-                          </small>
-                        </span>
-                      </button>
-                    ))
+                          <span
+                            className={
+                              styles.conteudoNotificacao
+                            }
+                          >
+                            <strong>
+                              {notificacao.titulo}
+                            </strong>
+
+                            <span>
+                              {notificacao.mensagem}
+                            </span>
+
+                            <small>
+                              {formatarDataHora(
+                                notificacao.criada_em
+                              )}
+                            </small>
+                          </span>
+
+                          <span
+                            className={
+                              styles.indicadorLeitura
+                            }
+                          />
+                        </button>
+                      );
+                    })
                   )}
                 </div>
+
+
+                {/* Só visual por enquanto */}
+                {notificacoes.length > 0 && (
+                  <button
+                    type="button"
+                    className={
+                      styles.verTodasNotificacoes
+                    }
+                  >
+                    Ver todas as notificações →
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -445,7 +539,6 @@ function Header({
                   ] ?? usuario.papel}
                 </p>
               </div>
-
 
               <div
                 className={`d-flex align-items-center justify-content-center rounded-circle text-white fw-semibold small ${styles.avatar}`}

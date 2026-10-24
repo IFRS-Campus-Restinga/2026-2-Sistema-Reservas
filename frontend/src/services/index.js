@@ -67,6 +67,7 @@ export {
 export {
   listarNotificacoes,
   marcarNotificacaoComoLida,
+  marcarTodasNotificacoesComoLidas,
 } from './notificacoes';
 export { buscarDataAtual } from './dataAtual';
 export {
