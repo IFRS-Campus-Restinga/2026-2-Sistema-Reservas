@@ -106,6 +106,7 @@
 
 .tabela {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   text-align: left;
   font-size: 14px;
@@ -114,6 +115,10 @@
 
 .tabela thead {
   background-color: #f9fafb;
+}
+
+.tabela th:first-child {
+  width: 34%;
 }
 
 .tabela th {
@@ -142,6 +147,31 @@
 .tabela tr[data-alterado='true'] .depois {
   color: #006b30;
   font-weight: 600;
+}
+
+.listaExpandida {
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.alternarLista {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--cor-marca);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.listaExpandida + .alternarLista {
+  margin: 4px 0 0;
+}
+
+.alternarLista:hover {
+  text-decoration: underline;
 }
 
 .nomeCampo {
