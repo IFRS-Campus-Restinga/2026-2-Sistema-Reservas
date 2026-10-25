@@ -1,15 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "react-bootstrap";
-import {
-  Bell,
-  Box,
-  Building2,
-  Car,
-  ChevronDown,
-  Plus,
-} from "lucide-react";
+import { Bell } from "lucide-react";
 
 import styles from "./Header.module.css";
+
+import NovaReserva from "./NovaReserva/NovaReserva";
 
 import { PAPEL_USUARIO_LABEL } from "../../utils/usuario";
 
@@ -43,15 +38,7 @@ function formatarDataHora(dataHora) {
 }
 
 
-function Header({
-  titulo,
-  usuario,
-  aoReservarEspaco,
-  aoReservarVeiculo,
-  aoReservarRecursoGeral,
-}) {
-  const [menuReservaAberto, setMenuReservaAberto] = useState(false);
-
+function Header({ titulo, usuario }) {
   const [notificacoesAbertas, setNotificacoesAbertas] = useState(false);
   const [notificacoes, setNotificacoes] = useState([]);
   const [naoLidas, setNaoLidas] = useState(0);
@@ -64,7 +51,6 @@ function Header({
   const [notificacaoSelecionada, setNotificacaoSelecionada] =
     useState(null);
 
-  const containerReservaRef = useRef(null);
   const containerNotificacoesRef = useRef(null);
 
 
@@ -118,13 +104,6 @@ function Header({
   useEffect(() => {
     function fecharAoClicarFora(evento) {
       if (
-        containerReservaRef.current &&
-        !containerReservaRef.current.contains(evento.target)
-      ) {
-        setMenuReservaAberto(false);
-      }
-
-      if (
         containerNotificacoesRef.current &&
         !containerNotificacoesRef.current.contains(evento.target)
       ) {
@@ -135,7 +114,6 @@ function Header({
 
     function fecharComEsc(evento) {
       if (evento.key === "Escape") {
-        setMenuReservaAberto(false);
         setNotificacoesAbertas(false);
       }
     }
@@ -151,16 +129,9 @@ function Header({
   }, []);
 
 
-  function escolherReserva(acao) {
-    setMenuReservaAberto(false);
-    acao?.();
-  }
-
-
   async function alternarNotificacoes() {
     const vaiAbrir = !notificacoesAbertas;
 
-    setMenuReservaAberto(false);
     setNotificacoesAbertas(vaiAbrir);
 
     if (vaiAbrir) {
@@ -220,86 +191,7 @@ function Header({
         <div className="d-flex align-items-center gap-2 flex-shrink-0">
 
           {/* Nova reserva */}
-          <div
-            className="position-relative"
-            ref={containerReservaRef}
-          >
-            <Button
-              type="button"
-              variant="success"
-              size="sm"
-              className="d-flex align-items-center gap-2 px-3"
-              onClick={() =>
-                setMenuReservaAberto((aberto) => !aberto)
-              }
-              aria-expanded={menuReservaAberto}
-              aria-haspopup="menu"
-            >
-              <Plus size={15} />
-
-              <span>Nova reserva</span>
-
-              <ChevronDown
-                size={14}
-                className={
-                  menuReservaAberto
-                    ? styles.setaAberta
-                    : ""
-                }
-              />
-            </Button>
-
-
-            {menuReservaAberto && (
-              <div
-                className={styles.menuReserva}
-                role="menu"
-              >
-                <button
-                  type="button"
-                  className={styles.itemReserva}
-                  onClick={() =>
-                    escolherReserva(aoReservarEspaco)
-                  }
-                  role="menuitem"
-                >
-                  <Building2 size={16} />
-
-                  <span>Reservar espaço</span>
-                </button>
-
-
-                <button
-                  type="button"
-                  className={styles.itemReserva}
-                  onClick={() =>
-                    escolherReserva(aoReservarVeiculo)
-                  }
-                  role="menuitem"
-                >
-                  <Car size={16} />
-
-                  <span>Reservar veículo</span>
-                </button>
-
-
-                <button
-                  type="button"
-                  className={styles.itemReserva}
-                  onClick={() =>
-                    escolherReserva(
-                      aoReservarRecursoGeral
-                    )
-                  }
-                  role="menuitem"
-                >
-                  <Box size={16} />
-
-                  <span>Reservar recurso geral</span>
-                </button>
-              </div>
-            )}
-          </div>
+          <NovaReserva usuario={usuario} />
 
 
           {/* Notificações */}

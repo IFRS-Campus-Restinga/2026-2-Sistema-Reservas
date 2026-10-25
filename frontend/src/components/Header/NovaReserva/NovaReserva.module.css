@@ -18,6 +18,32 @@
   display: none;
 }
 
-.icone {
+.setaAberta {
+  transform: rotate(180deg);
+}
+
+.menu {
+  --bs-dropdown-min-width: 190px;
+  --bs-dropdown-padding-y: 6px;
+  --bs-dropdown-font-size: 14px;
+  --bs-dropdown-border-color: #e5e7eb;
+  --bs-dropdown-border-radius: 10px;
+  --bs-dropdown-box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+  --bs-dropdown-link-color: #374151;
+  --bs-dropdown-link-hover-color: #374151;
+  --bs-dropdown-link-hover-bg: #f3f4f6;
+  --bs-dropdown-link-active-color: #374151;
+  --bs-dropdown-link-active-bg: #f3f4f6;
+  --bs-dropdown-item-padding-y: 10px;
+  --bs-dropdown-item-padding-x: 12px;
+  overflow: hidden;
+}
+
+.item {
+  gap: 10px;
+}
+
+.item svg {
+  flex-shrink: 0;
   color: var(--cor-marca);
 }
