@@ -14,6 +14,7 @@ import { horarioParaMinutos } from '../../utils/data';
 import {
   TIPO_RECORRENCIA,
   conflitosRecorrencia,
+  datasConflitantesRecorrencia,
   gerarDatasRecorrencia,
   montarRecorrencia,
   validarRecorrencia,
@@ -71,7 +72,7 @@ function ReservaAreaModal({
   const [recorrente, setRecorrente] = useState(false);
   const [tipoRecorrencia, setTipoRecorrencia] = useState(TIPO_RECORRENCIA.SEMANAL);
   const [dataFimRecorrencia, setDataFimRecorrencia] = useState('');
-  const [conflitos, setConflitos] = useState([]);
+  const [falhaRecorrencia, setFalhaRecorrencia] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState('');
 
@@ -102,7 +103,7 @@ function ReservaAreaModal({
     setRecorrente(false);
     setTipoRecorrencia(TIPO_RECORRENCIA.SEMANAL);
     setDataFimRecorrencia('');
-    setConflitos([]);
+    setFalhaRecorrencia(null);
     setErro('');
   }, [aberto, areaInicial, reservaEdicao, dataInicial, horarioInicial]);
 
@@ -144,6 +145,27 @@ function ReservaAreaModal({
     ? periodosDoTurno[Math.max(...indicesSelecionados)].fim
     : '';
 
+  const dadosReserva = {
+    nome: titulo.trim(),
+    descricao: observacoes.trim(),
+    data,
+    horario_inicio: aula ? horarioInicioAula : horarioInicio,
+    horario_fim: aula ? horarioFimAula : horarioFim,
+    area: Number(areaId),
+    aula,
+  };
+
+  const assinaturaPedido = JSON.stringify([
+    dadosReserva.area,
+    data,
+    dadosReserva.horario_inicio,
+    dadosReserva.horario_fim,
+    tipoRecorrencia,
+    dataFimRecorrencia,
+  ]);
+  const falhaAtual =
+    falhaRecorrencia?.assinatura === assinaturaPedido ? falhaRecorrencia : null;
+
   function alterarTurno(novoTurno) {
     setTurno(novoTurno);
     setPeriodosSelecionados([]);
@@ -168,10 +190,14 @@ function ReservaAreaModal({
     });
   }
 
-  async function enviar(evento) {
+  function enviar(evento) {
     evento.preventDefault();
+    salvar();
+  }
+
+  async function salvar({ pularConflitos = false } = {}) {
     setErro('');
-    setConflitos([]);
+    setFalhaRecorrencia(null);
 
     if (!areaId) {
       setErro('Selecione uma área.');
@@ -208,34 +234,32 @@ function ReservaAreaModal({
     try {
       setEnviando(true);
 
-      const dados = {
-        nome: titulo.trim(),
-        descricao: observacoes.trim(),
-        data,
-        horario_inicio: aula ? horarioInicioAula : horarioInicio,
-        horario_fim: aula ? horarioFimAula : horarioFim,
-        area: Number(areaId),
-        aula,
-      };
-
       const resultado = reservaEdicao
-        ? await atualizarReservaArea(reservaEdicao.id, dados)
+        ? await atualizarReservaArea(reservaEdicao.id, dadosReserva)
         : await criarReservaArea({
-            ...dados,
+            ...dadosReserva,
             tipo_reserva: usuario?.perfil_acesso === 'convidado' ? 'EXTERNA' : 'INTERNA',
             recorrencia: montarRecorrencia(
               recorrenciaAtiva,
               tipoRecorrencia,
-              dataFimRecorrencia
+              dataFimRecorrencia,
+              pularConflitos
             ),
           });
 
       aoReservar(resultado);
     } catch (erroRequisicao) {
-      const conflitosRequisicao = conflitosRecorrencia(erroRequisicao);
+      const conflitos = conflitosRecorrencia(erroRequisicao);
 
-      setConflitos(conflitosRequisicao);
-      setErro(conflitosRequisicao.length ? '' : erroRequisicao.message);
+      if (conflitos.length) {
+        setFalhaRecorrencia({
+          assinatura: assinaturaPedido,
+          conflitos,
+          datas: datasConflitantesRecorrencia(erroRequisicao),
+        });
+      } else {
+        setErro(erroRequisicao.message);
+      }
     } finally {
       setEnviando(false);
     }
@@ -388,7 +412,10 @@ function ReservaAreaModal({
             dataFim={dataFimRecorrencia}
             aoAlterarDataFim={setDataFimRecorrencia}
             dataInicio={data}
-            conflitos={conflitos}
+            conflitos={falhaAtual?.conflitos}
+            datasConflitantes={falhaAtual?.datas}
+            aoPularConflitos={() => salvar({ pularConflitos: true })}
+            desabilitado={enviando}
           />
         )}
 

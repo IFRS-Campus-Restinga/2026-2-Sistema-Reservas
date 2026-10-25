@@ -80,10 +80,12 @@ class ReservaAreaListCreateView(APIView):
             dados["area"] = area
 
             if dados_recorrencia:
-                recorrencia = criar_reservas_recorrentes(request.user, dados, dados_recorrencia)
+                recorrencia, datas_puladas = criar_reservas_recorrentes(
+                    request.user, dados, dados_recorrencia
+                )
 
                 return Response(
-                    serializar_recorrencia(recorrencia),
+                    {**serializar_recorrencia(recorrencia), "datas_puladas": datas_puladas},
                     status=status.HTTP_201_CREATED,
                 )
 

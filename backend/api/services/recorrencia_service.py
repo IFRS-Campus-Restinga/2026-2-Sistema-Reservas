@@ -89,7 +89,7 @@ def _mensagem_erro(erro):
     return str(detalhe)
 
 
-def _validar_ocorrencias(usuario, ocorrencias):
+def _conflitos_ocorrencias(usuario, ocorrencias):
     conflitos = []
 
     for dados, excluir_reserva in ocorrencias:
@@ -97,10 +97,16 @@ def _validar_ocorrencias(usuario, ocorrencias):
             validar_autorizacao(usuario, dados)
             validar_disponibilidade_area(dados, excluir_reserva=excluir_reserva)
         except (PermissionDenied, ValidationError) as erro:
-            conflitos.append(f"{dados['data']:%d/%m/%Y}: {_mensagem_erro(erro)}")
+            conflitos.append((dados["data"], _mensagem_erro(erro)))
 
-    if conflitos:
-        raise ValidationError({"recorrencia": conflitos})
+    return conflitos
+
+
+def _erro_conflitos(conflitos):
+    return ValidationError({
+        "recorrencia": [f"{data:%d/%m/%Y}: {mensagem}" for data, mensagem in conflitos],
+        "datas_conflitantes": [data.isoformat() for data, _ in conflitos],
+    })
 
 
 def criar_reservas_recorrentes(usuario, dados, dados_recorrencia):
@@ -112,7 +118,20 @@ def criar_reservas_recorrentes(usuario, dados, dados_recorrencia):
         })
 
     validar_area_ativa(dados["area"])
-    _validar_ocorrencias(usuario, [({**dados, "data": data}, None) for data in datas])
+    conflitos = _conflitos_ocorrencias(usuario, [({**dados, "data": data}, None) for data in datas])
+
+    if conflitos and not dados_recorrencia.get("pular_conflitos"):
+        raise _erro_conflitos(conflitos)
+
+    datas_puladas = [data for data, _ in conflitos]
+    datas_reservadas = [data for data in datas if data not in datas_puladas]
+
+    if len(datas_reservadas) < 2:
+        raise ValidationError({
+            "recorrencia": (
+                f"Restariam apenas {len(datas_reservadas)} reserva(s) após pular as datas em conflito."
+            )
+        })
 
     recorrencia = Recorrencia.objects.create(
         tipo=dados_recorrencia["tipo"],
@@ -121,7 +140,7 @@ def criar_reservas_recorrentes(usuario, dados, dados_recorrencia):
         usuario=usuario,
     )
 
-    for data in datas:
+    for data in datas_reservadas:
         ReservaArea.objects.create(
             **{**dados, "data": data},
             usuario=usuario,
@@ -129,7 +148,7 @@ def criar_reservas_recorrentes(usuario, dados, dados_recorrencia):
             recorrencia=recorrencia,
         )
 
-    return recorrencia
+    return recorrencia, datas_puladas
 
 
 def editar_recorrencia(recorrencia, dados_edicao):
@@ -177,7 +196,10 @@ def editar_recorrencia(recorrencia, dados_edicao):
     for area_id in {dados["area"].pk for dados, _ in ocorrencias}:
         validar_area_ativa(areas[area_id])
 
-    _validar_ocorrencias(recorrencia.usuario, ocorrencias)
+    conflitos = _conflitos_ocorrencias(recorrencia.usuario, ocorrencias)
+
+    if conflitos:
+        raise _erro_conflitos(conflitos)
 
     alteradas = []
 
