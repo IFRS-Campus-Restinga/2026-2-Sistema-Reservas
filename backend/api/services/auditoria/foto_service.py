@@ -1,14 +1,19 @@
 from django.contrib.auth import get_user_model
 
+from api.models.grupo_model import Grupo
+
 CAMPOS_IGNORADOS_NA_FOTO = {'excluido_em', 'duracao'}
 
 
 def foto(objeto):
-    return {
+    dados = {
         campo.name: _valor_legivel(objeto, campo)
         for campo in objeto._meta.concrete_fields
         if not campo.primary_key and campo.name not in CAMPOS_IGNORADOS_NA_FOTO
     }
+    if isinstance(objeto, Grupo):
+        dados['recursos_autorizados'] = [str(autorizacao) for autorizacao in objeto.autorizacoes.all()]
+    return dados
 
 
 def _valor_legivel(objeto, campo):

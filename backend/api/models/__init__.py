@@ -6,6 +6,7 @@ from .bloco_model import *
 from .area_model import *
 from .timetable import *
 from .grupo_model import Grupo
+from .autorizacao_grupo_model import AutorizacaoGrupo
 from .membro_grupo_model import MembroGrupo
 from .recorrencia_model import Recorrencia
 from .reserva_model import Reserva

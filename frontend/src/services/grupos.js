@@ -14,9 +14,9 @@ async function buscarTodasPaginas(url) {
     return resultados;
 }
 
-export const buscarGrupos = async () => {
+export const buscarGrupos = async ({ apenasMeus = false } = {}) => {
     try {
-        return await buscarTodasPaginas(GRUPOS_URL);
+        return await buscarTodasPaginas(apenasMeus ? `${GRUPOS_URL}?meus=true` : GRUPOS_URL);
     } catch (erro) {
         console.error('Erro ao buscar grupos:', erro.response?.data);
         throw erro;
