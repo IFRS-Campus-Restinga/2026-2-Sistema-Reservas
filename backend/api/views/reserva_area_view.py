@@ -8,13 +8,14 @@ from rest_framework.views import APIView
 from api.enumerations.status_reserva import StatusReserva
 from api.models.area_model import Area
 from api.models.reserva_area_model import ReservaArea
-from api.permissions.regras_comuns import UsuarioAutenticado
+from api.permissions.regras_comuns import LeituraPublica, UsuarioAutenticado
 from api.permissions.reserva_permissions import PodeGerenciarReserva
 from api.serializers.reserva_area_serializer import ReservaAreaSerializer, serializar_recorrencia
 from api.services.recorrencia_service import criar_reservas_recorrentes
 from api.validators.reserva_area_validator import validar_autorizacao, validar_disponibilidade_area
 from api.enumerations.auditoria_enumerations import AcaoAuditoria
 from api.services.auditoria import foto, registrar_auditoria
+from hub_integrations.authentication import HubJWTAuthenticationOpcional
 
 
 STATUS_ALTERAVEIS = [
@@ -34,7 +35,8 @@ CAMPOS_EDICAO = {
 
 
 class ReservaAreaListCreateView(APIView):
-    permission_classes = [UsuarioAutenticado]
+    authentication_classes = [HubJWTAuthenticationOpcional]
+    permission_classes = [LeituraPublica | UsuarioAutenticado]
 
     def get(self, request):
         reservas = ReservaArea.objects.filter(

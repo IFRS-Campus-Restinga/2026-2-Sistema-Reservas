@@ -9,10 +9,13 @@ from api.serializers.bloco_serializer import BlocoSerializer
 from api.enumerations.auditoria_enumerations import AcaoAuditoria
 from api.services.auditoria import foto, registrar_auditoria
 from api.permissions.escrita_admin import EscritaAdmin
+from api.permissions.regras_comuns import LeituraPublica
+from hub_integrations.authentication import HubJWTAuthenticationOpcional
 
 
 class BlocoListCreateView(APIView):
-    permission_classes = [EscritaAdmin]
+    authentication_classes = [HubJWTAuthenticationOpcional]
+    permission_classes = [LeituraPublica | EscritaAdmin]
 
     def get(self, request):
         blocos = Bloco.objects.all()
