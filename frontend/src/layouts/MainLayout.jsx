@@ -1,9 +1,9 @@
-import { Outlet, useLocation } from 'react-router-dom'
+import { matchPath, Outlet, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import Sidebar from '../components/SideBar/SideBar'
 import Header from '../components/Header/Header'
 import NaoAutenticado from '../pages/NaoAutenticado/NaoAutenticado'
-import { ITENS_MENU } from '../config/rotas'
+import { ITENS_MENU, ROTAS } from '../config/rotas'
 import { UsuarioContext } from '../contexts/UsuarioContext'
 import { buscarUsuarioLogado } from '../services'
 import styles from './MainLayout.module.css'
@@ -39,7 +39,11 @@ function MainLayout() {
     return null
   }
 
-  if (!usuario) {
+  // Visitante só acessa rotas públicas; a "/" redireciona para o calendário (RotaProtegida).
+  const rotaPublica = location.pathname === '/' ||
+    ROTAS.some((rota) => rota.publica && matchPath(rota.path, location.pathname))
+
+  if (!usuario && !rotaPublica) {
     return <NaoAutenticado />
   }
 
