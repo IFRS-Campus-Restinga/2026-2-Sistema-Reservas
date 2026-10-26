@@ -1,8 +1,6 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Q
 from django.utils import timezone
-
-from accounts.enumerations import Papel
+from api.permissions.regras_comuns import filtro_usuario_admin
 from api.enumerations.tipo_notificacao import TipoNotificacao
 from api.models.notificacao_model import Notificacao
 
@@ -75,7 +73,7 @@ def criar_notificacao_termo_enviado(termo, reenviado=False):
     Usuario = get_user_model()
 
     administradores = Usuario.objects.filter(
-        Q(papel=Papel.ADMIN) | Q(is_staff=True),
+        filtro_usuario_admin,
         is_active=True,
     ).distinct()
 
@@ -89,43 +87,27 @@ def criar_notificacao_termo_enviado(termo, reenviado=False):
         )
 
 def criar_notificacao_termo_aprovado(reserva):
-    notificacao, _ = Notificacao.objects.update_or_create(
-        usuario=reserva.usuario,
-        reserva=reserva,
-        tipo=TipoNotificacao.TERMO_APROVADO,
-        defaults={
-            "titulo": "Termo aprovado",
-            "mensagem": (
-                f'O termo da reserva "{reserva.nome}" foi aprovado '
-                "e sua reserva foi confirmada."
-            ),
-            "lida": False,
-            "lida_em": None,
-            "criada_em": timezone.now(),
-        },
+    return _registrar_notificacao(
+        reserva.usuario,
+        reserva,
+        TipoNotificacao.TERMO_APROVADO,
+        "Termo aprovado",
+        (
+            f'O termo da reserva "{reserva.nome}" foi aprovado '
+            "e sua reserva foi confirmada."
+        ),
     )
-
-    return notificacao
 
 def criar_notificacao_termo_rejeitado(reserva, motivo):
     motivo = (motivo or "").strip()
 
-    mensagem = (
-        f'O termo da reserva "{reserva.nome}" foi recusado. '
-        f"Motivo: {motivo}"
+    return _registrar_notificacao(
+        reserva.usuario,
+        reserva,
+        TipoNotificacao.TERMO_REJEITADO,
+        "Termo recusado",
+        (
+            f'O termo da reserva "{reserva.nome}" foi recusado. '
+            f'Motivo: {motivo}'
+        ),
     )
-
-    notificacao, _ = Notificacao.objects.update_or_create(
-        usuario=reserva.usuario,
-        reserva=reserva,
-        tipo=TipoNotificacao.TERMO_REJEITADO,
-        defaults={
-            "titulo": "Termo recusado",
-            "mensagem": mensagem[:255],
-            "lida": False,
-            "lida_em": None,
-            "criada_em": timezone.now(),
-        },
-    )
-
-    return notificacao

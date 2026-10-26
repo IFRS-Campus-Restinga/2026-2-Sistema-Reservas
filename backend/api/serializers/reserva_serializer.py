@@ -3,7 +3,7 @@ from rest_framework import serializers
 from api.models.reserva_model import Reserva
 
 
-class ReservaPendenteSerializer(serializers.ModelSerializer):
+class ReservaSerializer(serializers.ModelSerializer):
     usuario = serializers.SerializerMethodField()
     modalidade = serializers.SerializerMethodField()
     item = serializers.SerializerMethodField()

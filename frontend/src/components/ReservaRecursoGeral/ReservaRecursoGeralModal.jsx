@@ -411,11 +411,6 @@ function ReservaRecursoGeralModal({
         )}
 
         <label>
-          Finalidade
-          <input disabled value="Empréstimo de recurso" />
-        </label>
-
-        <label>
           Observações
           <textarea
             maxLength={255}

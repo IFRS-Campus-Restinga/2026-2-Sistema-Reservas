@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
-
+import Paginacao from '../Paginacao/Paginacao';
 import styles from './ReservasAdmin.module.css';
 
 import {
@@ -39,6 +39,7 @@ const MODALIDADE_LABEL = {
   recurso_geral: 'Recurso geral',
 };
 
+const TAMANHO_PAGINA = 20;
 
 const STATUS_GERENCIAVEIS = new Set([
   'PENDENTE',
@@ -163,6 +164,9 @@ function ReservasAdmin() {
   const [busca, setBusca] = useState('');
   const [modalidade, setModalidade] = useState('todas');
 
+  const [pagina, setPagina] = useState(1);
+  const [total, setTotal] = useState(0);
+
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
   const [mensagemSucesso, setMensagemSucesso] =
@@ -185,26 +189,15 @@ function ReservasAdmin() {
 
   const [cancelando, setCancelando] = useState(false);
 
-
-  useEffect(() => {
-    carregarDados();
-  }, []);
-
-
-  async function carregarDados() {
+  async function carregarDadosAuxiliares() {
     try {
-      setCarregando(true);
-      setErro('');
-
       const [
-        listaReservas,
         listaAreas,
         listaBlocos,
         listaVeiculos,
         listaRecursos,
         listaTipos,
       ] = await Promise.all([
-        listarReservasAdmin(),
         buscarAreas(),
         buscarBlocos(),
         buscarVeiculos(),
@@ -212,7 +205,6 @@ function ReservasAdmin() {
         listarTiposRecurso(),
       ]);
 
-      setReservas(listaReservas || []);
       setAreas(listaAreas || []);
       setBlocos(listaBlocos || []);
       setVeiculos(listaVeiculos || []);
@@ -225,11 +217,70 @@ function ReservasAdmin() {
         falha.message ||
         'Não foi possível carregar as reservas.'
       );
-    } finally {
-      setCarregando(false);
     }
   }
 
+  async function carregarReservas(signal) {
+    try {
+      setCarregando(true);
+      setErro('');
+
+      const tipo =
+        modalidade === 'todas'
+          ? 'todos'
+          : modalidade;
+
+      const resultado =
+        await listarReservasAdmin(
+          {
+            busca: busca.trim(),
+            tipo,
+            page: pagina,
+            page_size: TAMANHO_PAGINA,
+          },
+          signal
+        );
+
+      if (signal?.aborted) {
+        return;
+      }
+
+      setReservas(resultado.results || []);
+      setTotal(resultado.count || 0);
+    } catch (falha) {
+      if (falha.name === 'AbortError') {
+        return;
+      }
+
+      console.error(falha);
+
+      setErro(
+        falha.message ||
+          'Não foi possível carregar as reservas.'
+      );
+    } finally {
+      if (!signal?.aborted) {
+        setCarregando(false);
+      }
+    }
+  }
+
+  useEffect(() => {
+    carregarDadosAuxiliares();
+  }, []);
+
+  useEffect(() => {
+    const controle = new AbortController();
+
+    const atraso = setTimeout(() => {
+      carregarReservas(controle.signal);
+    }, 300);
+
+    return () => {
+      clearTimeout(atraso);
+      controle.abort();
+    };
+  }, [busca, modalidade, pagina]);
 
   function podeGerenciar(reserva) {
     if (!STATUS_GERENCIAVEIS.has(reserva.status)) {
@@ -263,7 +314,7 @@ function ReservasAdmin() {
 
     setReservaEditando(null);
 
-    await carregarDados();
+    await carregarReservas();
 
     setMensagemSucesso(
       nome
@@ -319,7 +370,7 @@ function ReservasAdmin() {
       setReservaCancelando(null);
       setMotivoCancelamento('');
 
-      await carregarDados();
+      await carregarReservas();
 
       setMensagemSucesso(
         `Reserva "${nome}" cancelada com sucesso.`
@@ -335,44 +386,6 @@ function ReservasAdmin() {
       setCancelando(false);
     }
   }
-
-
-  const reservasFiltradas = useMemo(() => {
-    const termo = busca.trim().toLowerCase();
-
-    return reservas.filter((reserva) => {
-      const tipoCorreto =
-        modalidade === 'todas' ||
-        reserva.modalidade === modalidade;
-
-      if (!tipoCorreto) {
-        return false;
-      }
-
-      if (!termo) {
-        return true;
-      }
-
-      const campos = [
-        reserva.nome,
-        reserva.usuario?.nome,
-        reserva.usuario?.email,
-        reserva.item?.nome,
-        reserva.item?.tipo,
-        reserva.item?.placa,
-        reserva.item?.bloco,
-        MODALIDADE_LABEL[reserva.modalidade],
-        labelStatus(reserva.status),
-      ];
-
-      return campos.some((campo) =>
-        String(campo ?? '')
-          .toLowerCase()
-          .includes(termo)
-      );
-    });
-  }, [reservas, busca, modalidade]);
-
 
   const colunas = [
     {
@@ -547,24 +560,29 @@ function ReservasAdmin() {
         </div>
 
         <span className={styles.contador}>
-          {reservasFiltradas.length}{' '}
-          {reservasFiltradas.length === 1
+          {total}{' '}
+          {total === 1
             ? 'reserva'
             : 'reservas'}
         </span>
       </div>
 
-
       <div className={styles.filtros}>
         <CampoBusca
           valor={busca}
-          aoAlterar={setBusca}
+          aoAlterar={(valor) => {
+            setBusca(valor);
+            setPagina(1);
+          }}
           placeholder="Buscar reserva..."
         />
 
         <Select
           valor={modalidade}
-          aoAlterar={setModalidade}
+          aoAlterar={(valor) => {
+            setModalidade(valor);
+            setPagina(1);
+          }}
           valorTodos="todas"
           rotuloTodos="Todos os tipos"
           ariaLabel="Filtrar reservas por tipo"
@@ -614,16 +632,26 @@ function ReservasAdmin() {
           Carregando reservas...
         </p>
       ) : (
-        <TabelaAdministracao
-          colunas={colunas}
-          dados={reservasFiltradas}
-          mensagemVazia={
-            busca.trim() ||
-            modalidade !== 'todas'
-              ? 'Nenhuma reserva encontrada para os filtros selecionados.'
-              : 'Nenhuma reserva cadastrada.'
-          }
-        />
+        <>
+          <TabelaAdministracao
+            colunas={colunas}
+            dados={reservas}
+            mensagemVazia={
+              busca.trim() ||
+              modalidade !== 'todas'
+                ? 'Nenhuma reserva encontrada para os filtros selecionados.'
+                : 'Nenhuma reserva cadastrada.'
+            }
+          />
+
+          <Paginacao
+            paginaAtual={pagina}
+            totalPaginas={Math.ceil(
+              total / TAMANHO_PAGINA
+            )}
+            aoMudarPagina={setPagina}
+          />
+        </>
       )}
 
 

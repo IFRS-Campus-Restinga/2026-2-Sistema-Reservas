@@ -8,6 +8,7 @@ import ReservaRecursoGeralModal from '../components/ReservaRecursoGeral/ReservaR
 import NaoAutenticado from '../pages/NaoAutenticado/NaoAutenticado'
 import { ITENS_MENU } from '../config/rotas'
 import { UsuarioContext } from '../contexts/UsuarioContext'
+import { NotificacoesProvider } from '../contexts/NotificacoesContext'
 import {
   buscarUsuarioLogado,
   buscarAreas,
@@ -116,53 +117,55 @@ function MainLayout() {
 
   return (
     <UsuarioContext value={usuario}>
-      <div className={styles.app}>
-        <Sidebar
-          menuRecolhido={menuRecolhido}
-          recolherMenu={() => setMenuRecolhido((n) => !n)}
-          paginaAtual={paginaAtual}
-        />
-
-        <div className={styles.main}>
-          <Header
-            titulo={paginaAtual}
-            usuario={usuario}
-            aoReservarEspaco={abrirReservaEspaco}
-            aoReservarVeiculo={abrirReservaVeiculo}
-            aoReservarRecursoGeral={abrirReservaRecursoGeral}
+      <NotificacoesProvider>
+        <div className={styles.app}>
+          <Sidebar
+            menuRecolhido={menuRecolhido}
+            recolherMenu={() => setMenuRecolhido((n) => !n)}
+            paginaAtual={paginaAtual}
           />
 
-          <main className={styles.content}>
-            <Outlet />
-          </main>
+          <div className={styles.main}>
+            <Header
+              titulo={paginaAtual}
+              usuario={usuario}
+              aoReservarEspaco={abrirReservaEspaco}
+              aoReservarVeiculo={abrirReservaVeiculo}
+              aoReservarRecursoGeral={abrirReservaRecursoGeral}
+            />
+
+            <main className={styles.content}>
+              <Outlet />
+            </main>
+          </div>
         </div>
-      </div>
 
-      <ReservaAreaModal
-        aberto={reservaRapida === 'area'}
-        areaInicial={null}
-        areas={areas}
-        blocos={blocos}
-        usuario={usuario}
-        aoFechar={() => setReservaRapida(null)}
-        aoReservar={() => reservaCriada('area')}
-      />
+        <ReservaAreaModal
+          aberto={reservaRapida === 'area'}
+          areaInicial={null}
+          areas={areas}
+          blocos={blocos}
+          usuario={usuario}
+          aoFechar={() => setReservaRapida(null)}
+          aoReservar={() => reservaCriada('area')}
+        />
 
-      <ReservaVeiculoModal
-        aberto={reservaRapida === 'veiculo'}
-        veiculoInicial={null}
-        veiculos={veiculos}
-        aoFechar={() => setReservaRapida(null)}
-        aoReservar={() => reservaCriada('veiculo')}
-      />
+        <ReservaVeiculoModal
+          aberto={reservaRapida === 'veiculo'}
+          veiculoInicial={null}
+          veiculos={veiculos}
+          aoFechar={() => setReservaRapida(null)}
+          aoReservar={() => reservaCriada('veiculo')}
+        />
 
-      <ReservaRecursoGeralModal
-        aberto={reservaRapida === 'recurso'}
-        tipos={tiposRecurso}
-        recursos={recursos}
-        aoFechar={() => setReservaRapida(null)}
-        aoReservar={() => reservaCriada('recurso_geral')}
-      />
+        <ReservaRecursoGeralModal
+          aberto={reservaRapida === 'recurso'}
+          tipos={tiposRecurso}
+          recursos={recursos}
+          aoFechar={() => setReservaRapida(null)}
+          aoReservar={() => reservaCriada('recurso_geral')}
+        />
+      </NotificacoesProvider>
     </UsuarioContext>
   )
 }

@@ -1,16 +1,14 @@
 import { useNavigate  } from "react-router-dom";
 import {
-    LogOut,
     ChevronLeft,
     ChevronRight,
     ExternalLink
 } from "lucide-react";
-import { useEffect, useState } from "react";
 import { ITENS_MENU } from "../../config/rotas";
 import { useUsuario } from "../../hooks/useUsuario";
+import { useNotificacoes } from "../../hooks/useNotificacoes";
 import { temPermissao } from "../../utils/permissoes";
 import styles from "./SideBar.module.css";
-import { listarNotificacoes } from "../../services";
 import { HUB_URL } from "../../config/hub"
 
 export default function Sidebar({
@@ -20,41 +18,8 @@ export default function Sidebar({
 }) {
     const navigate = useNavigate();
     const usuario = useUsuario();
+    const { naoLidas } = useNotificacoes();
     const itens = ITENS_MENU.filter((item) => temPermissao(usuario, item.permissao));
-    const [naoLidas, setNaoLidas] = useState(0);
-    useEffect(() => {
-    let ativo = true;
-
-    async function carregarContador() {
-        try {
-        const dados = await listarNotificacoes();
-
-        if (ativo) {
-            setNaoLidas(dados.nao_lidas || 0);
-        }
-        } catch {
-        if (ativo) {
-            setNaoLidas(0);
-        }
-        }
-    }
-
-    carregarContador();
-
-    window.addEventListener(
-        "notificacoes-atualizadas",
-        carregarContador
-    );
-
-    return () => {
-        ativo = false;
-
-        window.removeEventListener(
-        "notificacoes-atualizadas",
-        carregarContador
-        );
-    };
-    }, [usuario?.id]);
 
     return (
         <aside

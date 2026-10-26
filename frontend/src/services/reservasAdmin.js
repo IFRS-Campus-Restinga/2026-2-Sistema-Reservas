@@ -16,10 +16,31 @@ async function tratarResposta(resposta) {
   return dados;
 }
 
-export async function listarReservasAdmin() {
-  const resposta = await fetch(URL, {
-    credentials: 'include',
-  });
+export async function listarReservasAdmin(
+  parametros = {},
+  signal
+) {
+  const query = new URLSearchParams();
+
+  Object.entries(parametros).forEach(
+    ([chave, valor]) => {
+      if (
+        valor !== undefined &&
+        valor !== null &&
+        valor !== ''
+      ) {
+        query.set(chave, valor);
+      }
+    }
+  );
+
+  const resposta = await fetch(
+    `${URL}?${query.toString()}`,
+    {
+      credentials: 'include',
+      signal,
+    }
+  );
 
   return tratarResposta(resposta);
 }

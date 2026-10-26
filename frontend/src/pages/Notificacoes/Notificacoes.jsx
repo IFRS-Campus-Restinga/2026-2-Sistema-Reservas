@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useUsuario } from "../../hooks/useUsuario";
 import {
-  Bell,
-  Check,
-  CheckCircle2,
-  FileText,
-  XCircle,
-} from "lucide-react";
+  configuracaoNotificacao,
+  notificacaoAbreSolicitacao,
+} from "../../utils/notificacoes";
+import { Check } from "lucide-react";
 
 import {
   listarNotificacoes,
@@ -16,46 +16,6 @@ import {
 import ModalNotificacao from "../../components/Notificacoes/ModalNotificacao";
 
 import styles from "./Notificacoes.module.css";
-
-
-function configuracaoNotificacao(tipo) {
-  if (
-    tipo === "CANCELAMENTO_RESERVA" ||
-    tipo === "REJEICAO_RESERVA" ||
-    tipo === "TERMO_REJEITADO"
-  ) {
-    return {
-      Icone: XCircle,
-      classe: "iconeErro",
-    };
-  }
-
-  if (
-    tipo === "CONFIRMACAO_RESERVA" ||
-    tipo === "TERMO_APROVADO"
-  ) {
-    return {
-      Icone: CheckCircle2,
-      classe: "iconeSucesso",
-    };
-  }
-
-  if (
-    tipo === "TERMO_ENVIADO" ||
-    tipo === "TERMO_REENVIADO"
-  ) {
-    return {
-      Icone: FileText,
-      classe: "iconeTermo",
-    };
-  }
-
-  return {
-    Icone: Bell,
-    classe: "iconeInfo",
-  };
-}
-
 
 function formatarTempo(dataHora) {
   if (!dataHora) return "";
@@ -104,6 +64,9 @@ function avisarAtualizacao() {
 
 
 function Notificacoes() {
+  const navigate = useNavigate();
+  const usuario = useUsuario();
+
   const [notificacoes, setNotificacoes] = useState([]);
   const [naoLidas, setNaoLidas] = useState(0);
 
@@ -166,6 +129,27 @@ function Notificacoes() {
         console.error(falha);
       }
     }
+
+  if (
+    notificacaoAbreSolicitacao(
+      atualizada,
+      usuario
+    )
+  ) {
+    navigate("/admin", {
+      state: {
+        aba: "solicitacoes",
+        solicitacaoInicial: {
+          id: atualizada.reserva.id,
+          modalidade:
+            atualizada.reserva.modalidade,
+          termo_tipo: "responsabilidade",
+        },
+      },
+    });
+
+    return;
+  }
 
     setSelecionada(atualizada);
   }

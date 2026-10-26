@@ -1,9 +1,8 @@
 from rest_framework import serializers
 
 from api.models.notificacao_model import Notificacao
-from api.enumerations.status_termo import StatusTermo
 from api.enumerations.tipo_notificacao import TipoNotificacao
-
+from api.services.termo_service import reserva_concreta
 
 class NotificacaoSerializer(serializers.ModelSerializer):
     reserva = serializers.SerializerMethodField()
@@ -26,14 +25,7 @@ class NotificacaoSerializer(serializers.ModelSerializer):
     def get_reserva(self, notificacao):
         reserva = notificacao.reserva
         cancelada_por = reserva.cancelada_por
-        if hasattr(reserva, "reservaveiculo"):
-            modalidade = "veiculo"
-        elif hasattr(reserva, "reservarecursogeral"):
-            modalidade = "recurso_geral"
-        elif hasattr(reserva, "reservaarea"):
-            modalidade = "area"
-        else:
-            modalidade = None
+        _, modalidade = reserva_concreta(reserva)
         return {
             "id": reserva.id,
             "nome": reserva.nome,
@@ -58,15 +50,14 @@ class NotificacaoSerializer(serializers.ModelSerializer):
         if notificacao.tipo != TipoNotificacao.TERMO_REJEITADO:
             return None
 
-        termo = (
-            notificacao.reserva.termos
-            .filter(status=StatusTermo.REJEITADO)
-            .exclude(motivo_rejeicao="")
-            .order_by("-data_validacao", "-pk")
-            .first()
+        termo = getattr(
+            notificacao.reserva,
+            'termos_rejeitados',
+            [],
         )
 
         if not termo:
             return None
 
-        return termo.motivo_rejeicao
+        return termo[0].motivo_rejeicao
+    

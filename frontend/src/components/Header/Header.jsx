@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
+import { ehAdministrador } from "../../utils/permissoes";
+import {
+  configuracaoNotificacao,
+  notificacaoAbreSolicitacao,
+} from "../../utils/notificacoes";
 
 import {
   Bell,
@@ -9,9 +14,6 @@ import {
   Car,
   ChevronDown,
   Plus,
-  CheckCircle2,
-  FileText,
-  XCircle,
 } from "lucide-react";
 
 import styles from "./Header.module.css";
@@ -46,35 +48,6 @@ function formatarDataHora(dataHora) {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-
-function configuracaoNotificacao(tipo) {
-  if (
-    tipo === "CANCELAMENTO_RESERVA" ||
-    tipo === "REJEICAO_RESERVA" ||
-    tipo === "TERMO_REJEITADO"
-  ) {
-    return {
-      Icone: XCircle,
-      classe: "iconeErro",
-    };
-  }
-
-  if (
-    tipo === "CONFIRMACAO_RESERVA" ||
-    tipo === "TERMO_APROVADO"
-  ) {
-    return {
-      Icone: CheckCircle2,
-      classe: "iconeSucesso",
-    };
-  }
-
-  return {
-    Icone: FileText,
-    classe: "iconeTermo",
-  };
 }
 
 
@@ -247,10 +220,9 @@ function Header({
     }
 
     const notificacaoDeTermoParaAdmin =
-      usuario?.papel === "admin" &&
-      (
-        atualizada.tipo === "TERMO_ENVIADO" ||
-        atualizada.tipo === "TERMO_REENVIADO"
+      notificacaoAbreSolicitacao(
+        atualizada,
+        usuario
       );
 
     if (notificacaoDeTermoParaAdmin) {

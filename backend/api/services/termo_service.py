@@ -13,7 +13,6 @@ from api.enumerations import StatusReserva, TipoTermo
 from api.enumerations.status_termo import StatusTermo
 from api.models import Reserva, TermoResponsabilidade
 from api.permissions.regras_comuns import usuario_e_admin
-from api.permissions.regras_reserva import status_inicial_reserva
 from api.services.notificacao_service import criar_notificacao_termo_aprovado, criar_notificacao_termo_enviado, criar_notificacao_termo_rejeitado
 
 
@@ -29,15 +28,19 @@ MODELOS_POR_TIPO = {
 
 
 def reserva_concreta(reserva):
+    if hasattr(reserva, 'reservaarea'):
+        return reserva.reservaarea, 'area'
     if hasattr(reserva, 'reservaveiculo'):
         return reserva.reservaveiculo, 'veiculo'
     if hasattr(reserva, 'reservarecursogeral'):
         return reserva.reservarecursogeral, 'recurso_geral'
-    raise ValidationError('Esta modalidade não possui termo de responsabilidade.')
+    raise ValidationError('Não foi possível identificar a modalidade da reserva.')
 
 
 def reserva_exige_termo(reserva, recurso=None):
     concreta, modalidade = reserva_concreta(reserva)
+    if modalidade == 'area':
+        return False
     if modalidade == 'veiculo':
         return True
     if recurso is not None:
@@ -170,7 +173,6 @@ def enviar_termo(reserva, usuario, arquivo, tipo=TipoTermo.RESPONSABILIDADE):
                     termo,
                     reenviado=reenviado,
                 )
-            elif tipo == TipoTermo.RESPONSABILIDADE:
                 reserva.status = StatusReserva.PENDENTE
                 Reserva.objects.filter(pk=reserva.pk).update(status=reserva.status)
             elif tipo == TipoTermo.DEVOLUCAO_VEICULO:
@@ -195,7 +197,7 @@ def invalidar_termo_apos_edicao(reserva, dados):
     if exige_termo:
         reserva.status = StatusReserva.AGUARDANDO_TERMO
     else:
-        reserva.status = status_inicial_reserva(reserva.usuario)
+        reserva.status = StatusReserva.CONFIRMADA
     reserva.save(update_fields=['status'])
 
 
@@ -286,3 +288,80 @@ def analisar_termo(reserva, termo_id, usuario, decisao, motivo, tipo=TipoTermo.R
                 reserva,
                 motivo,
             )
+
+def montar_solicitacao_termo(reserva, documento_parametro):
+    concreta, modalidade = reserva_concreta(reserva)
+
+    if modalidade == 'veiculo':
+        item = concreta.veiculo
+        nome_item = f'{item.nome} · {item.placa}'
+    else:
+        item = concreta.recurso_geral
+        nome_item = item.nome
+
+    termos_atuais = [
+        termo
+        for termo in reserva.termos.all()
+        if termo.atual
+    ]
+
+    termo_atual = next(
+        (
+            termo
+            for termo in termos_atuais
+            if termo.status == StatusTermo.PENDENTE
+        ),
+        None,
+    )
+
+    if termo_atual is None:
+        termo_atual = next(
+            (
+                termo
+                for termo in termos_atuais
+                if termo.tipo == TipoTermo.RESPONSABILIDADE
+            ),
+            None,
+        )
+
+    tipo_resultado = documento_parametro
+
+    if tipo_resultado == 'todos':
+        tipo_resultado = 'responsabilidade'
+
+    status_termo = None
+
+    if termo_atual is not None:
+        tipo_resultado = {
+            TipoTermo.RESPONSABILIDADE: 'responsabilidade',
+            TipoTermo.RETIRADA_VEICULO: 'retirada',
+            TipoTermo.DEVOLUCAO_VEICULO: 'devolucao',
+        }[termo_atual.tipo]
+
+        status_termo = termo_atual.status
+
+    return {
+        'id': reserva.pk,
+        'nome': reserva.nome,
+        'descricao': reserva.descricao,
+        'status': reserva.status,
+        'modalidade': modalidade,
+        'tipo_reserva': reserva.tipo_reserva,
+        'origem_solicitacao': 'TERMO',
+        'data': reserva.data,
+        'horario_inicio': reserva.horario_inicio,
+        'horario_fim': reserva.horario_fim,
+        'data_devolucao_prevista': getattr(
+            concreta,
+            'data_devolucao_prevista',
+            reserva.data,
+        ),
+        'responsavel': reserva.usuario.nome or reserva.usuario.email,
+        'item': nome_item,
+        'destino': getattr(concreta, 'destino', ''),
+        'finalidade': getattr(concreta, 'finalidade', ''),
+        'quantidade': getattr(concreta, 'quantidades', None),
+        'ocupantes': getattr(concreta, 'quantidade_passageiros', None),
+        'termo_tipo': tipo_resultado,
+        'termo_status': status_termo,
+    }

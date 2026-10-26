@@ -10,24 +10,10 @@ from api.enumerations.status_reserva import StatusReserva
 from api.models.reserva_model import Reserva
 from api.permissions.regras_comuns import SomenteAdmin
 from api.permissions.reserva_permissions import PodeCancelarReserva,PodeConfirmarReserva
-from api.serializers.reserva_pendente_serializer import ReservaPendenteSerializer
+from api.serializers.reserva_serializer import ReservaSerializer
 from api.services.auditoria import foto, registrar_auditoria
 from api.services.notificacao_service import criar_notificacao_cancelamento, criar_notificacao_confirmacao
-
-def _reserva_exige_termo(reserva):
-    if getattr(reserva, "reservaveiculo", None) is not None:
-        return True
-
-    reserva_recurso = getattr(
-        reserva,
-        "reservarecursogeral",
-        None,
-    )
-
-    return bool(
-        reserva_recurso
-        and reserva_recurso.recurso_geral.tem_termo_de_responsabilidade
-    )
+from api.services.termo_service import reserva_exige_termo
 
 def _entidade_reserva(reserva):
     if getattr(reserva, "reservaarea", None) is not None:
@@ -37,28 +23,6 @@ def _entidade_reserva(reserva):
     if getattr(reserva, "reservarecursogeral", None) is not None:
         return EntidadeAuditoria.RESERVA_RECURSO_GERAL
     return None
-
-class ReservasAdminListView(APIView):
-    permission_classes = [SomenteAdmin]
-
-    def get(self, request):
-        reservas = (
-            Reserva.objects
-            .select_related(
-                "usuario",
-                "reservaarea__area__bloco",
-                "reservaveiculo__veiculo",
-                "reservarecursogeral__recurso_geral__tipo_recurso",
-            )
-            .order_by("-data", "-horario_inicio", "-pk")
-        )
-
-        return Response(
-            ReservaPendenteSerializer(
-                reservas,
-                many=True,
-            ).data
-        )
 
 class ReservasPendentesListView(APIView):
     permission_classes = [SomenteAdmin]
@@ -78,7 +42,7 @@ class ReservasPendentesListView(APIView):
             .order_by("data", "horario_inicio")
         )
 
-        return Response(ReservaPendenteSerializer(reservas, many=True).data)
+        return Response(ReservaSerializer(reservas, many=True).data)
 
 class ConfirmarReservaView(APIView):
     permission_classes = [PodeConfirmarReserva]
@@ -100,7 +64,7 @@ class ConfirmarReservaView(APIView):
                     "status": "Somente reservas pendentes podem ser confirmadas."
                 })
 
-            if _reserva_exige_termo(reserva):
+            if reserva_exige_termo(reserva):
                 raise ValidationError({
                     "detail": (
                         "Reservas que exigem termo devem ser analisadas "
@@ -130,7 +94,7 @@ class ConfirmarReservaView(APIView):
 
             criar_notificacao_confirmacao(reserva)
 
-        return Response(ReservaPendenteSerializer(reserva).data)
+        return Response(ReservaSerializer(reserva).data)
 
 class CancelarReservaAdminView(APIView):
     permission_classes = [PodeCancelarReserva]
@@ -204,4 +168,4 @@ class CancelarReservaAdminView(APIView):
 
             criar_notificacao_cancelamento(reserva)
 
-        return Response(ReservaPendenteSerializer(reserva).data)
+        return Response(ReservaSerializer(reserva).data)

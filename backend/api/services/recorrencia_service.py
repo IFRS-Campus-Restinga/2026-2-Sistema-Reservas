@@ -9,7 +9,6 @@ from api.models.recorrencia_model import Recorrencia
 from api.models.reserva_area_model import ReservaArea
 from api.serializers.reserva_area_serializer import ReservaAreaSerializer
 from api.services.auditoria import foto
-from api.permissions.regras_reserva import status_inicial_reserva
 from api.validators.reserva_area_validator import (
     validar_area_ativa,
     validar_autorizacao,
@@ -129,7 +128,7 @@ def criar_reservas_recorrentes(usuario, dados, dados_recorrencia):
         ReservaArea.objects.create(
             **{**dados, "data": data},
             usuario=usuario,
-            status=status_inicial_reserva(usuario),
+            status=StatusReserva.CONFIRMADA,
             recorrencia=recorrencia,
         )
 
