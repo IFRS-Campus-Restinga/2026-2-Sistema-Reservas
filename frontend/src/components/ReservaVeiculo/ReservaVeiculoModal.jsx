@@ -1,3 +1,5 @@
+import SelectRemoto from '../SelectRemoto/SelectRemoto';
+import useListaPaginada from '../../hooks/useListaPaginada';
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Clock3 } from 'lucide-react';
@@ -5,12 +7,7 @@ import { CheckCircle2, Clock3 } from 'lucide-react';
 import Modal from '../Administracao/Modal/Modal';
 import Botao from '../Botao/Botao';
 import CalendarioReserva from '../CalendarioReserva/CalendarioReserva';
-import {
-  atualizarReservaVeiculo,
-  consultarDisponibilidadeVeiculo,
-  criarReservaVeiculo,
-} from '../../services/reservasVeiculos';
-import { STATUS_RECURSO_LABEL } from '../../utils/statusRecurso';
+import { atualizarReservaVeiculo, consultarDisponibilidadeVeiculo, criarReservaVeiculo } from '../../services/reservasVeiculos';
 import styles from './ReservaVeiculoModal.module.css';
 
 const HORARIOS = Array.from({ length: 48 }, (_, indice) => {
@@ -46,12 +43,12 @@ function opcoesHorario(data, valorAtual = '') {
 function ReservaVeiculoModal({
   aberto,
   veiculoInicial,
-  veiculos = [],
   reservaEdicao,
   aoFechar,
   aoReservar,
 }) {
   const [veiculoId, setVeiculoId] = useState('');
+  const consultaVeiculo = useListaPaginada('/api/veiculos/', { id: veiculoId }, aberto && Boolean(veiculoId));
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
   const [data, setData] = useState('');
@@ -90,7 +87,7 @@ function ReservaVeiculoModal({
     setErro('');
   }, [aberto, veiculoInicial, reservaEdicao]);
 
-  const veiculo = veiculos.find((item) => String(item.id) === veiculoId) || veiculoInicial;
+  const veiculo = consultaVeiculo.itens[0] || veiculoInicial;
   const intervaloCompleto = Boolean(
     veiculoId && data && dataRetorno && horarioInicio && horarioFim &&
     new Date(`${dataRetorno}T${horarioFim}:00`) > new Date(`${data}T${horarioInicio}:00`)
@@ -217,9 +214,6 @@ function ReservaVeiculoModal({
     }
   }
 
-  const opcoesVeiculos = veiculos.filter((item) =>
-    item.status === 'ATIVO' || String(item.id) === veiculoId
-  );
 
   return (
     <Modal
@@ -241,17 +235,7 @@ function ReservaVeiculoModal({
 
         <label>
           Veículo
-          <select required value={veiculoId} onChange={(evento) => {
-            setVeiculoId(evento.target.value);
-            setDisponivel(null);
-          }}>
-            <option value="">Selecione um veículo</option>
-            {opcoesVeiculos.map((item) => (
-              <option key={item.id} value={item.id} disabled={item.status !== 'ATIVO'}>
-                {item.nome} · {item.placa}{item.status !== 'ATIVO' ? ` (${STATUS_RECURSO_LABEL[item.status]})` : ''}
-              </option>
-            ))}
-          </select>
+          <SelectRemoto url="/api/veiculos/" ativo={aberto} filtros={{ status: 'ATIVO' }} required ariaLabel="Veículo" valor={veiculoId} aoAlterar={(valor) => { setVeiculoId(valor); setDisponivel(null); }} />
         </label>
 
         <div className={styles.campo}>

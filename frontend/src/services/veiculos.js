@@ -1,21 +1,8 @@
+import { consultarPagina } from './paginacao';
 import axios from 'axios';
 const VEICULOS_URL = '/api/veiculos/';
 
-export const buscarVeiculos = async () => {
-    try {
-        const response = await axios.get(
-            VEICULOS_URL,
-            {
-                withCredentials: true,
-            }
-        );
-
-        return response.data;
-    } catch (erro) {
-        console.error('Erro ao buscar veículos:', erro.response?.data);
-        throw erro;
-    }
-};
+export const buscarVeiculos = (parametros, signal) => consultarPagina('/api/veiculos/', parametros, signal);
 
 export const buscarVeiculo = async (id) => {
     if (!id) return null;
