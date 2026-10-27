@@ -7,18 +7,20 @@ const ROTULO_RECURSO = {
     VEICULO: 'Veículos',
 };
 
-export function rotuloRecurso(grupo) {
-    if (grupo.tipo_recurso_autorizado === 'RECURSO_GERAL') {
-        return grupo.tipo_recurso_descricao || 'Recurso geral';
-    }
-    return ROTULO_RECURSO[grupo.tipo_recurso_autorizado] || grupo.tipo_recurso_autorizado;
+export function rotulosRecursos(grupo) {
+    return (grupo.tipos_recurso_autorizados ?? []).flatMap((tipo) => {
+        if (tipo === TIPO_RECURSO_RESERVAVEL.RECURSO_GERAL) {
+            return grupo.tipos_recurso_descricao?.length ? grupo.tipos_recurso_descricao : ['Recurso geral'];
+        }
+        return [ROTULO_RECURSO[tipo] || tipo];
+    });
 }
 
 export function correspondeAoFiltroRecurso(grupo, filtroRecurso, filtroTipoRecurso) {
     if (filtroRecurso === FILTRO_TODOS) return true;
-    if (grupo.tipo_recurso_autorizado !== filtroRecurso) return false;
+    if (!grupo.tipos_recurso_autorizados?.includes(filtroRecurso)) return false;
     if (filtroRecurso !== TIPO_RECURSO_RESERVAVEL.RECURSO_GERAL || filtroTipoRecurso === FILTRO_TODOS) return true;
-    return String(grupo.tipo_recurso) === String(filtroTipoRecurso);
+    return (grupo.tipos_recurso ?? []).some((tipoRecurso) => String(tipoRecurso) === String(filtroTipoRecurso));
 }
 
 export function formatarData(dataISO) {

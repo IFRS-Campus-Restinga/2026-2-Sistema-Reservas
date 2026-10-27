@@ -1,30 +1,43 @@
 import { useEffect, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { listarTiposRecurso } from '../../../services';
+import { TIPO_RECURSO_RESERVAVEL, TIPO_RECURSO_RESERVAVEL_LABEL } from '../../../utils/tipoRecursoReservavel';
 import Modal from '../../Administracao/Modal/Modal';
 import styles from './GrupoModal.module.css';
 
 const formularioInicial = {
     nome: '',
     tipo_membro_permitido: 'aluno',
-    tipo_recurso_autorizado: 'AREA',
-    tipo_recurso: '',
+    tipos_recurso_autorizados: [],
+    tipos_recurso: [],
     data_inicio_validade: '',
     data_fim_validade: '',
 };
+
+const TIPOS_AUTORIZAVEIS_POR_MEMBRO = {
+    aluno: [TIPO_RECURSO_RESERVAVEL.AREA, TIPO_RECURSO_RESERVAVEL.RECURSO_GERAL],
+    servidor: [TIPO_RECURSO_RESERVAVEL.VEICULO],
+};
+
+function tiposIniciais(tipoMembro) {
+    return tipoMembro === 'servidor' ? [TIPO_RECURSO_RESERVAVEL.VEICULO] : [];
+}
 
 function montarFormulario(grupo, tipoInicial) {
     if (!grupo) {
         return {
             ...formularioInicial,
             tipo_membro_permitido: tipoInicial,
-            tipo_recurso_autorizado: tipoInicial === 'servidor' ? 'VEICULO' : 'AREA',
+            tipos_recurso_autorizados: tiposIniciais(tipoInicial),
         };
     }
+    const tipoMembro = grupo.tipo_membro_permitido || 'aluno';
+    const autorizaveis = TIPOS_AUTORIZAVEIS_POR_MEMBRO[tipoMembro] ?? [];
     return {
         nome: grupo.nome || '',
-        tipo_membro_permitido: grupo.tipo_membro_permitido || 'aluno',
-        tipo_recurso_autorizado: grupo.tipo_recurso_autorizado || 'AREA',
-        tipo_recurso: grupo.tipo_recurso?.id ?? grupo.tipo_recurso ?? '',
+        tipo_membro_permitido: tipoMembro,
+        tipos_recurso_autorizados: (grupo.tipos_recurso_autorizados ?? []).filter((tipo) => autorizaveis.includes(tipo)),
+        tipos_recurso: (grupo.tipos_recurso ?? []).map(String),
         data_inicio_validade: grupo.data_inicio_validade || '',
         data_fim_validade: grupo.data_fim_validade || '',
     };
@@ -41,13 +54,14 @@ function GrupoModal({
     const [salvando, setSalvando] = useState(false);
     const [erros, setErros] = useState({});
     const [tiposRecurso, setTiposRecurso] = useState(null);
+    const [recursosGeraisAbertos, setRecursosGeraisAbertos] = useState(false);
 
     useEffect(() => {
         listarTiposRecurso()
             .then(setTiposRecurso)
             .catch(() => {
                 setTiposRecurso([]);
-                setErros((anteriores) => ({ ...anteriores, tipo_recurso: 'Não foi possível carregar os tipos de recurso.' }));
+                setErros((anteriores) => ({ ...anteriores, tipos_recurso: 'Não foi possível carregar os tipos de recurso.' }));
             });
     }, []);
 
@@ -57,9 +71,20 @@ function GrupoModal({
             ...anterior,
             [name]: value,
             ...(name === 'tipo_membro_permitido' ? {
-                tipo_recurso_autorizado: value === 'servidor' ? 'VEICULO' : 'AREA',
-                tipo_recurso: '',
+                tipos_recurso_autorizados: tiposIniciais(value),
+                tipos_recurso: [],
             } : {}),
+        }));
+        setErros((anteriores) => ({ ...anteriores, [name]: '', geral: '' }));
+    }
+
+    function alternarItem(evento) {
+        const { name, value, checked } = evento.target;
+        setFormulario((anterior) => ({
+            ...anterior,
+            [name]: checked
+                ? [...anterior[name], value]
+                : anterior[name].filter((item) => item !== value),
         }));
         setErros((anteriores) => ({ ...anteriores, [name]: '', geral: '' }));
     }
@@ -80,7 +105,17 @@ function GrupoModal({
     async function enviarFormulario(evento) {
         evento.preventDefault();
 
-        const ehRecursoGeral = formulario.tipo_recurso_autorizado === 'RECURSO_GERAL';
+        const autorizaRecursoGeral = formulario.tipos_recurso_autorizados.includes(TIPO_RECURSO_RESERVAVEL.RECURSO_GERAL);
+
+        if (formulario.tipos_recurso_autorizados.length === 0) {
+            setErros({ tipos_recurso_autorizados: 'Selecione ao menos um recurso autorizado.' });
+            return;
+        }
+        if (autorizaRecursoGeral && formulario.tipos_recurso.length === 0) {
+            setErros({ tipos_recurso: 'Selecione ao menos um recurso geral.' });
+            setRecursosGeraisAbertos(true);
+            return;
+        }
 
         try {
             setSalvando(true);
@@ -89,8 +124,8 @@ function GrupoModal({
             await aoSalvar({
                 nome: formulario.nome,
                 tipo_membro_permitido: formulario.tipo_membro_permitido,
-                tipo_recurso_autorizado: formulario.tipo_recurso_autorizado,
-                tipo_recurso: ehRecursoGeral && formulario.tipo_recurso ? Number(formulario.tipo_recurso) : null,
+                tipos_recurso_autorizados: formulario.tipos_recurso_autorizados,
+                tipos_recurso: autorizaRecursoGeral ? formulario.tipos_recurso.map(Number) : [],
                 data_inicio_validade: formulario.data_inicio_validade,
                 data_fim_validade: formulario.data_fim_validade || null,
             });
@@ -114,6 +149,13 @@ function GrupoModal({
             setSalvando(false);
         }
     }
+
+    const recursosGeraisSelecionados = (tiposRecurso ?? [])
+        .filter((tipo) => formulario.tipos_recurso.includes(String(tipo.id)))
+        .map((tipo) => tipo.descricao);
+    const resumoRecursosGerais = tiposRecurso === null
+        ? 'Carregando...'
+        : recursosGeraisSelecionados.join(', ') || 'Nenhum selecionado';
 
     return (
         <Modal
@@ -183,54 +225,75 @@ function GrupoModal({
                     {mensagemErro('tipo_membro_permitido')}
                 </div>
 
-                <div className={styles.linhaDupla}>
+                {formulario.tipo_membro_permitido === 'servidor' ? (
                     <div className={styles.campo}>
-                        <label htmlFor="tipo_recurso_autorizado">Recurso autorizado *</label>
-                        <select
-                            id="tipo_recurso_autorizado"
-                            name="tipo_recurso_autorizado"
-                            value={formulario.tipo_recurso_autorizado}
-                            onChange={alterarCampo}
-                            required
-                        >
-                            {formulario.tipo_membro_permitido === 'servidor' ? (
-                                <option value="VEICULO">Veículos</option>
-                            ) : (
-                                <>
-                                    <option value="AREA">Áreas</option>
-                                    <option value="RECURSO_GERAL">Recurso geral</option>
-                                    {formulario.tipo_recurso_autorizado === 'VEICULO' && (
-                                        <option value="VEICULO" disabled>Veículos (não permitido para alunos)</option>
-                                    )}
-                                </>
-                            )}
-                        </select>
-                        {mensagemErro('tipo_recurso_autorizado')}
+                        <label>Recurso autorizado *</label>
+                        <p className={styles.valorFixo}>{TIPO_RECURSO_RESERVAVEL_LABEL.VEICULO}</p>
+                        {mensagemErro('tipos_recurso_autorizados')}
                     </div>
-
-                    {formulario.tipo_recurso_autorizado === 'RECURSO_GERAL' && (
-                        <div className={styles.campo}>
-                            <label htmlFor="tipo_recurso">Qual recurso geral *</label>
-                            <select
-                                id="tipo_recurso"
-                                name="tipo_recurso"
-                                value={formulario.tipo_recurso}
-                                onChange={alterarCampo}
-                                required
-                            >
-                                <option value="" disabled>
-                                    {tiposRecurso === null ? 'Carregando...' : 'Selecione'}
-                                </option>
-                                {(tiposRecurso ?? []).map((tipo) => (
-                                    <option key={tipo.id} value={tipo.id}>
-                                        {tipo.descricao}
-                                    </option>
-                                ))}
-                            </select>
-                            {mensagemErro('tipo_recurso')}
+                ) : (
+                    <fieldset className={styles.campo}>
+                        <legend>Recursos autorizados *</legend>
+                        <div className={styles.opcoes}>
+                            {TIPOS_AUTORIZAVEIS_POR_MEMBRO.aluno.map((tipo) => (
+                                <div key={tipo} className={styles.checkboxItem}>
+                                    <input
+                                        id={`tipo-${tipo}`}
+                                        name="tipos_recurso_autorizados"
+                                        type="checkbox"
+                                        value={tipo}
+                                        checked={formulario.tipos_recurso_autorizados.includes(tipo)}
+                                        onChange={alternarItem}
+                                    />
+                                    <label htmlFor={`tipo-${tipo}`}>{TIPO_RECURSO_RESERVAVEL_LABEL[tipo]}</label>
+                                </div>
+                            ))}
                         </div>
-                    )}
-                </div>
+                        {mensagemErro('tipos_recurso_autorizados')}
+                    </fieldset>
+                )}
+
+                {formulario.tipos_recurso_autorizados.includes(TIPO_RECURSO_RESERVAVEL.RECURSO_GERAL) && (
+                    <div className={styles.campo}>
+                        <div className={styles.accordion}>
+                            <button
+                                type="button"
+                                className={styles.accordionCabecalho}
+                                aria-expanded={recursosGeraisAbertos}
+                                aria-controls="lista-recursos-gerais"
+                                data-invalido={Boolean(erros.tipos_recurso)}
+                                onClick={() => setRecursosGeraisAbertos((aberto) => !aberto)}
+                            >
+                                <span className={styles.accordionTitulo}>Quais recursos gerais *</span>
+                                <span className={styles.accordionResumo}>{resumoRecursosGerais}</span>
+                                <ChevronDown size={16} className={styles.accordionIcone} aria-hidden="true" />
+                            </button>
+                            {recursosGeraisAbertos && tiposRecurso !== null && (
+                                <div
+                                    id="lista-recursos-gerais"
+                                    role="group"
+                                    aria-label="Quais recursos gerais"
+                                    className={`${styles.opcoes} ${styles.accordionConteudo}`}
+                                >
+                                    {tiposRecurso.map((tipo) => (
+                                        <div key={tipo.id} className={styles.checkboxItem}>
+                                            <input
+                                                id={`tipo-recurso-${tipo.id}`}
+                                                name="tipos_recurso"
+                                                type="checkbox"
+                                                value={String(tipo.id)}
+                                                checked={formulario.tipos_recurso.includes(String(tipo.id))}
+                                                onChange={alternarItem}
+                                            />
+                                            <label htmlFor={`tipo-recurso-${tipo.id}`}>{tipo.descricao}</label>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        {mensagemErro('tipos_recurso')}
+                    </div>
+                )}
 
                 <div className={styles.linhaDupla}>
                     <div className={styles.campo}>
