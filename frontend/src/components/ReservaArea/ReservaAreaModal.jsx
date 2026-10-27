@@ -1,3 +1,5 @@
+import SelectRemoto from '../SelectRemoto/SelectRemoto';
+import useListaPaginada from '../../hooks/useListaPaginada';
 import { useEffect, useState } from 'react';
 import { Form, Alert } from 'react-bootstrap';
 import { CheckCircle2 } from 'lucide-react';
@@ -5,19 +7,10 @@ import Modal from '../Administracao/Modal/Modal';
 import Botao from '../Botao/Botao';
 import CalendarioReserva from '../CalendarioReserva/CalendarioReserva';
 import CamposRecorrencia from '../CamposRecorrencia/CamposRecorrencia';
-import Select from '../Select/Select';
 import { criarReservaArea, atualizarReservaArea } from '../../services/reservasAreas';
-import { TIPO_AREA_LABEL } from '../../utils/tipoArea';
-import { STATUS_RECURSO_LABEL } from '../../utils/statusRecurso';
 import { TURNO_LABEL, PERIODOS_POR_TURNO } from '../../utils/periodosAula';
 import { horarioParaMinutos } from '../../utils/data';
-import {
-  TIPO_RECORRENCIA,
-  conflitosRecorrencia,
-  gerarDatasRecorrencia,
-  montarRecorrencia,
-  validarRecorrencia,
-} from '../../utils/recorrencia';
+import { TIPO_RECORRENCIA, conflitosRecorrencia, gerarDatasRecorrencia, montarRecorrencia, validarRecorrencia } from '../../utils/recorrencia';
 import styles from './ReservaAreaModal.module.css';
 
 const HORARIOS = Array.from({ length: 32 }, (_, indice) => {
@@ -38,16 +31,9 @@ function horarioFimSugerido(horarioInicio) {
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
 
-function nomeBloco(area, blocos) {
-  const blocoId = typeof area.bloco === 'object' ? area.bloco?.id : area.bloco;
-  return blocos.find((bloco) => String(bloco.id) === String(blocoId));
-}
-
 function ReservaAreaModal({
   aberto,
   areaInicial,
-  areas = [],
-  blocos = [],
   usuario,
   reservaEdicao,
   dataInicial,
@@ -106,7 +92,8 @@ function ReservaAreaModal({
     setErro('');
   }, [aberto, areaInicial, reservaEdicao, dataInicial, horarioInicial]);
 
-  const areaSelecionada = areas.find((area) => String(area.id) === areaId);
+  const consultaArea = useListaPaginada('/api/areas/', { id: areaId }, aberto && Boolean(areaId));
+  const areaSelecionada = consultaArea.itens[0];
 
   // A recorrência só é definida na criação, a edição altera apenas a reserva aberta
   const recorrenciaAtiva = recorrente && !reservaEdicao;
@@ -114,24 +101,6 @@ function ReservaAreaModal({
     recorrenciaAtiva && !validarRecorrencia(data, tipoRecorrencia, dataFimRecorrencia)
       ? gerarDatasRecorrencia(data, tipoRecorrencia, dataFimRecorrencia).length
       : 1;
-
-  const gruposArea = [...blocos]
-    .sort((a, b) => (a.numero ?? 0) - (b.numero ?? 0))
-    .map((bloco) => ({
-      rotulo: bloco.nome,
-      opcoes: areas
-        .filter((area) => nomeBloco(area, blocos)?.id === bloco.id)
-        .map((area) => ({
-          valor: String(area.id),
-          rotulo: `${area.nome} · ${TIPO_AREA_LABEL[area.tipo] || area.tipo} · ${area.capacidade} pax${
-            area.status !== 'ATIVO'
-              ? ` (${STATUS_RECURSO_LABEL[area.status]?.toLowerCase() || ''})`
-              : ''
-          }`,
-          desabilitado: area.status !== 'ATIVO',
-        })),
-    }))
-    .filter((grupo) => grupo.opcoes.length > 0);
 
   const periodosDoTurno = PERIODOS_POR_TURNO[turno];
   const indicesSelecionados = periodosSelecionados
@@ -270,10 +239,9 @@ function ReservaAreaModal({
 
         <Form.Group>
           <Form.Label>Área</Form.Label>
-          <Select
+          <SelectRemoto url="/api/areas/" ativo={aberto} filtros={{ disponiveis: true }}
             valor={areaId}
             aoAlterar={setAreaId}
-            grupos={gruposArea}
             valorTodos=""
             rotuloTodos="Selecione uma área"
             ariaLabel="Área"

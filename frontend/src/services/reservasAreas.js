@@ -1,3 +1,4 @@
+import { consultarPagina } from './paginacao';
 
 const URL = '/api/reservas/areas/';
 
@@ -35,13 +36,7 @@ export async function listarReservasAreas({ dataInicio, dataFim } = {}) {
   return tratarResposta(resposta);
 }
 
-export async function listarMinhasReservasAreas() {
-  const resposta = await fetch(`${URL}minhas/`, {
-    credentials: 'include',
-  });
-
-  return tratarResposta(resposta);
-}
+export const listarMinhasReservasAreas = (parametros, signal) => consultarPagina('/api/reservas/areas/minhas/', parametros, signal);
 
 export async function buscarAgendaArea(id) {
   const parametros = new URLSearchParams({ tipo: 'AREA', recurso: id });
