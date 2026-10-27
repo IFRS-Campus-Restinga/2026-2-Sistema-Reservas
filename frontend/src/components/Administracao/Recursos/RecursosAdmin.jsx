@@ -1,14 +1,10 @@
-import { useEffect, useState } from 'react';
+import useListaPaginada from '../../../hooks/useListaPaginada';
+import Paginacao from '../Paginacao/Paginacao';
+import { useState } from 'react';
 import { Pencil, Plus, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 import styles from './RecursosAdmin.module.css';
 
-import {
-    atualizarRecursoGeral,
-    criarRecursoGeral,
-    excluirRecursoGeral,
-    listarRecursosGerais,
-    listarTiposRecurso,
-} from '../../../services';
+import { atualizarRecursoGeral, criarRecursoGeral, excluirRecursoGeral } from '../../../services';
 
 import CampoBusca from '../CampoBusca/CampoBusca';
 import ModalConfirmacao from '../ModalConfirmacao/ModalConfirmacao';
@@ -16,39 +12,14 @@ import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import RecursoModal from './ModalRecurso/RecursoModal';
 
 function RecursosAdmin() {
-    const [recursos, setRecursos] = useState([]);
-    const [tipos, setTipos] = useState([]);
     const [busca, setBusca] = useState('');
-    const [carregando, setCarregando] = useState(true);
-    const [erro, setErro] = useState('');
 
     const [modalRecursoAberto, setModalRecursoAberto] = useState(false);
     const [recursoEditando, setRecursoEditando] = useState(null);
     const [recursoExcluindo, setRecursoExcluindo] = useState(null);
 
-    useEffect(() => {
-        carregarDados();
-    }, []);
 
-    async function carregarDados() {
-        try {
-            setCarregando(true);
-            setErro('');
-
-            const [listaRecursos, listaTipos] = await Promise.all([
-                listarRecursosGerais(),
-                listarTiposRecurso(),
-            ]);
-
-            setRecursos(listaRecursos);
-            setTipos(listaTipos);
-        } catch (erro) {
-            console.error(erro);
-            setErro('Não foi possível carregar os recursos.');
-        } finally {
-            setCarregando(false);
-        }
-    }
+    const { itens: recursos, carregando, erro, setErro, recarregar: carregarDados, paginacao } = useListaPaginada('/api/recursos-gerais/', { busca });
 
     function abrirCadastro() {
         setRecursoEditando(null);
@@ -114,22 +85,9 @@ function RecursosAdmin() {
         }
     }
 
-    const tiposPorId = {};
-    tipos.forEach((tipo) => {
-        tiposPorId[tipo.id] = tipo.descricao;
-    });
 
     const termoBusca = busca.trim().toLowerCase();
-    const recursosFiltrados = recursos.filter((recurso) => {
-        const tipo = tiposPorId[recurso.tipo_recurso] || '';
-        const codigo = recurso.codigo || '';
-
-        return (
-            recurso.nome.toLowerCase().includes(termoBusca) ||
-            tipo.toLowerCase().includes(termoBusca) ||
-            codigo.toLowerCase().includes(termoBusca)
-        );
-    });
+    const recursosFiltrados = recursos;
 
     const colunas = [
         {
@@ -140,7 +98,7 @@ function RecursosAdmin() {
         {
             chave: 'tipo_recurso',
             titulo: 'Tipo de recurso',
-            renderizar: (recurso) => tiposPorId[recurso.tipo_recurso] || '-',
+            renderizar: (recurso) => recurso.tipo_descricao || '-',
         },
         {
             chave: 'disponibilidade',
@@ -208,8 +166,6 @@ function RecursosAdmin() {
                     type="button"
                     className={styles.adicionar}
                     onClick={abrirCadastro}
-                    disabled={tipos.length === 0}
-                    title={tipos.length === 0 ? 'Cadastre um tipo de recurso primeiro' : undefined}
                 >
                     <Plus size={16} />
                     Adicionar
@@ -232,10 +188,11 @@ function RecursosAdmin() {
                 />
             )}
 
+            <Paginacao {...paginacao} />
+
             <RecursoModal
                 aberto={modalRecursoAberto}
                 recurso={recursoEditando}
-                tipos={tipos}
                 aoFechar={fecharModalRecurso}
                 aoSalvar={salvarRecurso}
             />

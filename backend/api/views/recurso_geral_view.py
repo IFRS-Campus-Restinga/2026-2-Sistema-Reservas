@@ -1,3 +1,4 @@
+from .view_helpers import listar
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -14,9 +15,8 @@ class RecursoGeralListCreateView(APIView):
     permission_classes = [EscritaAdmin]
 
     def get(self, request):
-        recursos = RecursoGeral.objects.all()
-        serializer = RecursoGeralSerializer(recursos, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        recursos = RecursoGeral.objects.select_related('tipo_recurso').all()
+        return listar(request, recursos, RecursoGeralSerializer)
 
     def post(self, request):
         serializer = RecursoGeralSerializer(data=request.data)

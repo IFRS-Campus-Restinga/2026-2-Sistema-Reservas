@@ -1,3 +1,5 @@
+import SelectRemoto from '../SelectRemoto/SelectRemoto';
+import useListaPaginada from '../../hooks/useListaPaginada';
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
@@ -5,11 +7,7 @@ import { CheckCircle2 } from 'lucide-react';
 import Modal from '../Administracao/Modal/Modal';
 import Botao from '../Botao/Botao';
 import CalendarioReserva from '../CalendarioReserva/CalendarioReserva';
-import {
-  criarReservaRecursoGeral,
-  atualizarReservaRecursoGeral,
-  consultarDisponibilidadeRecursoGeral,
-} from '../../services/reservasRecursosGerais';
+import { criarReservaRecursoGeral, atualizarReservaRecursoGeral, consultarDisponibilidadeRecursoGeral } from '../../services/reservasRecursosGerais';
 import { TIPO_PRAZO_LABEL } from '../../utils/tipoPrazo';
 import styles from './ReservaRecursoGeralModal.module.css';
 
@@ -25,8 +23,6 @@ function ReservaRecursoGeralModal({
   aberto,
   tipo,
   recursoInicial,
-  tipos = [],
-  recursos = [],
   reservaEdicao,
   aoFechar,
   aoReservar,
@@ -48,34 +44,10 @@ function ReservaRecursoGeralModal({
   const [disponiveisPeriodo, setDisponiveisPeriodo] = useState(null);
   const [verificando, setVerificando] = useState(false);
 
-  const tiposComRecursos = tipos.length > 0
-    ? tipos.map((itemTipo) => ({
-        ...itemTipo,
-        recursos: recursos.filter(
-          (recurso) => String(recurso.tipo_recurso) === String(itemTipo.id)
-        ),
-      }))
-    : tipo
-      ? [tipo]
-      : [];
-
-  const tiposDisponiveis = tiposComRecursos.filter((itemTipo) =>
-    itemTipo.recursos?.some(
-      (recurso) =>
-        recurso.status === 'ATIVO' &&
-        Number(recurso.quantidade_total) > 0
-    )
-  );
-
   useEffect(() => {
     if (!aberto) return;
 
-    const tipoInicialId = tipo?.id ||
-      tiposComRecursos.find((itemTipo) =>
-        itemTipo.recursos?.some(
-          (recurso) => String(recurso.id) === String(recursoInicial?.id)
-        )
-      )?.id || '';
+    const tipoInicialId = tipo?.id || recursoInicial?.tipo_recurso || '';
 
     setTipoId(String(tipoInicialId));
     setRecursoId(String(recursoInicial?.id || ''));
@@ -95,25 +67,10 @@ function ReservaRecursoGeralModal({
     setErro('');
   }, [aberto, tipo, recursoInicial, reservaEdicao]);
 
-  const tipoSelecionado = tiposComRecursos.find(
-    (itemTipo) => String(itemTipo.id) === String(tipoId)
-  ) || tipo;
-
-  const opcoes = (tipoSelecionado?.recursos || []).filter(
-    (recurso) =>
-      recurso.status === 'ATIVO' &&
-      (
-        Number(recurso.quantidade_total) > 0 ||
-        (
-          reservaEdicao &&
-          String(recurso.id) === String(recursoInicial?.id)
-        )
-      )
-  );
-
-  const recurso = opcoes.find(
-    (item) => String(item.id) === String(recursoId)
-  ) || recursoInicial;
+  const consultaTipo = useListaPaginada('/api/tipos-recurso/', { id: tipoId }, aberto && Boolean(tipoId));
+  const tipoSelecionado = consultaTipo.itens[0];
+  const consultaRecurso = useListaPaginada('/api/recursos-gerais/', { id: recursoId }, aberto && Boolean(recursoId));
+  const recurso = consultaRecurso.itens[0];
 
   const prazoLongo = recurso?.tipo_prazo === 'LONGO_PRAZO';
   const devolucaoEscolhida = prazoLongo ? dataDevolucao : data;
@@ -166,7 +123,7 @@ function ReservaRecursoGeralModal({
     horarioInicio,
     horarioFim,
     devolucaoEscolhida,
-    reservaEdicao?.id,
+    reservaEdicao,
   ]);
 
   const limite = recurso
@@ -280,53 +237,13 @@ function ReservaRecursoGeralModal({
           />
         </label>
 
-        {tipos.length > 0 ? (
-          <label>
-            Tipo de recurso
-            <select
-              required
-              value={tipoId}
-              onChange={(evento) => selecionarTipo(evento.target.value)}
-            >
-              <option value="">Selecione um tipo</option>
-              {tiposDisponiveis.map((itemTipo) => (
-                <option key={itemTipo.id} value={itemTipo.id}>
-                  {itemTipo.descricao}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : (
-          <label>
-            Tipo de recurso
-            <input
-              disabled
-              value={
-                tipoSelecionado && recurso
-                  ? `${tipoSelecionado.descricao} · ${
-                      TIPO_PRAZO_LABEL[recurso.tipo_prazo] || recurso.tipo_prazo
-                    }`
-                  : ''
-              }
-            />
-          </label>
-        )}
+        <label>Tipo de recurso
+          <SelectRemoto url="/api/tipos-recurso/" ativo={aberto} required ariaLabel="Tipo de recurso" valor={tipoId} aoAlterar={selecionarTipo} />
+        </label>
 
         <label>
           Item específico
-          <select
-            required
-            value={recursoId}
-            onChange={(evento) => selecionarRecurso(evento.target.value)}
-            disabled={!tipoSelecionado}
-          >
-            <option value="">Selecione um recurso</option>
-            {opcoes.map((item) => (
-              <option key={item.id} value={String(item.id)}>
-                {item.nome} · {item.quantidade_total} unidade(s)
-              </option>
-            ))}
-          </select>
+          <SelectRemoto url="/api/recursos-gerais/" ativo={aberto} filtros={{ tipo_recurso: tipoId, disponiveis: true }} required ariaLabel="Item específico" valor={recursoId} aoAlterar={selecionarRecurso} disabled={!tipoId} />
         </label>
 
         {recurso && (

@@ -1,3 +1,4 @@
+import { consultarPagina } from './paginacao';
 async function tratarResposta(resposta) {
   if (resposta.status === 204) {
     return null
@@ -17,13 +18,7 @@ async function tratarResposta(resposta) {
   return dados
 }
 
-export async function listarRecursosGerais() {
-  const resposta = await fetch('/api/recursos-gerais/', {
-    credentials: 'include',
-  })
-
-  return tratarResposta(resposta)
-}
+export const listarRecursosGerais = (parametros, signal) => consultarPagina('/api/recursos-gerais/', parametros, signal);
 
 export async function criarRecursoGeral(recurso) {
   const resposta = await fetch('/api/recursos-gerais/', {
@@ -60,10 +55,4 @@ export async function excluirRecursoGeral(id) {
   return tratarResposta(resposta)
 }
 
-export async function listarTiposRecurso() {
-  const resposta = await fetch('/api/tipos-recurso/', {
-    credentials: 'include',
-  })
-
-  return tratarResposta(resposta)
-}
+export const listarTiposRecurso = (parametros, signal) => consultarPagina('/api/tipos-recurso/', parametros, signal);

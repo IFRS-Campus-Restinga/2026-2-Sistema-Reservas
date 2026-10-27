@@ -5,6 +5,8 @@ from django.utils import timezone
 from api.validators.reserva_recurso_geral_validator import ocupacao_maxima
 
 class RecursoGeralSerializer(serializers.ModelSerializer):
+    tipo_descricao = serializers.CharField(source='tipo_recurso.descricao', read_only=True)
+
 
     quantidade_reservada = serializers.SerializerMethodField()
 
