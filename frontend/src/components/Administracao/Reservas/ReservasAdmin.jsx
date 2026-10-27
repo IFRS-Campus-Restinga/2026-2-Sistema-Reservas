@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import useListaPaginada from '../../../hooks/useListaPaginada';
+import Paginacao from '../Paginacao/Paginacao';
+import { useState } from 'react';
 import { Eye } from 'lucide-react';
 import styles from './ReservasAdmin.module.css';
 
-import { listarReservasPendentes, confirmarReservaPendente, cancelarReservaAdmin } from '../../../services';
+import { confirmarReservaPendente, cancelarReservaAdmin } from '../../../services';
 import CampoBusca from '../CampoBusca/CampoBusca';
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import Select from '../../Select/Select';
@@ -25,11 +27,8 @@ function formatarHorario(horario) {
 }
 
 function ReservasAdmin() {
-  const [reservas, setReservas] = useState([]);
   const [busca, setBusca] = useState('');
   const [modalidade, setModalidade] = useState('todas');
-  const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState('');
   const [erroConfirmacao, setErroConfirmacao] = useState('');
   const [erroCancelamento, setErroCancelamento] = useState('');
   const [mensagemSucesso, setMensagemSucesso] = useState('');
@@ -37,35 +36,7 @@ function ReservasAdmin() {
   const [confirmandoId, setConfirmandoId] = useState(null);
   const [cancelandoId, setCancelandoId] = useState(null);
 
-  useEffect(() => {
-    let ativo = true;
-
-    async function carregarReservas() {
-      try {
-        const dados = await listarReservasPendentes();
-
-        if (ativo) {
-          setReservas(Array.isArray(dados) ? dados : []);
-        }
-      } catch (erro) {
-        console.error(erro);
-
-        if (ativo) {
-          setErro(erro.message || 'Não foi possível carregar as reservas pendentes.');
-        }
-      } finally {
-        if (ativo) {
-          setCarregando(false);
-        }
-      }
-    }
-
-    carregarReservas();
-
-    return () => {
-      ativo = false;
-    };
-  }, []);
+  const { itens: reservasFiltradas, total, carregando, erro, recarregar, paginacao } = useListaPaginada('/api/reservas/pendentes/', { busca, modalidade });
 
   async function confirmarReserva(reserva) {
     if (!reserva || confirmandoId) return;
@@ -77,9 +48,7 @@ function ReservasAdmin() {
 
       await confirmarReservaPendente(reserva.id);
 
-      setReservas((reservasAtuais) =>
-        reservasAtuais.filter((item) => item.id !== reserva.id)
-      );
+      recarregar();
       setReservaSelecionada(null);
       setMensagemSucesso(`Reserva "${reserva.nome}" confirmada com sucesso.`);
     } catch (erro) {
@@ -103,9 +72,7 @@ function ReservasAdmin() {
 
       await cancelarReservaAdmin(reserva.id, motivo);
 
-      setReservas((reservasAtuais) =>
-        reservasAtuais.filter((item) => item.id !== reserva.id)
-      );
+      recarregar();
 
       setReservaSelecionada(null);
 
@@ -135,32 +102,6 @@ function ReservasAdmin() {
     setErroCancelamento('');
     setReservaSelecionada(null);
   }
-
-  const reservasFiltradas = useMemo(() => {
-    const termo = busca.trim().toLowerCase();
-
-    return reservas.filter((reserva) => {
-      const correspondeModalidade =
-        modalidade === 'todas' || reserva.modalidade === modalidade;
-
-      if (!correspondeModalidade) return false;
-      if (!termo) return true;
-
-      const campos = [
-        reserva.nome,
-        reserva.usuario?.nome,
-        reserva.usuario?.email,
-        reserva.item?.nome,
-        reserva.item?.tipo,
-        reserva.item?.placa,
-        MODALIDADE_LABEL[reserva.modalidade],
-      ];
-
-      return campos.some((campo) =>
-        String(campo ?? '').toLowerCase().includes(termo)
-      );
-    });
-  }, [reservas, busca, modalidade]);
 
   const colunas = [
     {
@@ -217,7 +158,7 @@ function ReservasAdmin() {
         <button
           type="button"
           className={styles.detalhes}
-          onClick={() => setReservaSelecionada(reserva)}
+          onClick={() => abrirDetalhes(reserva)}
           title="Ver detalhes"
           aria-label={`Ver detalhes da reserva ${reserva.nome}`}
         >
@@ -236,7 +177,7 @@ function ReservasAdmin() {
         </div>
 
         <span className={styles.contador}>
-          {reservasFiltradas.length} {reservasFiltradas.length === 1 ? 'reserva' : 'reservas'}
+          {total} {total === 1 ? 'reserva' : 'reservas'}
         </span>
       </div>
 
@@ -282,6 +223,8 @@ function ReservasAdmin() {
           }
         />
       )}
+
+      <Paginacao {...paginacao} />
 
       <ModalReservaPendente
         reserva={reservaSelecionada}

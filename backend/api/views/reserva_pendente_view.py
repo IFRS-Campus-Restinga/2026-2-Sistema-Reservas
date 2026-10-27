@@ -1,3 +1,4 @@
+from .view_helpers import listar
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
@@ -39,7 +40,7 @@ class ReservasPendentesListView(APIView):
             .order_by("data", "horario_inicio")
         )
 
-        return Response(ReservaPendenteSerializer(reservas, many=True).data)
+        return listar(request, reservas, ReservaPendenteSerializer)
 
 class ConfirmarReservaView(APIView):
     permission_classes = [PodeConfirmarReserva]

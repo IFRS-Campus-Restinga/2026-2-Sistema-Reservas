@@ -1,5 +1,7 @@
+import useListaPaginada from '../../hooks/useListaPaginada';
+import Paginacao from '../../components/Administracao/Paginacao/Paginacao';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useUsuario } from '../../hooks/useUsuario';
 import { ClipboardList, Info, Package, UserRound } from 'lucide-react';
@@ -10,22 +12,9 @@ import ReservaAreaModal from '../../components/ReservaArea/ReservaAreaModal';
 import ReservaVeiculoModal from '../../components/ReservaVeiculo/ReservaVeiculoModal';
 import TermoReserva from '../../components/TermoReserva/TermoReserva';
 import Select from '../../components/Select/Select';
-import {
-  listarRecursosGerais,
-  listarTiposRecurso,
-  listarMinhasReservasAreas,
-  cancelarReservaArea,
-  buscarAreas,
-  buscarBlocos,
-  buscarVeiculos,
-  listarReservasVeiculos,
-  cancelarReservaVeiculo,
-} from '../../services';
-import {
-  listarReservasRecursosGerais,
-  cancelarReservaRecursoGeral,
-} from '../../services/reservasRecursosGerais';
-import { STATUS_RESERVA_LABEL, statusReservaApresentado } from '../../utils/reserva';
+import { cancelarReservaArea, cancelarReservaVeiculo } from '../../services';
+import { cancelarReservaRecursoGeral } from '../../services/reservasRecursosGerais';
+import { STATUS_RESERVA_LABEL } from '../../utils/reserva';
 import { ehAdministrador } from '../../utils/permissoes';
 import styles from './MinhasReservas.module.css';
 
@@ -64,19 +53,12 @@ function MinhasReservas() {
   const usuario = useUsuario();
   const location = useLocation();
 
-  const [reservas, setReservas] = useState([]);
-  const [recursos, setRecursos] = useState([]);
-  const [tipos, setTipos] = useState([]);
-  const [areas, setAreas] = useState([]);
-  const [blocos, setBlocos] = useState([]);
-  const [veiculos, setVeiculos] = useState([]);
   const [editando, setEditando] = useState(null);
   const [editandoArea, setEditandoArea] = useState(null);
   const [editandoVeiculo, setEditandoVeiculo] = useState(null);
   const [selecionada, setSelecionada] = useState(null);
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [filtroStatus, setFiltroStatus] = useState('todos');
-  const [erro, setErro] = useState('');
   const [aviso, setAviso] = useState(
     location.state?.criada
       ? location.state?.tipo === 'veiculo'
@@ -85,43 +67,10 @@ function MinhasReservas() {
       : ''
   );
 
-  useEffect(() => {
-    Promise.all([
-      listarReservasRecursosGerais(),
-      listarRecursosGerais(),
-      listarTiposRecurso(),
-      listarMinhasReservasAreas(),
-      buscarAreas(),
-      buscarBlocos(),
-      listarReservasVeiculos(),
-      buscarVeiculos(),
-    ])
-      .then(([listaReservasRecurso, listaRecursos, listaTipos, listaReservasArea, listaAreas, listaBlocos, listaReservasVeiculo, listaVeiculos]) => {
-        setErro('');
-
-        setReservas([
-          ...listaReservasRecurso.map((reserva) => ({
-            ...reserva,
-            modalidade: 'recurso_geral',
-          })),
-          ...listaReservasArea.map((reserva) => ({
-            ...reserva,
-            modalidade: 'area',
-          })),
-          ...listaReservasVeiculo.map((reserva) => ({
-            ...reserva,
-            modalidade: 'veiculo',
-          })),
-        ]);
-
-        setRecursos(listaRecursos);
-        setTipos(listaTipos);
-        setAreas(listaAreas);
-        setBlocos(listaBlocos);
-        setVeiculos(listaVeiculos);
-      })
-      .catch((falha) => setErro(falha.message));
-  }, []);
+  const { itens: reservas, erro, setErro, carregando, recarregar, paginacao } = useListaPaginada('/api/reservas/minhas/', { modalidade: filtroTipo, situacao: filtroStatus });
+  const recursos = reservas.map((item) => item.recurso_detalhe).filter(Boolean);
+  const tipos = reservas.map((item) => item.tipo_detalhe).filter(Boolean);
+  const veiculos = reservas.map((item) => item.veiculo_detalhe).filter(Boolean);
 
   function recursoDaReserva(reserva) {
     return recursos.find(
@@ -220,20 +169,13 @@ function MinhasReservas() {
 
   async function cancelarSelecionada() {
     const modalidade = selecionada.modalidade;
-    const atualizada = modalidade === 'area'
+    modalidade === 'area'
       ? await cancelarReservaArea(selecionada.id)
       : modalidade === 'veiculo'
         ? await cancelarReservaVeiculo(selecionada.id)
         : await cancelarReservaRecursoGeral(selecionada.id);
 
-    setReservas((atuais) =>
-      atuais.map((reserva) =>
-        reserva.modalidade === modalidade &&
-        reserva.id === atualizada.id
-          ? { ...atualizada, modalidade }
-          : reserva
-      )
-    );
+    recarregar();
 
     setSelecionada(null);
     setAviso('Reserva cancelada.');
@@ -282,40 +224,22 @@ function MinhasReservas() {
     });
   }
 
-  function salvarEdicao(atualizada) {
-    setReservas((atuais) =>
-      atuais.map((reserva) =>
-        reserva.modalidade === 'recurso_geral' &&
-        String(reserva.id) === String(atualizada.id)
-          ? { ...atualizada, modalidade: 'recurso_geral' }
-          : reserva
-      )
-    );
+  function salvarEdicao() {
+    recarregar();
 
     setEditando(null);
     setAviso('Reserva atualizada.');
   }
 
-  function salvarEdicaoArea(atualizada) {
-    setReservas((atuais) =>
-      atuais.map((reserva) =>
-        reserva.modalidade === 'area' &&
-        String(reserva.id) === String(atualizada.id)
-          ? { ...atualizada, modalidade: 'area' }
-          : reserva
-      )
-    );
+  function salvarEdicaoArea() {
+    recarregar();
 
     setEditandoArea(null);
     setAviso('Reserva atualizada.');
   }
 
-  function salvarEdicaoVeiculo(atualizada) {
-    setReservas((atuais) => atuais.map((reserva) =>
-      reserva.modalidade === 'veiculo' && String(reserva.id) === String(atualizada.id)
-        ? { ...atualizada, modalidade: 'veiculo' }
-        : reserva
-    ));
+  function salvarEdicaoVeiculo() {
+    recarregar();
     setEditandoVeiculo(null);
     setAviso('Reserva atualizada.');
   }
@@ -325,28 +249,10 @@ function MinhasReservas() {
     return `${formatarData(reserva.data)} · ${String(reserva.horario_inicio).slice(0, 5)} até ${formatarData(reserva.data_devolucao_prevista)} · ${String(reserva.horario_fim).slice(0, 5)}`;
   }
 
-  const reservasDoTipo = filtroTipo === 'todos'
-    ? reservas
-    : reservas.filter((reserva) => reserva.modalidade === filtroTipo);
-
-  const ordenadas = [...reservasDoTipo]
-    .filter((reserva) => {
-      const status = statusReservaApresentado(reserva);
-      return filtroStatus === 'todos' ? status !== 'cancelada' : status === filtroStatus;
-    })
-    .sort((a, b) =>
-      `${b.data} ${b.horario_inicio}`.localeCompare(
-        `${a.data} ${a.horario_inicio}`
-      )
-    );
+  const ordenadas = reservas;
 
   function atualizarSituacaoTermo(dados) {
-    setReservas((atuais) => atuais.map((reserva) => {
-      if (reserva.id === dados.reserva) {
-        return { ...reserva, status: dados.status_reserva };
-      }
-      return reserva;
-    }));
+    recarregar();
     setSelecionada((atual) => {
       if (atual?.id === dados.reserva) {
         return { ...atual, status: dados.status_reserva };
@@ -357,6 +263,7 @@ function MinhasReservas() {
 
   return (
     <div className={styles.pagina}>
+      {carregando && <p role="status">Carregando reservas...</p>}
       {aviso && (
         <p className={styles.aviso}>
           {aviso}
@@ -412,6 +319,8 @@ function MinhasReservas() {
         ))}
       </section>
 
+      <Paginacao {...paginacao} />
+
       {selecionada && (
         <ModalDetalheReserva
           reserva={selecionada}
@@ -450,8 +359,6 @@ function MinhasReservas() {
         <ReservaAreaModal
           aberto
           areaInicial={null}
-          areas={areas}
-          blocos={blocos}
           usuario={usuario}
           reservaEdicao={editandoArea}
           aoFechar={() => setEditandoArea(null)}

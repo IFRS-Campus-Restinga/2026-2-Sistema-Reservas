@@ -1,3 +1,4 @@
+import { consultarPagina } from './paginacao';
 const URL = '/api/reservas/pendentes/';
 
 async function tratarResposta(resposta, mensagemPadrao) {
@@ -15,13 +16,7 @@ async function tratarResposta(resposta, mensagemPadrao) {
   return dados;
 }
 
-export async function listarReservasPendentes() {
-  const resposta = await fetch(URL, {
-    credentials: 'include',
-  });
-
-  return tratarResposta(resposta, 'Não foi possível consultar as reservas pendentes.');
-}
+export const listarReservasPendentes = (parametros, signal) => consultarPagina('/api/reservas/pendentes/', parametros, signal);
 
 export async function confirmarReservaPendente(id) {
   const resposta = await fetch(`${URL}${id}/confirmar/`, {

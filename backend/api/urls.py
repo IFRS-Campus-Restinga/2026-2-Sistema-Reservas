@@ -1,4 +1,5 @@
 from django.urls import path
+from api.views.minhas_reservas_view import MinhasReservasListView, ResumoReservasView
 from api.views.recurso_geral_view import RecursoGeralListCreateView, RecursoGeralDetailView
 from api.views.tipo_recurso_view import TipoRecursoCreateView
 from api.views.bloco_view import BlocoListCreateView, BlocoDetailView
@@ -32,6 +33,8 @@ from api.views.termo_view import (
 
 
 urlpatterns = [
+    path('reservas/resumo/', ResumoReservasView.as_view(), name='resumo-reservas'),
+    path('reservas/minhas/', MinhasReservasListView.as_view(), name='minhas-reservas'),
     path('reservas/<int:pk>/termo/', TermoReservaView.as_view(), name='termo-reserva'),
     path('reservas/<int:pk>/termo/modelo/', ModeloTermoView.as_view(), name='termo-modelo'),
     path('reservas/<int:pk>/termo/analise/', AnaliseTermoView.as_view(), name='termo-analise'),

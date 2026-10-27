@@ -4,12 +4,7 @@ import { Button, Dropdown } from 'react-bootstrap';
 import { Car, ChevronDown, DoorOpen, Package, Plus } from 'lucide-react';
 import ReservaAreaModal from '../../ReservaArea/ReservaAreaModal';
 import ReservaVeiculoModal from '../../ReservaVeiculo/ReservaVeiculoModal';
-import { buscarAreas, buscarBlocos, buscarVeiculos } from '../../../services';
-import {
-  podeReservarArea,
-  podeReservarRecursoGeral,
-  podeReservarVeiculo,
-} from '../../../utils/permissoes';
+import { podeReservarArea, podeReservarRecursoGeral, podeReservarVeiculo } from '../../../utils/permissoes';
 import { TIPO_RECURSO_RESERVAVEL } from '../../../utils/tipoRecursoReservavel';
 import styles from './NovaReserva.module.css';
 
@@ -47,7 +42,7 @@ const OPCOES = [
 function NovaReserva({ usuario }) {
   const navigate = useNavigate();
   const [modal, setModal] = useState(null);
-  const [carregando, setCarregando] = useState(false);
+  const carregando = false;
 
   const opcoes = OPCOES.filter((opcao) => opcao.permissao(usuario));
 
@@ -60,29 +55,7 @@ function NovaReserva({ usuario }) {
       return;
     }
 
-    try {
-      setCarregando(true);
-
-      if (opcao.tipo === TIPO_RECURSO_RESERVAVEL.AREA) {
-        const [areas, blocos] = await Promise.all([buscarAreas(), buscarBlocos()]);
-        setModal({ tipo: opcao.tipo, areas, blocos });
-        return;
-      }
-
-      const veiculos = await buscarVeiculos();
-      const veiculoInicial = veiculos.find((veiculo) => veiculo.status === 'ATIVO');
-
-      if (!veiculoInicial) {
-        console.error('Nenhum veículo ativo disponível para reserva.');
-        return;
-      }
-
-      setModal({ tipo: opcao.tipo, veiculos, veiculoInicial });
-    } catch (falha) {
-      console.error(falha);
-    } finally {
-      setCarregando(false);
-    }
+    setModal({ tipo: opcao.tipo });
   }
 
   function concluir(estado) {
