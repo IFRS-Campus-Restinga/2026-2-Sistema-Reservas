@@ -1,3 +1,4 @@
+import { consultarPagina } from '../../services/paginacao';
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUsuario } from "../../hooks/useUsuario";
@@ -7,18 +8,8 @@ import Banner from "../../components/Banner/Banner";
 import CartaoReserva from "../../components/CartaoReserva/CartaoReserva";
 import { dataParaISO, formatarDataCurta, somarDias } from "../../utils/data";
 import { PAPEL_USUARIO_LABEL } from "../../utils/usuario";
-import {
-  buscarDataAtual,
-  listarMinhasReservasAreas,
-  buscarVeiculos,
-  listarReservasVeiculos,
-  listarRecursosGerais,
-} from "../../services";
-import { listarReservasRecursosGerais } from "../../services/reservasRecursosGerais";
+import { buscarDataAtual } from "../../services";
 
-const LIMITE_PROXIMAS = 4;
-const LIMITE_ATIVIDADE = 3;
-const STATUS_INATIVOS = ["cancelada", "rejeitada"];
 
 const MODALIDADES = {
   recurso_geral: "Recurso geral",
@@ -52,10 +43,6 @@ function hora(valor) {
   return String(valor || "").slice(0, 5);
 }
 
-function inicioDaReserva(reserva) {
-  return `${reserva.data} ${hora(reserva.horario_inicio)}`;
-}
-
 function periodoVeiculo(reserva) {
   if (reserva.modalidade !== "veiculo") return undefined;
   return `${formatarDataCurta(reserva.data)} · ${hora(reserva.horario_inicio)} até ${formatarDataCurta(reserva.data_devolucao_prevista)} · ${hora(reserva.horario_fim)}`;
@@ -66,115 +53,35 @@ function Home() {
   const navigate = useNavigate();
 
   const [agora, setAgora] = useState(null);
-  const [reservas, setReservas] = useState([]);
-  const [recursos, setRecursos] = useState([]);
-  const [veiculos, setVeiculos] = useState([]);
   const [erro, setErro] = useState("");
 
+  const [resumo, setResumo] = useState({ proximas: [], recentes: [], dias: [] });
   useEffect(() => {
-    Promise.allSettled([
-      buscarDataAtual(),
-      listarReservasRecursosGerais(),
-      listarMinhasReservasAreas(),
-      listarReservasVeiculos(),
-      listarRecursosGerais(),
-      buscarVeiculos(),
-    ]).then(
-      ([
-        dataAtual,
-        reservasRecurso,
-        reservasArea,
-        reservasVeiculo,
-        listaRecursos,
-        listaVeiculos,
-      ]) => {
-        const validaRetorno = (resultado) =>
-          resultado.status === "fulfilled" ? resultado.value : [];
-
-        const secoesComFalha = [
-          [reservasRecurso, "recursos gerais"],
-          [reservasArea, "áreas"],
-          [reservasVeiculo, "veículos"],
-        ]
-          .filter(([resultado]) => resultado.status === "rejected")
-          .map(([, rotulo]) => rotulo);
-
-        if (dataAtual.status === "rejected") {
-          setErro(dataAtual.reason.message);
-        } else if (secoesComFalha.length) {
-          setErro(
-            `Não foi possível carregar as reservas de: ${secoesComFalha.join(", ")}.`,
-          );
-        } else {
-          setErro("");
-        }
-        setAgora(dataAtual.status === "fulfilled" ? dataAtual.value : null);
-        setRecursos(validaRetorno(listaRecursos));
-        setVeiculos(validaRetorno(listaVeiculos));
-        setReservas([
-          ...validaRetorno(reservasRecurso).map((reserva) => ({
-            ...reserva,
-            modalidade: "recurso_geral",
-          })),
-          ...validaRetorno(reservasArea).map((reserva) => ({
-            ...reserva,
-            modalidade: "area",
-          })),
-          ...validaRetorno(reservasVeiculo).map((reserva) => ({
-            ...reserva,
-            modalidade: "veiculo",
-          })),
-        ]);
-      },
-    );
+    const controle = new AbortController();
+    Promise.all([buscarDataAtual(), consultarPagina('/api/reservas/resumo/', {}, controle.signal)])
+      .then(([dataAtual, dados]) => {
+        if (controle.signal.aborted) return;
+        setAgora(dataAtual);
+        setResumo(dados);
+      }).catch((falha) => { if (!controle.signal.aborted) setErro(falha.message); });
+    return () => controle.abort();
   }, []);
 
   function nomeItem(reserva) {
-    if (reserva.modalidade === "recurso_geral") {
-      const recurso = recursos.find(
-        (item) => String(item.id) === String(reserva.recurso_geral),
-      );
-      return recurso?.nome || `Recurso #${reserva.recurso_geral}`;
-    }
-
-    if (reserva.modalidade === "area") {
-      return reserva.area_detalhe?.nome || `Área #${reserva.area}`;
-    }
-
-    const veiculo = veiculos.find(
-      (item) => String(item.id) === String(reserva.veiculo),
-    );
-    return veiculo
-      ? `${veiculo.nome} · ${veiculo.placa}`
-      : `Veículo #${reserva.veiculo}`;
+    if (reserva.modalidade === 'area') return reserva.area_detalhe?.nome;
+    if (reserva.modalidade === 'veiculo') return `${reserva.veiculo_detalhe?.nome} · ${reserva.veiculo_detalhe?.placa}`;
+    return reserva.recurso_detalhe?.nome;
   }
 
   const hoje = agora ? dataDeISO(agora.data) : null;
-  const referencia = agora ? `${agora.data} ${agora.hora}` : null;
 
-  const ativas = reservas.filter(
-    (reserva) =>
-      !STATUS_INATIVOS.includes(String(reserva.status).toLowerCase()),
-  );
-
-  const proximasReservas = referencia
-    ? ativas
-        .filter((reserva) => inicioDaReserva(reserva) >= referencia)
-        .sort((a, b) => inicioDaReserva(a).localeCompare(inicioDaReserva(b)))
-        .slice(0, LIMITE_PROXIMAS)
-    : [];
-
-  const atividadeRecente = referencia
-    ? ativas
-        .filter((reserva) => inicioDaReserva(reserva) < referencia)
-        .sort((a, b) => inicioDaReserva(b).localeCompare(inicioDaReserva(a)))
-        .slice(0, LIMITE_ATIVIDADE)
-    : [];
+  const proximasReservas = resumo.proximas;
+  const atividadeRecente = resumo.recentes;
 
   const diasDaSemana = hoje
     ? obterDiasDaSemana(hoje).map((dia) => ({
         ...dia,
-        temReserva: ativas.some((reserva) => reserva.data === dia.data),
+        temReserva: resumo.dias.includes(dia.data),
       }))
     : [];
 

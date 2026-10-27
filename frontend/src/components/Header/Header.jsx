@@ -1,22 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import useListaPaginada from '../../hooks/useListaPaginada';
+import Paginacao from '../Administracao/Paginacao/Paginacao';
+import { useEffect, useRef, useState } from "react";
 import { Button } from "react-bootstrap";
-import {
-  Bell,
-  Box,
-  Building2,
-  Car,
-  ChevronDown,
-  Plus,
-} from "lucide-react";
+import { Bell, Box, Building2, Car, ChevronDown, Plus } from "lucide-react";
 
 import styles from "./Header.module.css";
 
 import { PAPEL_USUARIO_LABEL } from "../../utils/usuario";
 
-import {
-  listarNotificacoes,
-  marcarNotificacaoComoLida,
-} from "../../services";
+import { marcarNotificacaoComoLida } from "../../services";
 
 import ModalNotificacao from "../Notificacoes/ModalNotificacao";
 
@@ -53,66 +45,18 @@ function Header({
   const [menuReservaAberto, setMenuReservaAberto] = useState(false);
 
   const [notificacoesAbertas, setNotificacoesAbertas] = useState(false);
-  const [notificacoes, setNotificacoes] = useState([]);
-  const [naoLidas, setNaoLidas] = useState(0);
-
-  const [carregandoNotificacoes, setCarregandoNotificacoes] =
-    useState(false);
-
-  const [erroNotificacoes, setErroNotificacoes] = useState("");
+  const consultaNotificacoes = useListaPaginada('/api/notificacoes/', {}, Boolean(usuario));
+  const notificacoes = consultaNotificacoes.itens;
+  const naoLidas = consultaNotificacoes.dados?.nao_lidas ?? 0;
+  const carregandoNotificacoes = consultaNotificacoes.carregando;
+  const erroNotificacoes = consultaNotificacoes.erro;
+  const carregarNotificacoes = consultaNotificacoes.recarregar;
 
   const [notificacaoSelecionada, setNotificacaoSelecionada] =
     useState(null);
 
   const containerReservaRef = useRef(null);
   const containerNotificacoesRef = useRef(null);
-
-
-  const carregarNotificacoes = useCallback(async () => {
-    if (!usuario) return;
-
-    try {
-      setCarregandoNotificacoes(true);
-      setErroNotificacoes("");
-
-      const dados = await listarNotificacoes();
-
-      setNotificacoes(dados.notificacoes || []);
-      setNaoLidas(dados.nao_lidas || 0);
-    } catch (erro) {
-      setErroNotificacoes(
-        erro.message || "Não foi possível carregar as notificações."
-      );
-    } finally {
-      setCarregandoNotificacoes(false);
-    }
-  }, [usuario]);
-
-
-  useEffect(() => {
-    if (!usuario) return undefined;
-
-    let ativo = true;
-
-    listarNotificacoes()
-      .then((dados) => {
-        if (!ativo) return;
-
-        setNotificacoes(dados.notificacoes || []);
-        setNaoLidas(dados.nao_lidas || 0);
-      })
-      .catch((erro) => {
-        if (!ativo) return;
-
-        setErroNotificacoes(
-          erro.message || "Não foi possível carregar as notificações."
-        );
-      });
-
-    return () => {
-      ativo = false;
-    };
-  }, [usuario]);
 
 
   useEffect(() => {
@@ -182,15 +126,7 @@ function Header({
 
       setNotificacaoSelecionada(atualizada);
 
-      setNotificacoes((atuais) =>
-        atuais.map((item) =>
-          item.id === atualizada.id ? atualizada : item
-        )
-      );
-
-      setNaoLidas((quantidade) =>
-        Math.max(0, quantidade - 1)
-      );
+      carregarNotificacoes();
     } catch (erro) {
       console.error(erro);
     }
@@ -423,6 +359,7 @@ function Header({
                       </button>
                     ))
                   )}
+                  <Paginacao {...consultaNotificacoes.paginacao} />
                 </div>
               </div>
             )}
