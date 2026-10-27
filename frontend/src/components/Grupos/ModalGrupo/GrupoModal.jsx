@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { listarTiposRecurso } from '../../../services';
+import SelectRemoto from '../../SelectRemoto/SelectRemoto';
+import { useState } from 'react';
 import Modal from '../../Administracao/Modal/Modal';
 import styles from './GrupoModal.module.css';
 
@@ -40,17 +40,6 @@ function GrupoModal({
     const [formulario, setFormulario] = useState(() => montarFormulario(grupo, ehAdmin ? tipoInicial : 'aluno'));
     const [salvando, setSalvando] = useState(false);
     const [erros, setErros] = useState({});
-    const [tiposRecurso, setTiposRecurso] = useState(null);
-
-    useEffect(() => {
-        listarTiposRecurso()
-            .then(setTiposRecurso)
-            .catch(() => {
-                setTiposRecurso([]);
-                setErros((anteriores) => ({ ...anteriores, tipo_recurso: 'Não foi possível carregar os tipos de recurso.' }));
-            });
-    }, []);
-
     function alterarCampo(evento) {
         const { name, value } = evento.target;
         setFormulario((anterior) => ({
@@ -211,22 +200,7 @@ function GrupoModal({
                     {formulario.tipo_recurso_autorizado === 'RECURSO_GERAL' && (
                         <div className={styles.campo}>
                             <label htmlFor="tipo_recurso">Qual recurso geral *</label>
-                            <select
-                                id="tipo_recurso"
-                                name="tipo_recurso"
-                                value={formulario.tipo_recurso}
-                                onChange={alterarCampo}
-                                required
-                            >
-                                <option value="" disabled>
-                                    {tiposRecurso === null ? 'Carregando...' : 'Selecione'}
-                                </option>
-                                {(tiposRecurso ?? []).map((tipo) => (
-                                    <option key={tipo.id} value={tipo.id}>
-                                        {tipo.descricao}
-                                    </option>
-                                ))}
-                            </select>
+                            <SelectRemoto id="tipo_recurso" url="/api/tipos-recurso/" required ariaLabel="Tipo de recurso" valor={formulario.tipo_recurso} aoAlterar={(valor) => alterarCampo({ target: { name: 'tipo_recurso', value: valor } })} />
                             {mensagemErro('tipo_recurso')}
                         </div>
                     )}
