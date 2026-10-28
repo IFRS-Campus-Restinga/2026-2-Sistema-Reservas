@@ -1,8 +1,12 @@
 # Auditoria: registre as ações nas suas views
 
-**Regra:** toda view que cria, edita, cancela ou exclui algo precisa chamar `registrar_auditoria`. Chame sempre, sem checar papel: a função já ignora quem não é admin e o admin mexendo no que é dele. Só fica no log o admin alterando o que é de outra pessoa ou um cadastro do sistema.
+**Regra:** toda view que cria, edita, cancela ou exclui algo precisa chamar `registrar_auditoria`. Chame sempre, sem checar papel: a função decide o que vai para o log.
 
-Os logs aparecem na tela de Administração, na aba de auditoria.
+- **Admin:** registra todas as ações, inclusive nos próprios grupos. Só não registra quando o admin mexe na própria reserva.
+- **Servidor:** registra apenas as ações em grupos e membros de grupo (criar, editar e excluir grupo; adicionar, alterar e remover membro).
+- **Aluno e convidado:** não registra.
+
+Cada log guarda o responsável e o perfil dele no momento da ação (`perfil_responsavel`). Os logs aparecem na tela de Administração, na aba de auditoria, que só o admin acessa.
 
 ## Como registrar
 
@@ -35,4 +39,4 @@ Os helpers `criar`, `atualizar` e `remover` de `views/view_helpers.py` já chama
 
 ## Model novo
 
-Adicione o model em `EntidadeAuditoria` (`enumerations/auditoria_enumerations/auditoria_enums.py`) e em `ENTIDADE_POR_MODEL` (`services/auditoria/registro_auditoria_service.py`). Senão, quando um admin alterar o registro de outra pessoa, o `registrar_auditoria` quebra com `KeyError`.
+Adicione o model em `EntidadeAuditoria` (`enumerations/auditoria_enumerations/auditoria_enums.py`) e em `ENTIDADE_POR_MODEL` (`services/auditoria/registro_auditoria_service.py`). Senão, quando um admin alterar esse registro, o `registrar_auditoria` quebra com `KeyError`.

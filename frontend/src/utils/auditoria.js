@@ -20,6 +20,11 @@ export const ENTIDADE_AUDITORIA_LABEL = {
   TIMETABLE: "Timetable",
 };
 
+export const PERFIL_RESPONSAVEL_LABEL = {
+  admin: "Admin",
+  servidor: "Servidor",
+};
+
 const ACAO_MEMBRO_LABEL = {
   CRIAR: "Adicionou membro",
   EXCLUIR: "Removeu membro",
