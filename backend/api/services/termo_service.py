@@ -16,11 +16,10 @@ from api.permissions.regras_comuns import usuario_e_admin
 
 
 ABERTAS = (StatusReserva.AGUARDANDO_TERMO, StatusReserva.PENDENTE)
-RESERVAS_VEICULO_ABERTAS = ABERTAS + (StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO,)
 MODELOS = Path(__file__).resolve().parent.parent / 'documentos' / 'termos'
 
 MODELOS_POR_TIPO = {
-    TipoTermo.RESPONSABILIDADE: {'veiculo': 'termo-veiculos.docx', 'recurso_geral': 'termo-recursos.docx'},
+    TipoTermo.RESPONSABILIDADE: {'recurso_geral': 'termo-recursos.docx'},
     TipoTermo.RETIRADA_VEICULO: {'veiculo': 'termo-retirada-veiculo.docx'},
     TipoTermo.DEVOLUCAO_VEICULO: {'veiculo': 'termo-devolucao-veiculo.docx'},
 }
@@ -37,7 +36,7 @@ def reserva_concreta(reserva):
 def reserva_exige_termo(reserva, recurso=None):
     concreta, modalidade = reserva_concreta(reserva)
     if modalidade == 'veiculo':
-        return True
+        return False
     if recurso is not None:
         item = recurso
     else:
@@ -231,21 +230,15 @@ def analisar_termo(reserva, termo_id, usuario, decisao, motivo, tipo=TipoTermo.R
         if not retirada:
             raise ValidationError('A devolução só pode ser analisada após a aprovação da retirada.')
     if decisao == StatusTermo.APROVADO and tipo == TipoTermo.RESPONSABILIDADE:
-        concreta, modalidade = reserva_concreta(reserva)
-        if modalidade == 'veiculo':
-            from api.models import Veiculo
-            from api.services.reserva_veiculo_service import validar_reserva
-            concreta.veiculo = Veiculo.objects.select_for_update().get(pk=concreta.veiculo_id)
-            validar_reserva(usuario, {}, concreta)
-        else:
-            from api.models import RecursoGeral
-            from api.validators.reserva_recurso_geral_validator import validar_autorizacao, validar_disponibilidade
-            concreta.recurso_geral = RecursoGeral.objects.select_for_update().get(pk=concreta.recurso_geral_id)
-            dados = {campo: getattr(concreta, campo) for campo in (
-                'recurso_geral', 'data', 'data_devolucao_prevista', 'horario_inicio', 'horario_fim', 'quantidades',
-            )}
-            validar_autorizacao(concreta.usuario, dados)
-            validar_disponibilidade(dados, excluir_reserva=concreta.pk)
+        concreta, _ = reserva_concreta(reserva)
+        from api.models import RecursoGeral
+        from api.validators.reserva_recurso_geral_validator import validar_autorizacao, validar_disponibilidade
+        concreta.recurso_geral = RecursoGeral.objects.select_for_update().get(pk=concreta.recurso_geral_id)
+        dados = {campo: getattr(concreta, campo) for campo in (
+            'recurso_geral', 'data', 'data_devolucao_prevista', 'horario_inicio', 'horario_fim', 'quantidades',
+        )}
+        validar_autorizacao(concreta.usuario, dados)
+        validar_disponibilidade(dados, excluir_reserva=concreta.pk)
         novo_status = StatusReserva.CONFIRMADA
     elif tipo == TipoTermo.RESPONSABILIDADE:
         novo_status = StatusReserva.AGUARDANDO_TERMO

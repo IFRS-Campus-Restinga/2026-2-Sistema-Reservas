@@ -15,7 +15,7 @@ from api.permissions.reserva_permissions import PodeGerenciarReserva
 from api.permissions.regras_comuns import SomenteAdministrador
 from api.serializers.termo_serializer import AnaliseTermoSerializer
 from api.services.termo_service import (
-    ABERTAS, RESERVAS_VEICULO_ABERTAS, analisar_termo, enviar_termo, modelo_da_reserva, reserva_concreta,
+    ABERTAS, analisar_termo, enviar_termo, modelo_da_reserva, reserva_concreta,
     reserva_exige_termo, resumo_termo, validar_termo_operacional,
 )
 
@@ -48,9 +48,12 @@ class TermoReservaView(APIView):
             queryset = Reserva.objects.all()
         reserva = get_object_or_404(queryset, pk=pk)
         self.check_object_permissions(request, reserva)
+        self.validar_modalidade(reserva)
+        return reserva
+
+    def validar_modalidade(self, reserva):
         if not reserva_exige_termo(reserva):
             raise ValidationError('Esta reserva não exige termo de responsabilidade.')
-        return reserva
 
     def get(self, request, pk):
         return Response(resumo_termo(self.obter_reserva(request, pk), request.user))
@@ -75,6 +78,11 @@ class ModeloTermoView(TermoReservaView):
 
 
 class TermoOperacionalView(TermoReservaView):
+    def validar_modalidade(self, reserva):
+        _, modalidade = reserva_concreta(reserva)
+        if modalidade != 'veiculo':
+            raise ValidationError('Este termo está disponível apenas para reservas de veículos.')
+
     def obter_tipo(self, tipo):
         tipos = {
             'retirada': TipoTermo.RETIRADA_VEICULO,
@@ -184,16 +192,22 @@ class SolicitacoesTermoView(APIView):
             else:
                 relacao = 'reservarecursogeral'
             queryset = queryset.filter(**{f'{relacao}__isnull': False})
-        if documento is not None and documento != TipoTermo.RESPONSABILIDADE:
+        aguardando_termo = (
+            Q(reservarecursogeral__isnull=False, status__in=ABERTAS)
+            | Q(reservaveiculo__isnull=False, status=StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO)
+        )
+        if documento == TipoTermo.RESPONSABILIDADE:
+            queryset = queryset.filter(reservarecursogeral__isnull=False)
+        elif documento is not None:
             queryset = queryset.filter(termos__tipo=documento, termos__atual=True)
-        elif documento is None:
-            queryset = queryset.filter(Q(status__in=RESERVAS_VEICULO_ABERTAS) | Q(termos__atual=True)).distinct()
+        else:
+            queryset = queryset.filter(aguardando_termo | Q(termos__atual=True)).distinct()
         if status == 'abertas':
             if documento == TipoTermo.RESPONSABILIDADE:
-                queryset = queryset.filter(status__in=RESERVAS_VEICULO_ABERTAS)
+                queryset = queryset.filter(status__in=ABERTAS)
             elif documento is None:
                 queryset = queryset.filter(
-                    Q(status__in=RESERVAS_VEICULO_ABERTAS)
+                    aguardando_termo
                     | Q(termos__atual=True, termos__status=StatusTermo.PENDENTE)
                 ).distinct()
             else:
@@ -219,6 +233,8 @@ class SolicitacoesTermoView(APIView):
             termo_atual = next((termo for termo in termos_atuais if termo.status == StatusTermo.PENDENTE), None)
             if termo_atual is None:
                 termo_atual = next((termo for termo in termos_atuais if termo.tipo == TipoTermo.RESPONSABILIDADE), None)
+            if termo_atual is None and termos_atuais:
+                termo_atual = termos_atuais[0]
             tipo_resultado = documento_parametro
             if tipo_resultado == 'todos':
                 tipo_resultado = 'responsabilidade'
