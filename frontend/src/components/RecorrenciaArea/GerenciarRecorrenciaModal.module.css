@@ -1,0 +1,15 @@
+.turnoAtivo {
+  background-color: var(--cor-marca);
+  border-color: var(--cor-marca);
+  color: #ffffff;
+}
+
+.acoes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.acoes button {
+  width: 100%;
+}

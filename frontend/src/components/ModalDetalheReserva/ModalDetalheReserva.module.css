@@ -146,6 +146,7 @@
 
 .acoes {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   padding-top: 8px;
   border-top: 1px solid #f3f4f6;
@@ -178,6 +179,10 @@
 
 .acoes .cancelar:hover:not(:disabled) {
   background: #fee2e2;
+}
+
+.acoes .larguraTotal {
+  flex-basis: 100%;
 }
 
 @media (max-width: 479px) {

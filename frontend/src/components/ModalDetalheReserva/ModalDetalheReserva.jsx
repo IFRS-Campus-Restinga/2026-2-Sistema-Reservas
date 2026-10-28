@@ -26,6 +26,7 @@ function ModalDetalheReserva({
   conteudoExtra,
   aoEditar,
   aoCancelar,
+  aoGerenciarRecorrencia,
   motivoAcoesIndisponiveis,
   aoFechar,
 }) {
@@ -161,6 +162,11 @@ function ModalDetalheReserva({
               <button type="button" className={styles.cancelar} disabled={!podeCancelar || bloqueado} onClick={() => setConfirmando(true)}>
                 <Trash2 size={13} /> Cancelar
               </button>
+              {reserva.recorrencia && aoGerenciarRecorrencia && (
+                <button type="button" className={styles.larguraTotal} disabled={bloqueado} onClick={aoGerenciarRecorrencia}>
+                  <Repeat size={13} /> Gerenciar Recorrência
+                </button>
+              )}
             </div>
           )}
         </div>
