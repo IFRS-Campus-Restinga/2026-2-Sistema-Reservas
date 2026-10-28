@@ -4,10 +4,8 @@ from django.db import models
 from django.db.models import Q
 
 from accounts.enumerations import Papel
-from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
 from api.validators.grupo_validator import validar_nome_grupo
 from .exclusao_logica_model import ExclusaoLogicaModel
-from .tipo_recurso_model import TipoRecurso
 
 
 class Grupo(ExclusaoLogicaModel):
@@ -26,25 +24,6 @@ class Grupo(ExclusaoLogicaModel):
         null=False,
         blank=False,
         help_text="Papel de usuário (servidor ou aluno) autorizado a ser membro deste grupo."
-    )
-    tipo_recurso_autorizado = models.CharField(
-        max_length=20,
-        choices=TipoRecursoReservavel.choices,
-        null=False,
-        blank=False,
-        help_text="Tipo de recurso que o grupo está autorizado a reservar."
-    )
-    tipo_recurso = models.ForeignKey(
-        TipoRecurso,
-        on_delete=models.PROTECT,
-        related_name='grupos_autorizados',
-        null=True,
-        blank=True,
-        help_text=(
-            "Tipo específico de Recurso Geral autorizado (ex.: bola). "
-            "Obrigatório quando tipo_recurso_autorizado = RECURSO_GERAL, "
-            "e deve ficar vazio nos demais casos."
-        )
     )
     data_inicio_validade = models.DateField(
         null=False,
@@ -72,6 +51,14 @@ class Grupo(ExclusaoLogicaModel):
     def grupo_relacionado(self):
         return self
 
+    @property
+    def tipos_recurso_autorizados(self):
+        return list(dict.fromkeys(autorizacao.tipo_recurso_autorizado for autorizacao in self.autorizacoes.all()))
+
+    @property
+    def tipos_recurso(self):
+        return [autorizacao.tipo_recurso for autorizacao in self.autorizacoes.all() if autorizacao.tipo_recurso_id]
+
     def clean(self):
         super().clean()
         if self.nome:
@@ -87,21 +74,6 @@ class Grupo(ExclusaoLogicaModel):
         if self.data_inicio_validade and self.data_fim_validade and self.data_fim_validade < self.data_inicio_validade:
             raise ValidationError(
                 {"data_fim_validade": "A data de fim de validade não pode ser anterior à data de início."}
-            )
-        from api.permissions.regras_reserva import tipos_autorizaveis_por_grupo
-        tipos_autorizaveis = tipos_autorizaveis_por_grupo(self.tipo_membro_permitido)
-        if self.tipo_recurso_autorizado and self.tipo_recurso_autorizado not in tipos_autorizaveis:
-            rotulos = ', '.join(TipoRecursoReservavel(tipo).label for tipo in tipos_autorizaveis)
-            raise ValidationError(
-                {"tipo_recurso_autorizado": f"Grupos de {self.get_tipo_membro_permitido_display().lower()} só podem autorizar: {rotulos}."}
-            )
-        if self.tipo_recurso_autorizado == TipoRecursoReservavel.RECURSO_GERAL and not self.tipo_recurso_id:
-            raise ValidationError(
-                {"tipo_recurso": "É obrigatório informar o tipo de recurso geral autorizado (por exemplo, bola)."}
-            )
-        if self.tipo_recurso_autorizado != TipoRecursoReservavel.RECURSO_GERAL and self.tipo_recurso_id:
-            raise ValidationError(
-                {"tipo_recurso": "Este campo só deve ser preenchido quando o tipo de recurso autorizado for Recurso Geral."}
             )
         if self.pk and self.data_inicio_validade:
             fora_da_janela = Q(data_fim_validade__lt=self.data_inicio_validade)
