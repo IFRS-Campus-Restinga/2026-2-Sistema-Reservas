@@ -7,10 +7,14 @@ import CalendarioReserva from '../CalendarioReserva/CalendarioReserva';
 import CamposRecorrencia from '../CamposRecorrencia/CamposRecorrencia';
 import Select from '../Select/Select';
 import { criarReservaArea, atualizarReservaArea } from '../../services/reservasAreas';
-import { TIPO_AREA_LABEL } from '../../utils/tipoArea';
-import { STATUS_RECURSO_LABEL } from '../../utils/statusRecurso';
 import { TURNO_LABEL, PERIODOS_POR_TURNO } from '../../utils/periodosAula';
 import { horarioParaMinutos } from '../../utils/data';
+import {
+  HORARIOS,
+  ajustarPeriodosContiguos,
+  gruposAreaPorBloco,
+  horarioDosPeriodos,
+} from '../../utils/reservaArea';
 import {
   TIPO_RECORRENCIA,
   conflitosRecorrencia,
@@ -21,14 +25,6 @@ import {
 } from '../../utils/recorrencia';
 import styles from './ReservaAreaModal.module.css';
 
-const HORARIOS = Array.from({ length: 32 }, (_, indice) => {
-  const total = 7 * 60 + indice * 30;
-  const horas = String(Math.floor(total / 60)).padStart(2, '0');
-  const minutos = String(total % 60).padStart(2, '0');
-
-  return `${horas}:${minutos}`;
-});
-
 // Término sugerido: uma hora depois do início, limitado ao último horário da lista
 function horarioFimSugerido(horarioInicio) {
   const total = Math.min(
@@ -37,11 +33,6 @@ function horarioFimSugerido(horarioInicio) {
   );
 
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
-}
-
-function nomeBloco(area, blocos) {
-  const blocoId = typeof area.bloco === 'object' ? area.bloco?.id : area.bloco;
-  return blocos.find((bloco) => String(bloco.id) === String(blocoId));
 }
 
 function ReservaAreaModal({
@@ -116,34 +107,13 @@ function ReservaAreaModal({
       ? gerarDatasRecorrencia(data, tipoRecorrencia, dataFimRecorrencia).length
       : 1;
 
-  const gruposArea = [...blocos]
-    .sort((a, b) => (a.numero ?? 0) - (b.numero ?? 0))
-    .map((bloco) => ({
-      rotulo: bloco.nome,
-      opcoes: areas
-        .filter((area) => nomeBloco(area, blocos)?.id === bloco.id)
-        .map((area) => ({
-          valor: String(area.id),
-          rotulo: `${area.nome} · ${TIPO_AREA_LABEL[area.tipo] || area.tipo} · ${area.capacidade} pax${
-            area.status !== 'ATIVO'
-              ? ` (${STATUS_RECURSO_LABEL[area.status]?.toLowerCase() || ''})`
-              : ''
-          }`,
-          desabilitado: area.status !== 'ATIVO',
-        })),
-    }))
-    .filter((grupo) => grupo.opcoes.length > 0);
+  const gruposArea = gruposAreaPorBloco(areas, blocos);
 
   const periodosDoTurno = PERIODOS_POR_TURNO[turno];
-  const indicesSelecionados = periodosSelecionados
-    .map((id) => periodosDoTurno.findIndex((periodo) => periodo.id === id))
-    .filter((indice) => indice !== -1);
-  const horarioInicioAula = indicesSelecionados.length
-    ? periodosDoTurno[Math.min(...indicesSelecionados)].inicio
-    : '';
-  const horarioFimAula = indicesSelecionados.length
-    ? periodosDoTurno[Math.max(...indicesSelecionados)].fim
-    : '';
+  const { inicio: horarioInicioAula, fim: horarioFimAula } = horarioDosPeriodos(
+    periodosSelecionados,
+    periodosDoTurno
+  );
 
   const dadosReserva = {
     nome: titulo.trim(),
@@ -178,15 +148,7 @@ function ReservaAreaModal({
         ? anteriores.filter((item) => item !== id)
         : [...anteriores, id];
 
-      if (atualizados.length === 0) return atualizados;
-
-      const indices = atualizados
-        .map((itemId) => periodosDoTurno.findIndex((periodo) => periodo.id === itemId))
-        .filter((indice) => indice !== -1);
-      const minIndice = Math.min(...indices);
-      const maxIndice = Math.max(...indices);
-
-      return periodosDoTurno.slice(minIndice, maxIndice + 1).map((periodo) => periodo.id);
+      return ajustarPeriodosContiguos(atualizados, periodosDoTurno);
     });
   }
 
