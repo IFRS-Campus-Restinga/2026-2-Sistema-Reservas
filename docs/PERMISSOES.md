@@ -54,6 +54,25 @@ Permissões que já existem:
 | `PodeGerenciarGrupo` | O criador do grupo ou admin |
 | `PodeGerenciarMembrosGrupo` | O criador do grupo ou admin |
 | `PodeGerenciarReserva` | O responsável pela reserva ou admin |
+| `LeituraPublica` | Leitura: qualquer pessoa, **mesmo sem login**. Escrita: ninguém. Use só combinada com outra regra (veja abaixo) |
+
+#### Endpoints públicos (sem login)
+
+Alguns dados precisam ser lidos por visitantes, como os usados pelo calendário público (`/api/areas/`, `/api/blocos/`, `/api/data-atual/` e a listagem de `/api/reservas/areas/`). Nesses casos, combine `LeituraPublica` com a regra de escrita usando `|` e troque a autenticação pela opcional:
+
+```python
+from api.permissions.escrita_admin import EscritaAdmin
+from api.permissions.regras_comuns import LeituraPublica
+from hub_integrations.authentication import HubJWTAuthenticationOpcional
+
+
+class AreaListCreateView(APIView):
+    authentication_classes = [HubJWTAuthenticationOpcional]
+    permission_classes = [LeituraPublica | EscritaAdmin]  # GET: todos. POST: só admin
+```
+
+- `HubJWTAuthenticationOpcional` trata token inválido ou expirado como visitante. Sem ela, quem tem um cookie vencido recebe 401 até nas leituras públicas.
+- Tudo o que o serializer devolve fica visível para qualquer pessoa. Não exponha dados pessoais além do necessário.
 
 > ⚠️ **Nunca deixe uma view sem `permission_classes`.** Sem esse atributo, qualquer usuário logado consegue criar, editar e excluir.
 
@@ -159,7 +178,7 @@ const usuario = useUsuario();
 }
 ```
 
-- Use as funções de `src/utils/permissoes.js`: `ehAdministrador`, `podeCriarGrupo`, `podeGerenciarGrupos`, `podeReservar(usuario, tipo)`, `podeReservarArea`, `podeReservarVeiculo`, `podeReservarRecursoGeral`. Os tipos ficam em `src/utils/tipoRecursoReservavel.js`.
+- Use as funções de `src/utils/permissoes.js`: `ehAdministrador`, `podeCriarGrupo`, `podeGerenciarGrupos`, `podeReservar(usuario, tipo)`, `podeReservarArea`, `podeReservarVeiculo`, `podeReservarRecursoGeral`, `podeReservarAlgo`. Os tipos ficam em `src/utils/tipoRecursoReservavel.js`.
 - **Não** faça `usuario.papel === 'admin'` nas telas. Se a regra mudar no backend, o front acompanha sozinho.
 - Esconder um botão não protege nada. Trate o erro **403** da API e mostre a mensagem que vier nele.
 
@@ -179,7 +198,8 @@ Cada tela é uma entrada em `ROTAS`. A mesma entrada gera a rota, a tab da sideb
 
 - `permissao`: a função que decide quem acessa. Sem ela, qualquer usuário logado acessa.
 - `menu`: só nas telas que aparecem na sidebar. Telas de detalhe (`/veiculos/:id`) não têm `menu`, mas **precisam** repetir a `permissao` da tela principal.
-- Quem não tem permissão não vê a tab e, se digitar a URL, é redirecionado para a Home (`src/routes/RotaProtegida.jsx`).
+- `publica: true`: a tela abre mesmo sem login (hoje, só o Calendário). Nas demais, o visitante vê a tela "Não autenticado".
+- Quem não tem permissão não vê a tab e, se digitar a URL, é redirecionado para a página inicial (`rotaInicial` em `src/config/rotas.js`, usada por `src/routes/RotaProtegida.jsx`): a Home para quem pode reservar algo, o Calendário para os demais.
 
 Não adicione rotas direto no `AppRoutes.jsx`: ele só percorre o `ROTAS`.
 
@@ -208,14 +228,15 @@ Telas e tabs hoje:
 
 | Tela | Quem vê |
 |---|---|
-| Home, Minhas Reservas | Qualquer usuário logado |
+| Calendário | Qualquer pessoa, mesmo sem login. É a página inicial de quem não pode reservar nada |
+| Home, Minhas Reservas | Quem pode reservar ao menos um tipo (`podeReservarAlgo`) |
 | Áreas, Recursos, Veículos | Quem pode reservar aquele tipo (sem grupo ou por grupo vigente) |
 | Meus Grupos | Quem pode criar grupos (admin e servidor) |
 | Administração | Só admin |
 
 ## Checklist antes do PR
 
-- [ ] Toda view nova tem `permission_classes` com uma permissão que herda de `UsuarioAutenticado`
+- [ ] Toda view nova tem `permission_classes` com uma permissão que herda de `UsuarioAutenticado` (ou `LeituraPublica | ...`, se a leitura for pública)
 - [ ] Criação e edição de reserva chamam `pode_reservar`
 - [ ] Consultas de grupos e membros partem de `objects` (ativos), nunca de um filtro pelo lado do usuário
 - [ ] Nenhuma comparação `papel == 'admin'`, nem no back nem no front

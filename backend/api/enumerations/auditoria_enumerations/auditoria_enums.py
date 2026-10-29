@@ -13,6 +13,7 @@ class EntidadeAuditoria(models.TextChoices):
     RESERVA_AREA = "RESERVA_AREA", "Reserva de área"
     RESERVA_VEICULO = "RESERVA_VEICULO", "Reserva de veículo"
     RESERVA_RECURSO_GERAL = "RESERVA_RECURSO_GERAL", "Reserva de recurso geral"
+    RECORRENCIA_RESERVA_AREA = "RECORRENCIA_RESERVA_AREA", "Recorrência de reserva de área"
     GRUPO = "GRUPO", "Grupo"
     MEMBRO_GRUPO = "MEMBRO_GRUPO", "Membro de grupo"
     RECURSO_GERAL = "RECURSO_GERAL", "Recurso geral"
