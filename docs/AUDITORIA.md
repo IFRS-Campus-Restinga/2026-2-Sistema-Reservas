@@ -2,7 +2,7 @@
 
 **Regra:** toda view que cria, edita, cancela ou exclui algo precisa chamar `registrar_auditoria`. Chame sempre, sem checar papel: a função decide o que vai para o log.
 
-- **Admin:** registra todas as ações, inclusive nos próprios grupos. Só não registra quando o admin mexe na própria reserva.
+- **Admin:** registra todas as ações, inclusive nos próprios grupos. Só não registra quando o admin mexe na própria reserva ou recorrência.
 - **Servidor:** registra apenas as ações em grupos e membros de grupo (criar, editar e excluir grupo; adicionar, alterar e remover membro).
 - **Aluno e convidado:** não registra.
 

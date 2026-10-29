@@ -3,6 +3,8 @@ import styles from './ModalDetalheAuditoria.module.css';
 
 import { buscarLogAuditoria } from '../../../../services';
 import {
+    ITENS_VISIVEIS_LISTA_AUDITORIA,
+    LIMITE_LISTA_AUDITORIA,
     PERFIL_RESPONSAVEL_LABEL,
     camposAuditoria,
     formatarDataHoraAuditoria,
@@ -15,6 +17,36 @@ import Botao from '../../../Botao/Botao';
 function pessoa(nome, email) {
     if (!nome && !email) return '-';
     return [nome, email].filter(Boolean).join(' · ');
+}
+
+// Listas longas (ex.: datas de uma recorrência) aparecem resumidas, com opção de expandir
+function ValorAuditoria({ valor }) {
+    const [expandido, setExpandido] = useState(false);
+
+    if (!Array.isArray(valor)) return valor;
+
+    if (valor.length <= LIMITE_LISTA_AUDITORIA) return valor.join(', ');
+
+    if (expandido) {
+        return (
+            <>
+                <div className={styles.listaExpandida}>{valor.join(', ')}</div>
+                <button type="button" className={styles.alternarLista} onClick={() => setExpandido(false)}>
+                    ver menos
+                </button>
+            </>
+        );
+    }
+
+    return (
+        <>
+            {valor.slice(0, ITENS_VISIVEIS_LISTA_AUDITORIA).join(', ')}
+            {` … e mais ${valor.length - ITENS_VISIVEIS_LISTA_AUDITORIA}`}
+            <button type="button" className={styles.alternarLista} onClick={() => setExpandido(true)}>
+                ver todas
+            </button>
+        </>
+    );
 }
 
 function ModalDetalheAuditoria({ log, aoFechar }) {
@@ -107,8 +139,12 @@ function ModalDetalheAuditoria({ log, aoFechar }) {
                                     {camposVisiveis.map((campo) => (
                                         <tr key={campo.campo} data-alterado={campo.alterado}>
                                             <td className={styles.nomeCampo}>{campo.rotulo}</td>
-                                            <td className={styles.antes}>{campo.antes}</td>
-                                            <td className={styles.depois}>{campo.depois}</td>
+                                            <td className={styles.antes}>
+                                                <ValorAuditoria valor={campo.antes} />
+                                            </td>
+                                            <td className={styles.depois}>
+                                                <ValorAuditoria valor={campo.depois} />
+                                            </td>
                                         </tr>
                                     ))}
                                     {camposVisiveis.length === 0 && (

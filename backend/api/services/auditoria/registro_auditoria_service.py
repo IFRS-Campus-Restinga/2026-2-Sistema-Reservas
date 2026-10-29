@@ -5,6 +5,7 @@ from api.models.bloco_model import Bloco
 from api.models.grupo_model import Grupo
 from api.models.log_auditoria_model import LogAuditoria
 from api.models.membro_grupo_model import MembroGrupo
+from api.models.recorrencia_model import Recorrencia
 from api.models.recurso_geral_model import RecursoGeral
 from api.models.reserva_area_model import ReservaArea
 from api.models.reserva_model import Reserva
@@ -18,6 +19,7 @@ ENTIDADE_POR_MODEL = {
     ReservaArea: EntidadeAuditoria.RESERVA_AREA,
     ReservaVeiculo: EntidadeAuditoria.RESERVA_VEICULO,
     ReservaRecursoGeral: EntidadeAuditoria.RESERVA_RECURSO_GERAL,
+    Recorrencia: EntidadeAuditoria.RECORRENCIA_RESERVA_AREA,
     Grupo: EntidadeAuditoria.GRUPO,
     MembroGrupo: EntidadeAuditoria.MEMBRO_GRUPO,
     RecursoGeral: EntidadeAuditoria.RECURSO_GERAL,
@@ -31,7 +33,7 @@ MODELS_AUDITADOS_PARA_SERVIDOR = (Grupo, MembroGrupo)
 
 
 def _dono(objeto):
-    if isinstance(objeto, Reserva):
+    if isinstance(objeto, (Reserva, Recorrencia)):
         return objeto.usuario
     if isinstance(objeto, Grupo):
         return objeto.criador
@@ -48,7 +50,7 @@ def _usuario_afetado(objeto):
 
 def _perfil_auditado(ator, objeto):
     if usuario_e_admin(ator):
-        if isinstance(objeto, Reserva) and objeto.usuario_id == ator.pk:
+        if isinstance(objeto, (Reserva, Recorrencia)) and objeto.usuario_id == ator.pk:
             return None
         return Papel.ADMIN
     if getattr(ator, 'papel', None) == Papel.SERVIDOR and isinstance(objeto, MODELS_AUDITADOS_PARA_SERVIDOR):

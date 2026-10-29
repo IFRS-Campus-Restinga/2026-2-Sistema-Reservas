@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Clock, Globe, Info, MapPin, Pencil, Trash2, UserRound, X } from 'lucide-react';
+import { CalendarCheck, Clock, Globe, Info, MapPin, Pencil, Repeat, Trash2, UserRound, X } from 'lucide-react';
 import useFocoModal from '../../hooks/useFocoModal';
 import TermoReserva from '../TermoReserva/TermoReserva';
+import { TIPO_RECORRENCIA_LABEL } from '../../utils/recorrencia';
 import { STATUS_RESERVA_LABEL, statusReservaApresentado } from '../../utils/reserva';
 import styles from './ModalDetalheReserva.module.css';
 import ModalConfirmacao from '../Administracao/ModalConfirmacao/ModalConfirmacao';
@@ -25,6 +26,7 @@ function ModalDetalheReserva({
   conteudoExtra,
   aoEditar,
   aoCancelar,
+  aoGerenciarRecorrencia,
   motivoAcoesIndisponiveis,
   aoFechar,
 }) {
@@ -112,6 +114,18 @@ function ModalDetalheReserva({
               <strong>{periodo || `${dataFormatada(reserva.data)} · ${reserva.horario_inicio.slice(0, 5)} às ${reserva.horario_fim.slice(0, 5)}`}</strong>
             </div>
           </div>
+          {reserva.recorrencia && (
+            <>
+              <div className={styles.linha}>
+                <span className={styles.icone}><Repeat size={14} /></span>
+                <div><span className={styles.rotulo}>Recorrência</span><strong>{TIPO_RECORRENCIA_LABEL[reserva.recorrencia.tipo] || reserva.recorrencia.tipo}</strong></div>
+              </div>
+              <div className={styles.linha}>
+                <span className={styles.icone}><CalendarCheck size={14} /></span>
+                <div><span className={styles.rotulo}>Fim da recorrência</span><strong>{dataFormatada(reserva.recorrencia.data_fim)}</strong></div>
+              </div>
+            </>
+          )}
           <div className={styles.linha}>
             <span className={styles.icone}><UserRound size={14} /></span>
             <div><span className={styles.rotulo}>Responsável</span><strong>{responsavel || 'Não informado'}</strong></div>
@@ -148,6 +162,11 @@ function ModalDetalheReserva({
               <button type="button" className={styles.cancelar} disabled={!podeCancelar || bloqueado} onClick={() => setConfirmando(true)}>
                 <Trash2 size={13} /> Cancelar
               </button>
+              {reserva.recorrencia && aoGerenciarRecorrencia && (
+                <button type="button" className={styles.larguraTotal} disabled={bloqueado} onClick={aoGerenciarRecorrencia}>
+                  <Repeat size={13} /> Gerenciar Recorrência
+                </button>
+              )}
             </div>
           )}
         </div>

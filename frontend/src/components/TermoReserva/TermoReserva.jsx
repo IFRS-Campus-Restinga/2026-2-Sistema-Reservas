@@ -26,7 +26,7 @@ function HistoricoTermos({ termos }) {
 }
 
 export default function TermoReserva({
-  reservaId, modalidade, administrativo = false, somenteResumo = false,
+  reservaId, administrativo = false, somenteResumo = false,
   rejeitarInicialmente = false, aoAtualizar, aoProcessar,
   tipoDocumento = 'responsabilidade',
   ocultarIndisponivel = false,
@@ -135,10 +135,6 @@ export default function TermoReserva({
 
     let nomeModelo = 'Termo de responsabilidade — recursos.docx';
     let tituloDocumento = 'Termo deste recurso';
-    if (modalidade === 'veiculo') {
-      nomeModelo = 'Termo de responsabilidade — veículos.docx';
-      tituloDocumento = 'Termo deste veículo';
-    }
     if (tipoDocumento === 'retirada') {
       nomeModelo = 'Termo de retirada de veículo';
       tituloDocumento = 'Termo de retirada';

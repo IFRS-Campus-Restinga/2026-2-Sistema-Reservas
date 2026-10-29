@@ -20,4 +20,7 @@ export const podeReservarVeiculo = (usuario) => podeReservar(usuario, TIPO_RECUR
 
 export const podeReservarRecursoGeral = (usuario) => podeReservar(usuario, TIPO_RECURSO_RESERVAVEL.RECURSO_GERAL);
 
+export const podeReservarAlgo = (usuario) =>
+  podeReservarArea(usuario) || podeReservarVeiculo(usuario) || podeReservarRecursoGeral(usuario);
+
 export const temPermissao = (usuario, regra) => !regra || Boolean(regra(usuario));

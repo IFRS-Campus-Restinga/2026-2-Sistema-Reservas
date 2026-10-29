@@ -16,6 +16,19 @@ def foto(objeto):
     return dados
 
 
+def foto_agrupada(fotos):
+    agrupada = {}
+
+    for campo in fotos[0] if fotos else {}:
+        valores = []
+        for item in fotos:
+            if item[campo] not in valores:
+                valores.append(item[campo])
+        agrupada[campo] = valores[0] if len(valores) == 1 else valores
+
+    return agrupada
+
+
 def _valor_legivel(objeto, campo):
     if campo.is_relation:
         relacionado = getattr(objeto, campo.name)
