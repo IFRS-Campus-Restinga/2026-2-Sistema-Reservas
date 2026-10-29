@@ -32,7 +32,7 @@ import styles from './MinhasReservas.module.css';
 const STATUS_ALTERAVEIS = {
   recurso_geral: ['PENDENTE', 'CONFIRMADA', 'AGUARDANDO_TERMO'],
   area: ['PENDENTE', 'CONFIRMADA'],
-  veiculo: ['PENDENTE', 'AGUARDANDO_TERMO', 'CONFIRMADA'],
+  veiculo: ['PENDENTE', 'CONFIRMADA'],
 };
 
 const MODALIDADES = {
@@ -80,7 +80,7 @@ function MinhasReservas() {
   const [aviso, setAviso] = useState(
     location.state?.criada
       ? location.state?.tipo === 'veiculo'
-        ? 'Reserva enviada! Aguardando confirmação de um administrador.'
+        ? 'Solicitação enviada! aguardando aprovação do administrador.'
         : 'Reserva enviada! Acompanhe sua reserva abaixo.'
       : ''
   );
@@ -423,8 +423,8 @@ function MinhasReservas() {
           aoAtualizarTermo={atualizarSituacaoTermo}
           conteudoExtra={selecionada.modalidade === 'veiculo' ? (
             <>
-              <TermoReserva reservaId={selecionada.id} modalidade="veiculo" tipoDocumento="retirada" ocultarIndisponivel />
-              <TermoReserva reservaId={selecionada.id} modalidade="veiculo" tipoDocumento="devolucao" ocultarIndisponivel />
+              <TermoReserva reservaId={selecionada.id} modalidade="veiculo" tipoDocumento="retirada" ocultarIndisponivel aoAtualizar={atualizarSituacaoTermo}/>
+              <TermoReserva reservaId={selecionada.id} modalidade="veiculo" tipoDocumento="devolucao" ocultarIndisponivel aoAtualizar={atualizarSituacaoTermo}/>
             </>
           ) : null}
           detalhes={detalhesDaReserva(selecionada)}

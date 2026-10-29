@@ -174,9 +174,6 @@ def enviar_termo(reserva, usuario, arquivo, tipo=TipoTermo.RESPONSABILIDADE):
                 )
                 reserva.status = StatusReserva.PENDENTE
                 Reserva.objects.filter(pk=reserva.pk).update(status=reserva.status)
-            elif tipo == TipoTermo.DEVOLUCAO_VEICULO:
-                reserva.status = StatusReserva.PENDENTE
-                Reserva.objects.filter(pk=reserva.pk).update(status=reserva.status)
     except Exception:
         for campo in (termo.arquivo_original, termo.arquivo_assinado):
             if campo.name:
@@ -192,11 +189,20 @@ def invalidar_termo_apos_edicao(reserva, dados):
     if not any(campo in dados and dados[campo] != getattr(reserva, campo, None) for campo in campos):
         return
     reserva.termos.filter(atual=True).update(atual=False)
-    exige_termo = reserva_exige_termo(reserva, recurso=dados.get('recurso_geral'))
-    if exige_termo:
-        reserva.status = StatusReserva.AGUARDANDO_TERMO
+    _, modalidade = reserva_concreta(reserva)
+
+    if modalidade == 'veiculo':
+        reserva.status = StatusReserva.PENDENTE
     else:
-        reserva.status = StatusReserva.CONFIRMADA
+        exige_termo = reserva_exige_termo(
+            reserva,
+            recurso=dados.get('recurso_geral'),
+        )
+
+        if exige_termo:
+            reserva.status = StatusReserva.AGUARDANDO_TERMO
+        else:
+            reserva.status = StatusReserva.CONFIRMADA
     reserva.save(update_fields=['status'])
 
 
@@ -216,7 +222,7 @@ def validar_termo_operacional(reserva, tipo):
         if timezone.now() < inicio - timedelta(hours=1):
             raise ValidationError('O termo de retirada fica disponível uma hora antes do início da reserva.')
     if tipo == TipoTermo.DEVOLUCAO_VEICULO:
-        if reserva.status not in (StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO, StatusReserva.PENDENTE):
+        if (reserva.status != StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO):
             raise ValidationError('A devolução só pode ser enviada após a aprovação da retirada.')
         retirada = reserva.termos.filter(tipo=TipoTermo.RETIRADA_VEICULO, atual=True).first()
         if not retirada or retirada.status != StatusTermo.APROVADO:
@@ -252,8 +258,15 @@ def analisar_termo(reserva, termo_id, usuario, decisao, motivo, tipo=TipoTermo.R
         novo_status = StatusReserva.CONFIRMADA
     elif tipo == TipoTermo.RESPONSABILIDADE:
         novo_status = StatusReserva.AGUARDANDO_TERMO
+    elif (
+        tipo == TipoTermo.RETIRADA_VEICULO
+        and decisao == StatusTermo.APROVADO
+    ):
+        novo_status = (
+            StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO
+        )
     elif tipo == TipoTermo.RETIRADA_VEICULO:
-        novo_status = StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO
+        novo_status = StatusReserva.CONFIRMADA
     elif decisao == StatusTermo.APROVADO and tipo == TipoTermo.DEVOLUCAO_VEICULO:
         novo_status = StatusReserva.CONCLUIDA
     elif tipo == TipoTermo.DEVOLUCAO_VEICULO:
@@ -297,6 +310,12 @@ def montar_solicitacao_termo(reserva, documento_parametro):
         for termo in reserva.termos.all()
         if termo.atual
     ]
+
+    solicitacao_reserva = (
+        modalidade == 'veiculo'
+        and reserva.status == StatusReserva.PENDENTE
+        and not termos_atuais
+    )
 
     termo_atual = next(
         (
@@ -343,7 +362,7 @@ def montar_solicitacao_termo(reserva, documento_parametro):
         'status': reserva.status,
         'modalidade': modalidade,
         'tipo_reserva': reserva.tipo_reserva,
-        'origem_solicitacao': 'TERMO',
+        'origem_solicitacao': ('RESERVA' if solicitacao_reserva else 'TERMO'),
         'data': reserva.data,
         'horario_inicio': reserva.horario_inicio,
         'horario_fim': reserva.horario_fim,

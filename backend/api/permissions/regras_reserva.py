@@ -47,11 +47,13 @@ def autorizacoes_vigentes(usuario, data=None):
 def pode_reservar(usuario, tipo_recurso_autorizado, tipo_recurso_id=None, data=None, data_fim=None):
     if not (usuario and usuario.is_authenticated):
         return False
+
+    if (tipo_recurso_autorizado == TipoRecursoReservavel.VEICULO and getattr(usuario, 'papel', None) != Papel.SERVIDOR):
+        return False
+    
     if tipo_recurso_autorizado in tipos_reserva_livre(usuario):
         return True
-    if tipo_recurso_autorizado == TipoRecursoReservavel.VEICULO:
-        if getattr(usuario, 'papel', None) != Papel.SERVIDOR:
-            return False
+    
     inicio = data or timezone.localdate()
     return _tem_cobertura_grupo(
         usuario, tipo_recurso_autorizado, tipo_recurso_id, inicio, data_fim or inicio,

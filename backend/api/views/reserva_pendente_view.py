@@ -46,7 +46,13 @@ class ConfirmarReservaView(APIView):
                     "status": "Somente reservas pendentes podem ser confirmadas."
                 })
 
-            if reserva_exige_termo(reserva):
+            reserva_veiculo = getattr(
+                reserva,
+                "reservaveiculo",
+                None,
+            )
+
+            if (reserva_exige_termo(reserva) and reserva_veiculo is None):
                 raise ValidationError({
                     "detail": (
                         "Reservas que exigem termo devem ser analisadas "
