@@ -2,7 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useUsuario } from '../../hooks/useUsuario';
-import { ClipboardList, Info, Package, UserRound } from 'lucide-react';
+import { CalendarCheck, ClipboardList, Info, Package, Repeat, UserRound } from 'lucide-react';
+
 import CartaoReserva from '../../components/CartaoReserva/CartaoReserva';
 import ModalDetalheReserva from '../../components/ModalDetalheReserva/ModalDetalheReserva';
 import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/ReservaRecursoGeralModal';
@@ -26,6 +27,7 @@ import {
   cancelarReservaRecursoGeral,
 } from '../../services/reservasRecursosGerais';
 import { STATUS_RESERVA_LABEL, statusReservaApresentado } from '../../utils/reserva';
+import { TIPO_RECORRENCIA_LABEL } from '../../utils/recorrencia';
 import { ehAdministrador } from '../../utils/permissoes';
 import styles from './MinhasReservas.module.css';
 
@@ -74,6 +76,7 @@ function MinhasReservas() {
   const [editandoArea, setEditandoArea] = useState(null);
   const [editandoVeiculo, setEditandoVeiculo] = useState(null);
   const [selecionada, setSelecionada] = useState(null);
+  const [recorrenciasExpandidas, setRecorrenciasExpandidas] = useState({});
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [erro, setErro] = useState('');
@@ -171,7 +174,7 @@ function MinhasReservas() {
         },
       ];
 
-      if (reserva.recorrencia) {
+      if (reserva.recorrencia && !reserva.ehOcorrenciaIndividual) {
         const tipoLabel = TIPO_RECORRENCIA_LABEL[reserva.recorrencia.tipo] || reserva.recorrencia.tipo || 'Recorrente';
         const inicio = formatarData(reserva.primeira_data || reserva.data);
         const fim = formatarData(reserva.ultima_data || reserva.recorrencia.data_fim || reserva.data);
@@ -367,36 +370,75 @@ function MinhasReservas() {
     ? reservas
     : reservas.filter((reserva) => reserva.modalidade === filtroTipo);
 
-  // Agrupa ocorrências da mesma série de recorrência para não poluir "Minhas Reservas"
+  // agrupa ocorrências da mesma série de recorrência para não poluir "Minhas Reservas"
+  const agora = new Date();
   const mapaRecorrencias = new Map();
   const reservasAgrupadas = [];
+
+  function ehOcorrenciaFutura(ocorrencia) {
+    const status = String(ocorrencia.status || '').toUpperCase();
+    if (status === 'CANCELADA' || status === 'REJEITADA') return false;
+    const fimOcorrencia = new Date(`${ocorrencia.data}T${ocorrencia.horario_fim}`);
+    return !Number.isNaN(fimOcorrencia.getTime()) && fimOcorrencia >= agora;
+  }
 
   for (const reserva of reservasDoTipo) {
     const idRecorrencia = reserva.recorrencia?.id;
 
     if (idRecorrencia && reserva.modalidade === 'area') {
+      const futura = ehOcorrenciaFutura(reserva);
+
       if (!mapaRecorrencias.has(idRecorrencia)) {
         const itemAgrupado = {
           ...reserva,
           primeira_data: reserva.data,
           ultima_data: reserva.data,
+          proxima_data: futura ? reserva.data : null,
           total_ocorrencias: 1,
+          ocorrencias: [reserva],
         };
         mapaRecorrencias.set(idRecorrencia, itemAgrupado);
         reservasAgrupadas.push(itemAgrupado);
       } else {
         const itemExistente = mapaRecorrencias.get(idRecorrencia);
         itemExistente.total_ocorrencias += 1;
+        itemExistente.ocorrencias.push(reserva);
         if (reserva.data < itemExistente.primeira_data) {
           itemExistente.primeira_data = reserva.data;
         }
         if (reserva.data > itemExistente.ultima_data) {
           itemExistente.ultima_data = reserva.data;
         }
+
+        // mantém como principal a próxima ocorrência futura (menor data >= agora)
+        if (futura && (!itemExistente.proxima_data || reserva.data < itemExistente.proxima_data)) {
+          itemExistente.id = reserva.id;
+          itemExistente.data = reserva.data;
+          itemExistente.proxima_data = reserva.data;
+          itemExistente.status = reserva.status;
+        } else if (!itemExistente.proxima_data && reserva.data < itemExistente.data) {
+          itemExistente.id = reserva.id;
+          itemExistente.data = reserva.data;
+        }
       }
     } else {
       reservasAgrupadas.push(reserva);
     }
+  }
+
+  for (const item of reservasAgrupadas) {
+    if (item.ocorrencias) {
+      item.ocorrencias.sort((a, b) =>
+        `${a.data} ${a.horario_inicio}`.localeCompare(`${b.data} ${b.horario_inicio}`)
+      );
+    }
+  }
+
+  function alternarSanfona(idRecorrencia) {
+    setRecorrenciasExpandidas((atuais) => ({
+      ...atuais,
+      [idRecorrencia]: !atuais[idRecorrencia],
+    }));
   }
 
   const ordenadas = [...reservasAgrupadas]
@@ -466,20 +508,75 @@ function MinhasReservas() {
           </p>
         )}
 
-        {ordenadas.map((reserva) => (
-          <CartaoReserva
-            key={`${reserva.modalidade}-${reserva.id}`}
-            reserva={{
-              ...reserva,
-              descricao: nomeItem(reserva),
-            }}
-            modalidade={MODALIDADES[reserva.modalidade] || 'Reserva'}
-            periodo={formatarPeriodoCartao(reserva)}
-            mostrarStatus={true}
-            mostrarDisponibilidadeRetirada={reserva.modalidade === 'veiculo'}
-            aoClicar={() => setSelecionada(reserva)}
-          />
-        ))}
+        {ordenadas.map((reserva) => {
+          const idRecorrencia = reserva.recorrencia?.id;
+          const temSanfona = Boolean(idRecorrencia && reserva.ocorrencias?.length);
+          const expandida = Boolean(temSanfona && recorrenciasExpandidas[idRecorrencia]);
+
+          return (
+            <div key={`${reserva.modalidade}-${reserva.id}`} className={styles.grupoReserva}>
+              <CartaoReserva
+                reserva={{
+                  ...reserva,
+                  descricao: nomeItem(reserva),
+                }}
+                modalidade={MODALIDADES[reserva.modalidade] || 'Reserva'}
+                periodo={formatarPeriodoCartao(reserva)}
+                mostrarStatus={true}
+                mostrarDisponibilidadeRetirada={reserva.modalidade === 'veiculo'}
+                aoClicar={() => setSelecionada(reserva)}
+                expandido={expandida}
+                aoAlternarExpansao={temSanfona ? () => alternarSanfona(idRecorrencia) : undefined}
+              />
+
+              {expandida && (
+                <div className={styles.listaOcorrencias}>
+                  {reserva.ocorrencias.map((ocorrencia) => {
+                    const statusOcorrencia = statusReservaApresentado(ocorrencia);
+                    const tipoOcorrencia = String(ocorrencia.tipo_reserva || '').toLowerCase();
+                    const horarioCurto = `${String(ocorrencia.horario_inicio).slice(0, 5)}–${String(ocorrencia.horario_fim).slice(0, 5)}`;
+
+                    return (
+                      <button
+                        key={ocorrencia.id}
+                        type="button"
+                        className={styles.linhaOcorrencia}
+                        data-tipo={tipoOcorrencia}
+                        onClick={() => setSelecionada({ ...ocorrencia, ehOcorrenciaIndividual: true })}
+                      >
+                        <span
+                          className={styles.barraStatusLinha}
+                          data-status={statusOcorrencia}
+                          data-tipo={tipoOcorrencia}
+                          aria-hidden="true"
+                        />
+                        <span className={styles.conteudoLinhaOcorrencia}>
+                          <span className={styles.dataLinhaOcorrencia}>
+                            {formatarData(ocorrencia.data)}
+                          </span>
+                          <span className={styles.separadorLinha}>·</span>
+                          <span className={styles.horarioLinhaOcorrencia}>
+                            {horarioCurto}
+                          </span>
+                          <span className={styles.separadorLinha}>·</span>
+                          <span className={styles.nomeLinhaOcorrencia}>
+                            {ocorrencia.nome}
+                          </span>
+                          <span className={styles.areaLinhaOcorrencia}>
+                            {nomeItem(ocorrencia)}
+                          </span>
+                        </span>
+                        <span className={styles.badgeStatusLinha} data-status={statusOcorrencia}>
+                          {STATUS_RESERVA_LABEL[statusOcorrencia] || ocorrencia.status}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </section>
 
       {selecionada && (
