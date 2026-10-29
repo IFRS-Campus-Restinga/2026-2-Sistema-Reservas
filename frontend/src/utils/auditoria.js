@@ -10,6 +10,7 @@ export const ENTIDADE_AUDITORIA_LABEL = {
   RESERVA_AREA: "Reserva de área",
   RESERVA_VEICULO: "Reserva de veículo",
   RESERVA_RECURSO_GERAL: "Reserva de recurso geral",
+  RECORRENCIA_RESERVA_AREA: "Recorrência de reserva de área",
   GRUPO: "Grupo",
   MEMBRO_GRUPO: "Membro de grupo",
   RECURSO_GERAL: "Recurso geral",
@@ -57,6 +58,14 @@ export function formatarValorAuditoria(valor) {
   return texto;
 }
 
+export const LIMITE_LISTA_AUDITORIA = 5;
+export const ITENS_VISIVEIS_LISTA_AUDITORIA = 3;
+
+function valorCampoAuditoria(valor) {
+  if (Array.isArray(valor) && valor.length > 0) return valor.map(formatarValorAuditoria);
+  return formatarValorAuditoria(valor);
+}
+
 function rotuloCampo(campo, rotulos) {
   if (rotulos?.[campo]) return rotulos[campo];
   const texto = campo.replaceAll("_", " ");
@@ -72,8 +81,8 @@ export function camposAuditoria(log) {
   return campos.map((campo) => ({
     campo,
     rotulo: rotuloCampo(campo, log.rotulos),
-    antes: log.dados_antes ? formatarValorAuditoria(antes[campo]) : "-",
-    depois: log.dados_depois ? formatarValorAuditoria(depois[campo]) : "-",
+    antes: log.dados_antes ? valorCampoAuditoria(antes[campo]) : "-",
+    depois: log.dados_depois ? valorCampoAuditoria(depois[campo]) : "-",
     alterado: comparavel && JSON.stringify(antes[campo]) !== JSON.stringify(depois[campo]),
   }));
 }

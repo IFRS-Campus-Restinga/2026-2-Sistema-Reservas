@@ -11,6 +11,7 @@ import {
 } from "../../services";
 import ModalDetalheReserva from "../../components/ModalDetalheReserva/ModalDetalheReserva";
 import ReservaAreaModal from "../../components/ReservaArea/ReservaAreaModal";
+import GerenciarRecorrenciaModal from "../../components/RecorrenciaArea/GerenciarRecorrenciaModal";
 import Select from "../../components/Select/Select";
 import { diasDaSemana, horarioParaMinutos } from "../../utils/data";
 import { ehAdministrador, podeReservarArea } from "../../utils/permissoes";
@@ -96,6 +97,7 @@ function Calendario() {
   const [reservaDetalhe, setReservaDetalhe] = useState(null);
   const [reservaEdicao, setReservaEdicao] = useState(null);
   const [novaReserva, setNovaReserva] = useState(null);
+  const [recorrenciaGerenciada, setRecorrenciaGerenciada] = useState(null);
 
   const [aviso, setAviso] = useState("");
   const [erro, setErro] = useState("");
@@ -226,6 +228,11 @@ function Calendario() {
   function abrirEdicao(reserva) {
     setReservaDetalhe(null);
     setReservaEdicao(reserva);
+  }
+
+  function abrirRecorrencia(reserva) {
+    setReservaDetalhe(null);
+    setRecorrenciaGerenciada(reserva.recorrencia.id);
   }
 
   if (carregando) {
@@ -451,6 +458,9 @@ function Calendario() {
           ]}
           aoEditar={podeAlterar(reservaDetalhe) ? () => abrirEdicao(reservaDetalhe) : undefined}
           aoCancelar={podeAlterar(reservaDetalhe) ? cancelarDetalhe : undefined}
+          aoGerenciarRecorrencia={
+            podeAlterar(reservaDetalhe) ? () => abrirRecorrencia(reservaDetalhe) : undefined
+          }
           motivoAcoesIndisponiveis={
             reservaDetalhe.celula_timetable
               ? "Aulas da grade horária oficial (Timetable) não podem ser alteradas ou canceladas."
@@ -489,6 +499,24 @@ function Calendario() {
           aoReservar={() => {
             setReservaEdicao(null);
             atualizarGrade("Reserva atualizada.");
+          }}
+        />
+      )}
+
+      {recorrenciaGerenciada && (
+        <GerenciarRecorrenciaModal
+          aberto
+          recorrenciaId={recorrenciaGerenciada}
+          areas={areas}
+          blocos={blocos}
+          aoFechar={() => setRecorrenciaGerenciada(null)}
+          aoSalvar={() => {
+            setRecorrenciaGerenciada(null);
+            atualizarGrade("Recorrência atualizada.");
+          }}
+          aoCancelarRecorrencia={() => {
+            setRecorrenciaGerenciada(null);
+            atualizarGrade("Recorrência cancelada.");
           }}
         />
       )}

@@ -542,8 +542,8 @@ def popular_reservas_veiculos():
         or usuarios[0]
     )
     dados_reservas = [
-        ('Viagem administrativa', 'ABC1D23', 1, time(8), 1, time(12), 'Campus Porto Alegre', 'Reunião institucional', 8, StatusReserva.AGUARDANDO_TERMO),
-        ('Visita técnica', 'DEF4567', 3, time(14), 3, time(18), 'Parque Tecnológico', 'Visita técnica institucional', 4, StatusReserva.AGUARDANDO_TERMO),
+        ('Viagem administrativa', 'ABC1D23', 1, time(8), 1, time(12), 'Campus Porto Alegre', 'Reunião institucional', 8, StatusReserva.PENDENTE),
+        ('Visita técnica', 'DEF4567', 3, time(14), 3, time(18), 'Parque Tecnológico', 'Visita técnica institucional', 4, StatusReserva.PENDENTE),
     ]
 
     criados = 0
