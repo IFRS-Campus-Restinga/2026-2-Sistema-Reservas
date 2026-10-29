@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from accounts.enumerations import Papel
 from accounts.models.hub_user import HubUser
-from api.enumerations import StatusReserva
+from api.enumerations import StatusReserva, TipoReserva
 from api.enumerations.categoria_recurso import CategoriaRecurso
 from api.enumerations.status_recurso import StatusRecurso
 from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
@@ -21,10 +21,15 @@ from api.models.membro_grupo_model import MembroGrupo
 from api.models.recorrencia_model import Recorrencia
 from api.models.recurso_geral_model import RecursoGeral
 from api.models.reserva_area_model import ReservaArea
+from api.models.reserva_recurso_geral_model import ReservaRecursoGeral
 from api.models.reserva_veiculo_model import ReservaVeiculo
 from api.models.tipo_recurso_model import TipoRecurso
 from api.models.veiculo_model import Veiculo
+from api.enumerations.auditoria_enumerations import AcaoAuditoria
+from api.services.auditoria import foto, registrar_auditoria
 from api.services.autorizacao_grupo_service import salvar_autorizacoes_grupo
+from api.services.notificacao_service import criar_notificacao_cancelamento, criar_notificacao_confirmacao
+from hub_integrations.services.demonstracao import USUARIOS_DEMONSTRACAO, garantir_usuario_demonstracao
 
 
 ALUNOS = [
@@ -647,6 +652,209 @@ def limpar_areas_mock():
     removidos, _ = blocos.delete()
     return removidos + reservas_removidas
 
+EMAIL_ALUNA_DEMONSTRACAO = USUARIOS_DEMONSTRACAO['aluno']['email']
+
+GRUPOS_DEMONSTRACAO = [
+    {
+        'nome': 'Monitoria de Programação',
+        'criador': 'servidor',
+        'tipos': [TipoRecursoReservavel.AREA, TipoRecursoReservavel.RECURSO_GERAL],
+        'tipos_recurso': ['Notebooks'],
+        'tipos_recurso_apos_edicao': ['Notebooks', 'Mouses'],
+        'membros': [
+            EMAIL_ALUNA_DEMONSTRACAO,
+            'carlos.mendes@aluno.ifrs.edu.br',
+            'mariana.alves@aluno.ifrs.edu.br',
+            'gabriel.oliveira@aluno.ifrs.edu.br',
+        ],
+        'membros_removidos': ['gabriel.oliveira@aluno.ifrs.edu.br'],
+    },
+    {
+        'nome': 'Equipe de Robótica',
+        'criador': 'admin',
+        'tipos': [TipoRecursoReservavel.AREA, TipoRecursoReservavel.RECURSO_GERAL],
+        'tipos_recurso': ['Projetores', 'Caixas de som'],
+        'membros': [EMAIL_ALUNA_DEMONSTRACAO, 'lucas.fernandes@aluno.ifrs.edu.br'],
+    },
+    {
+        'nome': 'Esportes no intervalo',
+        'criador': 'servidor',
+        'tipos': [TipoRecursoReservavel.RECURSO_GERAL],
+        'tipos_recurso': ['Bolas', 'Redes de vôlei'],
+        'membros': ['pedro.souza@aluno.ifrs.edu.br', 'julia.martins@aluno.ifrs.edu.br'],
+    },
+]
+
+RESERVAS_AREA_DEMONSTRACAO = [
+    ('admin', 'Reunião de coordenação', '301', '3', 1, time(9), time(11), StatusReserva.CONFIRMADA),
+    ('servidor', 'Aula de reforço de Algoritmos', '402', '4', 2, time(14), time(16), StatusReserva.CONFIRMADA),
+    ('servidor', 'Banca de TCC', '502', '5', 5, time(19), time(21), StatusReserva.CONFIRMADA),
+    ('aluno', 'Estudo em grupo de Programação', '401', '4', 3, time(10), time(12), StatusReserva.CONFIRMADA),
+    ('aluno', 'Treino da equipe de robótica', '701', '7', 6, time(13), time(17), StatusReserva.CONFIRMADA),
+    ('aluno', 'Revisão para a prova de Cálculo', '301', '3', -4, time(15), time(17), StatusReserva.CONFIRMADA),
+    ('aluno', 'Ensaio da apresentação do projeto', '302', '3', 2, time(8), time(10), StatusReserva.CONFIRMADA),
+]
+
+RESERVAS_RECURSO_DEMONSTRACAO = [
+    ('aluno', 'Notebook para monitoria', 'Notebook Dell', 3, time(10), time(12), StatusReserva.CONFIRMADA),
+    ('aluno', 'Mouse para monitoria', 'Mouse USB', 3, time(10), time(12), StatusReserva.CONFIRMADA),
+    ('servidor', 'Projetor para aula de reforço', 'Projetor Epson', 2, time(14), time(16), StatusReserva.CONFIRMADA),
+]
+
+RESERVA_CANCELADA_PELA_ADMIN = 'Ensaio da apresentação do projeto'
+MOTIVO_CANCELAMENTO_DEMONSTRACAO = 'A sala será usada em um evento institucional.'
+
+
+def _tipos_recurso(descricoes):
+    return list(TipoRecurso.objects.filter(descricao__in=descricoes))
+
+
+def _criar_grupo_demonstracao(dados, usuarios, hoje):
+    criador = usuarios[dados['criador']]
+    grupo, criado = Grupo.objects.get_or_create(
+        nome=dados['nome'],
+        criador=criador,
+        defaults={
+            'tipo_membro_permitido': Papel.ALUNO,
+            'data_inicio_validade': hoje - timedelta(days=30),
+            'data_fim_validade': hoje + timedelta(days=180),
+        },
+    )
+    if not criado:
+        return 0
+
+    salvar_autorizacoes_grupo(grupo, dados['tipos'], _tipos_recurso(dados['tipos_recurso']))
+    registrar_auditoria(criador, AcaoAuditoria.CRIAR, grupo, depois=foto(grupo))
+    criados = 1
+
+    for usuario in HubUser.objects.filter(email__in=dados['membros']):
+        membro = MembroGrupo.objects.create(grupo=grupo, usuario=usuario)
+        registrar_auditoria(criador, AcaoAuditoria.CRIAR, membro, depois=foto(membro))
+        criados += 1
+
+    if 'tipos_recurso_apos_edicao' in dados:
+        antes = foto(grupo)
+        salvar_autorizacoes_grupo(grupo, dados['tipos'], _tipos_recurso(dados['tipos_recurso_apos_edicao']))
+        registrar_auditoria(criador, AcaoAuditoria.EDITAR, grupo, antes=antes, depois=foto(grupo))
+
+    for membro in grupo.membros.filter(usuario__email__in=dados.get('membros_removidos', [])):
+        registrar_auditoria(criador, AcaoAuditoria.EXCLUIR, membro, antes=foto(membro))
+        membro.delete()
+
+    return criados
+
+
+def _adicionar_servidor_ao_grupo_veiculos(usuarios):
+    grupo = Grupo.objects.filter(nome='Servidores autorizados para veículos').first()
+    if not grupo:
+        return 0
+    membro, criado = MembroGrupo.objects.get_or_create(grupo=grupo, usuario=usuarios['servidor'])
+    if criado:
+        registrar_auditoria(usuarios['admin'], AcaoAuditoria.CRIAR, membro, depois=foto(membro))
+    return int(criado)
+
+
+def _finalizar_reserva_demonstracao(reserva, status, usuarios):
+    if reserva.status != status:
+        reserva.status = status
+        reserva.save(update_fields=['status'])
+    if status == StatusReserva.CONFIRMADA and reserva.usuario != usuarios['admin']:
+        criar_notificacao_confirmacao(reserva)
+    if reserva.nome == RESERVA_CANCELADA_PELA_ADMIN:
+        antes = foto(reserva)
+        reserva.status = StatusReserva.CANCELADA
+        reserva.motivo_cancelamento = MOTIVO_CANCELAMENTO_DEMONSTRACAO
+        reserva.cancelada_em = timezone.now()
+        reserva.cancelada_por = usuarios['admin']
+        reserva.save(update_fields=['status', 'motivo_cancelamento', 'cancelada_em', 'cancelada_por'])
+        registrar_auditoria(usuarios['admin'], AcaoAuditoria.CANCELAR, reserva, antes=antes, depois=foto(reserva))
+        criar_notificacao_cancelamento(reserva)
+
+
+def _criar_reservas_area_demonstracao(usuarios, hoje):
+    criados = 0
+    for perfil, nome, area_nome, bloco_numero, dias, inicio, fim, status in RESERVAS_AREA_DEMONSTRACAO:
+        area = Area.objects.filter(nome=area_nome, bloco__numero=bloco_numero).first()
+        if not area:
+            continue
+        reserva, criada = ReservaArea.objects.get_or_create(
+            nome=nome,
+            usuario=usuarios[perfil],
+            defaults={
+                'descricao': 'Reserva de demonstração criada pelo popular_banco.',
+                'area': area,
+                'data': hoje + timedelta(days=dias),
+                'horario_inicio': inicio,
+                'horario_fim': fim,
+                'tipo_reserva': TipoReserva.INTERNA,
+                'status': status,
+            },
+        )
+        if criada:
+            _finalizar_reserva_demonstracao(reserva, status, usuarios)
+        criados += criada
+    return criados
+
+
+def _criar_reservas_recurso_demonstracao(usuarios, hoje):
+    criados = 0
+    for perfil, nome, recurso_nome, dias, inicio, fim, status in RESERVAS_RECURSO_DEMONSTRACAO:
+        recurso = RecursoGeral.objects.filter(nome=recurso_nome).first()
+        if not recurso:
+            continue
+        reserva, criada = ReservaRecursoGeral.objects.get_or_create(
+            nome=nome,
+            usuario=usuarios[perfil],
+            defaults={
+                'descricao': 'Reserva de demonstração criada pelo popular_banco.',
+                'recurso_geral': recurso,
+                'data': hoje + timedelta(days=dias),
+                'horario_inicio': inicio,
+                'horario_fim': fim,
+                'data_devolucao_prevista': hoje + timedelta(days=dias),
+                'quantidades': 1,
+                'tipo_reserva': TipoReserva.INTERNA,
+            },
+        )
+        if criada and not recurso.tem_termo_de_responsabilidade:
+            _finalizar_reserva_demonstracao(reserva, status, usuarios)
+        criados += criada
+    return criados
+
+
+def _criar_reserva_veiculo_demonstracao(usuarios, hoje):
+    veiculo = Veiculo.objects.filter(placa='ABC1D23').first()
+    if not veiculo:
+        return 0
+    _, criada = ReservaVeiculo.objects.get_or_create(
+        nome='Visita técnica com turma',
+        usuario=usuarios['servidor'],
+        defaults={
+            'descricao': 'Reserva de demonstração criada pelo popular_banco.',
+            'veiculo': veiculo,
+            'data': hoje + timedelta(days=4),
+            'horario_inicio': time(8),
+            'horario_fim': time(17),
+            'data_devolucao_prevista': hoje + timedelta(days=4),
+            'destino': 'Parque Tecnológico',
+            'finalidade': 'Visita técnica com alunos',
+            'quantidade_passageiros': 4,
+        },
+    )
+    return int(criada)
+
+
+def popular_demonstracao():
+    usuarios = {perfil: garantir_usuario_demonstracao(perfil) for perfil in USUARIOS_DEMONSTRACAO}
+    hoje = timezone.localdate()
+
+    criados = sum(_criar_grupo_demonstracao(dados, usuarios, hoje) for dados in GRUPOS_DEMONSTRACAO)
+    criados += _adicionar_servidor_ao_grupo_veiculos(usuarios)
+    criados += _criar_reservas_area_demonstracao(usuarios, hoje)
+    criados += _criar_reservas_recurso_demonstracao(usuarios, hoje)
+    criados += _criar_reserva_veiculo_demonstracao(usuarios, hoje)
+    return criados
+
 POPULADORES = [
     ('Usuários (alunos e servidores)', popular_usuarios),
     ('Veículos', popular_veiculos),
@@ -656,6 +864,7 @@ POPULADORES = [
     ('Reservas de veículos', popular_reservas_veiculos),
     ('Blocos (Padrão Timetable)', popular_blocos_padrao_timetable),
     ('Áreas (Padrão Timetable)', popular_areas_padrao_timetable),
+    ('Dados de demonstração', popular_demonstracao),
 ]
 
 
