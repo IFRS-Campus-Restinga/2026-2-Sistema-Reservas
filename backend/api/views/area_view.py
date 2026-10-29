@@ -6,13 +6,16 @@ from rest_framework.views import APIView
 
 from api.models.area_model import Area
 from api.permissions.escrita_admin import EscritaAdmin
+from api.permissions.regras_comuns import LeituraPublica
 from api.serializers.area_serializer import AreaSerializer
 from api.enumerations.auditoria_enumerations import AcaoAuditoria
 from api.services.auditoria import foto, registrar_auditoria
+from hub_integrations.authentication import HubJWTAuthenticationOpcional
 
 
 class AreaListCreateView(APIView):
-    permission_classes = [EscritaAdmin]
+    authentication_classes = [HubJWTAuthenticationOpcional]
+    permission_classes = [LeituraPublica | EscritaAdmin]
 
     def get(self, request):
         areas = Area.objects.all().select_related('bloco')

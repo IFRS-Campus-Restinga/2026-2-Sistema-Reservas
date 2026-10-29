@@ -7,3 +7,4 @@ fs-auth-middleware @ git+https://github.com/Cassio-de-Paula/FS_auth_middleware.g
 requests==2.32.2
 sqlparse==0.6.0
 tzdata==2026.3
+pypdf==6.10.0

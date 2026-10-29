@@ -19,5 +19,5 @@ class LogAuditoriaDetailView(APIView):
     permission_classes = [SomenteAdmin]
 
     def get(self, request, pk):
-        log = get_object_or_404(LogAuditoria.objects.select_related('admin', 'usuario_afetado'), pk=pk)
+        log = get_object_or_404(LogAuditoria.objects.select_related('responsavel', 'usuario_afetado'), pk=pk)
         return detalhar(log, LogAuditoriaDetalheSerializer)

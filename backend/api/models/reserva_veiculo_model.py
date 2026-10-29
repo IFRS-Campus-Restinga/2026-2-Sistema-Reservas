@@ -43,6 +43,6 @@ class ReservaVeiculo(Reserva):
 
     def save(self, *args, **kwargs):
         if self._state.adding:
-            self.status = StatusReserva.AGUARDANDO_TERMO
+            self.status = StatusReserva.PENDENTE
             self.tipo_reserva = TipoReserva.INTERNA
         return super().save(*args, **kwargs)

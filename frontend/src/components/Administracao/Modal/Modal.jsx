@@ -1,4 +1,6 @@
 import { X } from 'lucide-react';
+import { useId } from 'react';
+import useFocoModal from '../../../hooks/useFocoModal';
 import styles from './Modal.module.css';
 
 function Modal({
@@ -8,7 +10,15 @@ function Modal({
     children,
     rodape,
     variante = 'padrao',
+    processando = false,
 }) {
+    const tituloId = useId();
+    const modalRef = useFocoModal({ aberto, aoFechar, bloqueado: processando });
+
+    function fechar() {
+        if (!processando) aoFechar();
+    }
+
     if (!aberto) {
         return null;
     }
@@ -16,20 +26,24 @@ function Modal({
     return (
         <div
             className={`${styles.fundo} ${styles[variante] ?? ''}`}
-            onMouseDown={aoFechar}
+            onMouseDown={fechar}
         >
             <div
                 className={styles.modal}
+                ref={modalRef}
+                tabIndex={-1}
                 role="dialog"
                 aria-modal="true"
+                aria-labelledby={tituloId}
                 onMouseDown={(evento) => evento.stopPropagation()}
             >
                 <div className={styles.cabecalho}>
-                    <h2>{titulo}</h2>
+                    <h2 id={tituloId}>{titulo}</h2>
 
                     <button
                         type="button"
-                        onClick={aoFechar}
+                        onClick={fechar}
+                        disabled={processando}
                         aria-label="Fechar"
                     >
                         <X size={18} />

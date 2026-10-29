@@ -16,8 +16,8 @@ def resumo_autorizacoes(usuario):
         {
             'grupo': membro.grupo.id,
             'grupo_nome': membro.grupo.nome,
-            'tipo_recurso_autorizado': membro.grupo.tipo_recurso_autorizado,
-            'tipo_recurso': membro.grupo.tipo_recurso_id,
+            'tipos_recurso_autorizados': membro.grupo.tipos_recurso_autorizados,
+            'tipos_recurso': [tipo_recurso.id for tipo_recurso in membro.grupo.tipos_recurso],
             'valido_ate': membro.data_fim_validade or membro.grupo.data_fim_validade,
         }
         for membro in autorizacoes_vigentes(usuario)

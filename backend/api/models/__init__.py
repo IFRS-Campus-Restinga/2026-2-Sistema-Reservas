@@ -6,11 +6,13 @@ from .bloco_model import *
 from .area_model import *
 from .timetable import *
 from .grupo_model import Grupo
+from .autorizacao_grupo_model import AutorizacaoGrupo
 from .membro_grupo_model import MembroGrupo
 from .recorrencia_model import Recorrencia
 from .reserva_model import Reserva
 from .reserva_recurso_geral_model import *
 from .reserva_veiculo_model import ReservaVeiculo
-
 from .reserva_area_model import ReservaArea
 from .log_auditoria_model import LogAuditoria
+from .termo_responsabilidade_model import TermoResponsabilidade
+from .notificacao_model import Notificacao

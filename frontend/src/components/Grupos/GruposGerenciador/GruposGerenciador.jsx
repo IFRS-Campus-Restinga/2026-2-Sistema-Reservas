@@ -65,7 +65,7 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
             setCarregando(true);
             setErro('');
 
-            const dados = await buscarGrupos();
+            const dados = await buscarGrupos({ apenasMeus: apenasMeusGrupos });
 
             setGrupos(dados);
         } catch (erro) {
@@ -132,13 +132,10 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
     }
 
     const termoBusca = busca.trim().toLowerCase();
-    const gruposVisiveis = apenasMeusGrupos
-        ? grupos.filter((grupo) => grupo.criador === usuario.id)
-        : grupos;
-    const gruposServidor = gruposVisiveis.filter((grupo) => grupo.tipo_membro_permitido === 'servidor');
-    const gruposAluno = gruposVisiveis.filter((grupo) => grupo.tipo_membro_permitido === 'aluno');
+    const gruposServidor = grupos.filter((grupo) => grupo.tipo_membro_permitido === 'servidor');
+    const gruposAluno = grupos.filter((grupo) => grupo.tipo_membro_permitido === 'aluno');
     const filtrando = Boolean(termoBusca) || filtroRecurso !== FILTRO_TODOS;
-    const gruposDaTela = gruposVisiveis
+    const gruposDaTela = grupos
         .filter((grupo) => grupo.tipo_membro_permitido === tipoAtivo)
         .filter((grupo) => correspondeAoFiltroRecurso(grupo, filtroRecurso, filtroTipoRecurso))
         .filter((grupo) => grupo.nome.toLowerCase().includes(termoBusca));

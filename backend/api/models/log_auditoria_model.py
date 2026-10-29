@@ -2,18 +2,25 @@ from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 
+from accounts.enumerations import Papel
 from api.enumerations.auditoria_enumerations import AcaoAuditoria, EntidadeAuditoria
 from api.validators.log_auditoria_validator import validar_alteracao_log_auditoria, validar_exclusao_log_auditoria
 from .base_model import BaseModel
 
 
 class LogAuditoria(BaseModel):
-    admin = models.ForeignKey(
+    responsavel = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name='acoes_auditadas',
-        verbose_name="Admin",
-        help_text="Administrador que executou a ação."
+        verbose_name="Responsável",
+        help_text="Usuário que executou a ação."
+    )
+    perfil_responsavel = models.CharField(
+        max_length=12,
+        choices=[(Papel.ADMIN, Papel.ADMIN.label), (Papel.SERVIDOR, Papel.SERVIDOR.label)],
+        verbose_name="Perfil do responsável",
+        help_text="Perfil do responsável no momento da ação."
     )
     acao = models.CharField(
         max_length=12,
@@ -62,7 +69,7 @@ class LogAuditoria(BaseModel):
     )
 
     def __str__(self):
-        return f"{self.admin} - {self.get_acao_display()} - {self.get_entidade_display()}"
+        return f"{self.responsavel} - {self.get_acao_display()} - {self.get_entidade_display()}"
 
     def save(self, *args, **kwargs):
         validar_alteracao_log_auditoria(self)
