@@ -8,7 +8,14 @@
   min-width: 0;
 }
 
-.campo label {
+fieldset.campo {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.campo label,
+.campo legend {
   display: block;
   margin-bottom: 4px;
   color: #374151;
@@ -50,6 +57,90 @@
 
 .campo [aria-invalid='true']:focus {
   box-shadow: 0 0 0 2px #dc2626;
+}
+
+.campo input[type='checkbox'] {
+  display: inline-block;
+  width: auto;
+  margin: 0 8px 0 0;
+  padding: 0;
+  accent-color: var(--cor-marca);
+}
+
+.opcoes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+.checkboxItem {
+  display: flex;
+  align-items: center;
+}
+
+.checkboxItem label {
+  margin-bottom: 0;
+  font-weight: 400;
+}
+
+.accordion {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #ffffff;
+}
+
+.accordionCabecalho {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: #374151;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.accordionCabecalho:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--cor-marca);
+}
+
+.accordionCabecalho[data-invalido='true'] {
+  box-shadow: 0 0 0 1px #dc2626;
+}
+
+.accordionTitulo {
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.accordionResumo {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: #6b7280;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accordionIcone {
+  flex-shrink: 0;
+  color: #6b7280;
+  transition: transform 150ms ease;
+}
+
+.accordionCabecalho[aria-expanded='true'] .accordionIcone {
+  transform: rotate(180deg);
+}
+
+.accordionConteudo {
+  padding: 4px 12px 12px;
 }
 
 .valorFixo {
@@ -109,7 +200,8 @@
 }
 
 @media (max-width: 479px) {
-  .linhaDupla {
+  .linhaDupla,
+  .opcoes {
     grid-template-columns: 1fr;
   }
 }
