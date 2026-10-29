@@ -88,3 +88,18 @@ Acesse sempre como **`http://localhost:8001`**, nunca `127.0.0.1:8001` — os co
 ## 6. Teste o fluxo completo
 
 1. Já logado no HUB (`localhost:3000`), vá em **Sistemas** e clique no card do **Reserva de Recursos**.
+## Modo demonstração (sem HUB)
+
+Para apresentar o sistema sem subir o HUB, ligue no `.env`:
+
+```
+MODO_DEMONSTRACAO=True
+```
+
+Rode `python manage.py popular_banco` para criar os usuários de demonstração (Helena Duarte, admin; Paulo Rezende, servidor; Clara Nogueira, aluna; Marcos Visitante, convidado), com grupos e reservas na semana atual.
+
+Com o modo ligado, quem acessa sem sessão do HUB já entra logado como a Helena (admin): o backend assina um token igual ao do HUB e grava no cookie `access_token`, e o sistema funciona normalmente. Para trocar de perfil, clique no próprio nome no topo e use o menu **Visualizar como**.
+
+- Nunca ligue em produção: qualquer pessoa entraria como admin.
+- Ao desligar o modo, quem estava logado com um usuário de demonstração é deslogado na próxima requisição e vê a tela de não autenticado.
+- Como o cookie `access_token` é do host `localhost`, entrar em modo demonstração substitui a sessão do HUB local. Para voltar ao HUB, desligue o modo e faça login nele de novo.

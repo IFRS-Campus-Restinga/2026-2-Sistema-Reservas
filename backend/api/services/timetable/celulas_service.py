@@ -91,6 +91,8 @@ class CelulasService:
         
         # Limpa as células antigas DESSA SINCROMIZAÇÃO para não duplicar aulas toda vez que rodarmos o script
         # Por isso utilizo o decorador assinado na função
+        from .reservas_timetable_service import ReservasTimetableService
+        ReservasTimetableService.limpar_reservas_timetable([semestre_ativo.id])
         CelulaTimetable.objects.filter(periodo_letivo=semestre_ativo).delete()
         
         celulas_para_salvar = []

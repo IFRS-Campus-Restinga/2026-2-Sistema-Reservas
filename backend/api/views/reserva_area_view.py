@@ -39,11 +39,10 @@ class ReservaAreaListCreateView(APIView):
     permission_classes = [LeituraPublica | UsuarioAutenticado]
 
     def get(self, request):
-        reservas = ReservaArea.objects.filter(
-            status=StatusReserva.CONFIRMADA
-        ).select_related("area__bloco", "usuario", "recorrencia").order_by("-data", "-horario_inicio")
+        from api.services.timetable.reservas_timetable_service import ReservasTimetableService
 
-        for parametro, filtro in (("data_inicio", "data__gte"), ("data_fim", "data__lte")):
+        filtros_data = {}
+        for parametro in ("data_inicio", "data_fim"):
             valor = request.query_params.get(parametro)
 
             if valor is None:
@@ -60,7 +59,25 @@ class ReservaAreaListCreateView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            reservas = reservas.filter(**{filtro: data})
+            filtros_data[parametro] = data
+
+        reservas_normais = ReservaArea.objects.filter(
+            status=StatusReserva.CONFIRMADA,
+            celula_timetable__isnull=True,
+        ).select_related("area__bloco", "usuario", "recorrencia")
+
+        if "data_inicio" in filtros_data:
+            reservas_normais = reservas_normais.filter(data__gte=filtros_data["data_inicio"])
+        if "data_fim" in filtros_data:
+            reservas_normais = reservas_normais.filter(data__lte=filtros_data["data_fim"])
+
+        reservas_timetable = ReservasTimetableService.projetar_reservas_no_intervalo(
+            data_inicio=filtros_data.get("data_inicio"),
+            data_fim=filtros_data.get("data_fim"),
+        )
+
+        reservas = list(reservas_normais) + reservas_timetable
+        reservas.sort(key=lambda r: (r.data, r.horario_inicio), reverse=True)
 
         serializer = ReservaAreaSerializer(reservas, many=True)
 
