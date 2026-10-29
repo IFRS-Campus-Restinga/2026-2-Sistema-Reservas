@@ -48,6 +48,9 @@ def pode_reservar(usuario, tipo_recurso_autorizado, tipo_recurso_id=None, data=N
     if not (usuario and usuario.is_authenticated):
         return False
 
+    if usuario_e_admin(usuario):
+        return True
+
     if (tipo_recurso_autorizado == TipoRecursoReservavel.VEICULO and getattr(usuario, 'papel', None) != Papel.SERVIDOR):
         return False
     

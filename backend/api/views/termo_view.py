@@ -72,7 +72,6 @@ class TermoReservaView(APIView):
     def post(self, request, pk):
         with transaction.atomic():
             reserva = self.obter_reserva(request, pk, bloquear=True)
-            self.validar_responsabilidade(reserva)
             enviar_termo(reserva, request.user, request.FILES.get('arquivo'))
             return Response(resumo_termo(reserva, request.user), status=201)
 
@@ -82,7 +81,6 @@ class ModeloTermoView(TermoReservaView):
 
     def get(self, request, pk):
         reserva = self.obter_reserva(request, pk)
-        self.validar_responsabilidade(reserva)
         caminho = modelo_da_reserva(reserva)
         resposta = FileResponse(caminho.open('rb'), as_attachment=True, filename=caminho.name,
                                content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
