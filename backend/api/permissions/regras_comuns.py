@@ -3,7 +3,7 @@ from accounts.enumerations import Papel
 from django.db.models import Q
 
 def usuario_e_admin(user):
-    return bool(user and (user.is_staff or getattr(user, 'papel', None) in Papel.ADMIN))
+    return bool(user and (user.is_staff or getattr(user, 'papel', None) == Papel.ADMIN))
 
 
 def filtro_usuario_admin():
