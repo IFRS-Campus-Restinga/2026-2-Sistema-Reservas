@@ -82,13 +82,24 @@ export function validarRecorrencia(dataInicio, tipo, dataFim) {
 }
 
 // Campo "recorrencia" enviado no payload de criação
-export function montarRecorrencia(ativa, tipo, dataFim) {
-  return ativa ? { tipo, data_fim: dataFim } : null;
+export function montarRecorrencia(ativa, tipo, dataFim, pularConflitos = false) {
+  if (!ativa) return null;
+
+  return pularConflitos
+    ? { tipo, data_fim: dataFim, pular_conflitos: true }
+    : { tipo, data_fim: dataFim };
 }
 
-// Datas em conflito devolvidas pelo backend ao recusar a recorrência
+// Mensagens devolvidas pelo backend ao recusar a recorrência ("19/10/2026: motivo")
 export function conflitosRecorrencia(erro) {
   const conflitos = erro?.dados?.recorrencia;
 
   return Array.isArray(conflitos) ? conflitos : [];
+}
+
+// Datas "AAAA-MM-DD" que podem ser puladas para criar a recorrência mesmo assim
+export function datasConflitantesRecorrencia(erro) {
+  const datas = erro?.dados?.datas_conflitantes;
+
+  return Array.isArray(datas) ? datas : [];
 }

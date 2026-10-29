@@ -1,9 +1,11 @@
+from accounts.enumerations import Papel
 from api.enumerations.auditoria_enumerations import EntidadeAuditoria
 from api.models.area_model import Area
 from api.models.bloco_model import Bloco
 from api.models.grupo_model import Grupo
 from api.models.log_auditoria_model import LogAuditoria
 from api.models.membro_grupo_model import MembroGrupo
+from api.models.recorrencia_model import Recorrencia
 from api.models.recurso_geral_model import RecursoGeral
 from api.models.reserva_area_model import ReservaArea
 from api.models.reserva_model import Reserva
@@ -17,6 +19,7 @@ ENTIDADE_POR_MODEL = {
     ReservaArea: EntidadeAuditoria.RESERVA_AREA,
     ReservaVeiculo: EntidadeAuditoria.RESERVA_VEICULO,
     ReservaRecursoGeral: EntidadeAuditoria.RESERVA_RECURSO_GERAL,
+    Recorrencia: EntidadeAuditoria.RECORRENCIA_RESERVA_AREA,
     Grupo: EntidadeAuditoria.GRUPO,
     MembroGrupo: EntidadeAuditoria.MEMBRO_GRUPO,
     RecursoGeral: EntidadeAuditoria.RECURSO_GERAL,
@@ -26,9 +29,11 @@ ENTIDADE_POR_MODEL = {
     Veiculo: EntidadeAuditoria.VEICULO,
 }
 
+MODELS_AUDITADOS_PARA_SERVIDOR = (Grupo, MembroGrupo)
+
 
 def _dono(objeto):
-    if isinstance(objeto, Reserva):
+    if isinstance(objeto, (Reserva, Recorrencia)):
         return objeto.usuario
     if isinstance(objeto, Grupo):
         return objeto.criador
@@ -43,14 +48,23 @@ def _usuario_afetado(objeto):
     return _dono(objeto)
 
 
+def _perfil_auditado(ator, objeto):
+    if usuario_e_admin(ator):
+        if isinstance(objeto, (Reserva, Recorrencia)) and objeto.usuario_id == ator.pk:
+            return None
+        return Papel.ADMIN
+    if getattr(ator, 'papel', None) == Papel.SERVIDOR and isinstance(objeto, MODELS_AUDITADOS_PARA_SERVIDOR):
+        return Papel.SERVIDOR
+    return None
+
+
 def registrar_auditoria(ator, acao, objeto=None, *, antes=None, depois=None, entidade=None, descricao=None):
-    if not usuario_e_admin(ator):
-        return None
-    dono = _dono(objeto)
-    if dono is not None and dono.pk == ator.pk:
+    perfil = _perfil_auditado(ator, objeto)
+    if perfil is None:
         return None
     return LogAuditoria.objects.create(
-        admin=ator,
+        responsavel=ator,
+        perfil_responsavel=perfil,
         acao=acao,
         entidade=entidade or ENTIDADE_POR_MODEL[type(objeto)],
         objeto_id=getattr(objeto, 'pk', None),

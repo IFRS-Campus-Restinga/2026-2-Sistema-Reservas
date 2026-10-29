@@ -24,6 +24,7 @@ import Notificacoes from "../pages/Notificacoes/Notificacoes";
 import {
   ehAdministrador,
   podeGerenciarGrupos,
+  podeReservarAlgo,
   podeReservarArea,
   podeReservarRecursoGeral,
   podeReservarVeiculo,
@@ -34,12 +35,14 @@ export const ROTAS = [
     id: "home",
     path: "/",
     componente: Home,
+    permissao: podeReservarAlgo,
     menu: { titulo: "Home", icone: IconeHome },
   },
   {
     id: "calendario",
     path: "/calendario",
     componente: Calendario,
+    publica: true,
     menu: { titulo: "Calendário", icone: CalendarDays },
   },
   {
@@ -79,6 +82,7 @@ export const ROTAS = [
     id: "minhas-reservas",
     path: "/minhas-reservas",
     componente: MinhasReservas,
+    permissao: podeReservarAlgo,
     menu: { titulo: "Minhas Reservas", icone: ClipboardList },
   },
   {
@@ -107,3 +111,6 @@ export const ROTAS = [
 ];
 
 export const ITENS_MENU = ROTAS.filter((rota) => rota.menu);
+
+// Quem não pode reservar nada (inclusive visitantes) começa pelo calendário.
+export const rotaInicial = (usuario) => (podeReservarAlgo(usuario) ? "/" : "/calendario");

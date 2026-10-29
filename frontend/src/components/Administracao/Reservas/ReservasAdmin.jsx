@@ -18,20 +18,15 @@ import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import ModalConfirmacao from '../ModalConfirmacao/ModalConfirmacao';
 import Select from '../../Select/Select';
 
-import ModalDetalheReserva
-  from '../../ModalDetalheReserva/ModalDetalheReserva';
+import ModalDetalheReserva from '../../ModalDetalheReserva/ModalDetalheReserva';
 
-import ReservaAreaModal
-  from '../../ReservaArea/ReservaAreaModal';
+import ReservaAreaModal from '../../ReservaArea/ReservaAreaModal';
 
-import ReservaRecursoGeralModal
-  from '../../ReservaRecursoGeral/ReservaRecursoGeralModal';
+import ReservaRecursoGeralModal from '../../ReservaRecursoGeral/ReservaRecursoGeralModal';
 
-import ReservaVeiculoModal
-  from '../../ReservaVeiculo/ReservaVeiculoModal';
+import ReservaVeiculoModal from '../../ReservaVeiculo/ReservaVeiculoModal';
 
 import { STATUS_RESERVA_LABEL } from '../../../utils/reserva';
-
 
 const MODALIDADE_LABEL = {
   area: 'Área',
@@ -47,7 +42,6 @@ const STATUS_GERENCIAVEIS = new Set([
   'AGUARDANDO_TERMO',
   'AGUARDANDO_TERMO_DEVOLUCAO',
 ]);
-
 
 function formatarData(data) {
   if (!data) return '—';

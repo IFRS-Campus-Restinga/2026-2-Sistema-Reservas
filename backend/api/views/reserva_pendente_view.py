@@ -7,11 +7,14 @@ from django.utils import timezone
 
 from api.enumerations.auditoria_enumerations import AcaoAuditoria, EntidadeAuditoria
 from api.enumerations.status_reserva import StatusReserva
+from api.enumerations.status_termo import StatusTermo
+from api.enumerations import TipoTermo
 from api.models.reserva_model import Reserva
 from api.permissions.regras_comuns import SomenteAdmin
 from api.permissions.reserva_permissions import PodeCancelarReserva,PodeConfirmarReserva
 from api.serializers.reserva_serializer import ReservaSerializer
 from api.services.auditoria import foto, registrar_auditoria
+from api.services.termo_service import analisar_termo
 from api.services.notificacao_service import criar_notificacao_cancelamento, criar_notificacao_confirmacao
 from api.services.termo_service import reserva_exige_termo
 
@@ -79,8 +82,21 @@ class ConfirmarReservaView(APIView):
                 })
 
             antes = foto(reserva)
-            reserva.status = StatusReserva.CONFIRMADA
-            reserva.save(update_fields=["status"])
+            devolucao = None
+            if entidade == EntidadeAuditoria.RESERVA_VEICULO:
+                devolucao = reserva.termos.filter(
+                    tipo=TipoTermo.DEVOLUCAO_VEICULO, atual=True, status=StatusTermo.PENDENTE,
+                ).first()
+
+            if devolucao is not None:
+                analisar_termo(
+                    reserva, devolucao.pk, request.user, StatusTermo.APROVADO, "", TipoTermo.DEVOLUCAO_VEICULO,
+                )
+                descricao = f"Conclusão da reserva {reserva.nome}"
+            else:
+                reserva.status = StatusReserva.CONFIRMADA
+                reserva.save(update_fields=["status"])
+                descricao = f"Confirmação da reserva {reserva.nome}"
 
             registrar_auditoria(
                 request.user,
@@ -89,7 +105,7 @@ class ConfirmarReservaView(APIView):
                 antes=antes,
                 depois=foto(reserva),
                 entidade=entidade,
-                descricao=f"Confirmação da reserva {reserva.nome}",
+                descricao=descricao,
             )
 
             criar_notificacao_confirmacao(reserva)

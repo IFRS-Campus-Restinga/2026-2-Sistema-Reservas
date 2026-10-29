@@ -50,6 +50,9 @@ export {
   criarReservaArea,
   cancelarReservaArea,
   buscarAgendaArea,
+  buscarRecorrenciaArea,
+  atualizarRecorrenciaArea,
+  cancelarRecorrenciaArea,
 } from './reservasAreas';
 export {
   listarReservasVeiculos,
@@ -60,7 +63,6 @@ export {
   buscarAgendaVeiculo,
 } from './reservasVeiculos';
 export { 
-  listarReservasPendentes,
   confirmarReservaPendente, 
   cancelarReservaAdmin,
 } from './reservasPendentes';

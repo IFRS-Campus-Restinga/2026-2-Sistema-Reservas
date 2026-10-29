@@ -13,13 +13,21 @@ import {
 
 export const NotificacoesContext = createContext(null);
 
-export function NotificacoesProvider({ children }) {
+export function NotificacoesProvider({ children, usuario }) {
   const [notificacoes, setNotificacoes] = useState([]);
   const [naoLidas, setNaoLidas] = useState(0);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState('');
 
   const carregarNotificacoes = useCallback(async () => {
+    if (!usuario) {
+    setNotificacoes([]);
+    setNaoLidas(0);
+    setErro('');
+    setCarregando(false);
+    return;
+    }
+    
     try {
       setCarregando(true);
       setErro('');
@@ -36,7 +44,7 @@ export function NotificacoesProvider({ children }) {
     } finally {
       setCarregando(false);
     }
-  }, []);
+  }, [usuario]);
 
   useEffect(() => {
     carregarNotificacoes();

@@ -32,3 +32,10 @@ class SomenteAdmin(UsuarioAutenticado):
 
     def tem_permissao(self, request, view):
         return usuario_e_admin(request.user)
+
+
+class LeituraPublica(permissions.BasePermission):
+    """Libera leitura sem login. Combine com outra regra para a escrita: LeituraPublica | EscritaAdmin."""
+
+    def has_permission(self, request, view):
+        return request.method in permissions.SAFE_METHODS

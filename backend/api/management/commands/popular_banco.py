@@ -24,6 +24,7 @@ from api.models.reserva_area_model import ReservaArea
 from api.models.reserva_veiculo_model import ReservaVeiculo
 from api.models.tipo_recurso_model import TipoRecurso
 from api.models.veiculo_model import Veiculo
+from api.services.autorizacao_grupo_service import salvar_autorizacoes_grupo
 
 
 ALUNOS = [
@@ -498,12 +499,13 @@ def popular_grupo_veiculos():
         nome='Servidores autorizados para veículos',
         defaults={
             'tipo_membro_permitido': Papel.SERVIDOR,
-            'tipo_recurso_autorizado': TipoRecursoReservavel.VEICULO,
             'data_inicio_validade': hoje - timedelta(days=365),
             'data_fim_validade': hoje + timedelta(days=365),
             'criador': servidor,
         },
     )
+    if criado:
+        salvar_autorizacoes_grupo(grupo, [TipoRecursoReservavel.VEICULO], [])
 
     membros_criados = 0
     servidores = HubUser.objects.filter(
@@ -540,8 +542,8 @@ def popular_reservas_veiculos():
         or usuarios[0]
     )
     dados_reservas = [
-        ('Viagem administrativa', 'ABC1D23', 1, time(8), 1, time(12), 'Campus Porto Alegre', 'Reunião institucional', 8, StatusReserva.AGUARDANDO_TERMO),
-        ('Visita técnica', 'DEF4567', 3, time(14), 3, time(18), 'Parque Tecnológico', 'Visita técnica institucional', 4, StatusReserva.AGUARDANDO_TERMO),
+        ('Viagem administrativa', 'ABC1D23', 1, time(8), 1, time(12), 'Campus Porto Alegre', 'Reunião institucional', 8, StatusReserva.PENDENTE),
+        ('Visita técnica', 'DEF4567', 3, time(14), 3, time(18), 'Parque Tecnológico', 'Visita técnica institucional', 4, StatusReserva.PENDENTE),
     ]
 
     criados = 0

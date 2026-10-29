@@ -15,14 +15,6 @@ async function tratarResposta(resposta, mensagemPadrao) {
   return dados;
 }
 
-export async function listarReservasPendentes() {
-  const resposta = await fetch(URL, {
-    credentials: 'include',
-  });
-
-  return tratarResposta(resposta, 'Não foi possível consultar as reservas pendentes.');
-}
-
 export async function confirmarReservaPendente(id) {
   const resposta = await fetch(`${URL}${id}/confirmar/`, {
     method: 'POST',

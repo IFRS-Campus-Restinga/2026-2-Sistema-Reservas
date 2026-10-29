@@ -7,26 +7,23 @@ import CalendarioReserva from '../CalendarioReserva/CalendarioReserva';
 import CamposRecorrencia from '../CamposRecorrencia/CamposRecorrencia';
 import Select from '../Select/Select';
 import { criarReservaArea, atualizarReservaArea } from '../../services/reservasAreas';
-import { TIPO_AREA_LABEL } from '../../utils/tipoArea';
-import { STATUS_RECURSO_LABEL } from '../../utils/statusRecurso';
 import { TURNO_LABEL, PERIODOS_POR_TURNO } from '../../utils/periodosAula';
 import { horarioParaMinutos } from '../../utils/data';
 import {
+  HORARIOS,
+  ajustarPeriodosContiguos,
+  gruposAreaPorBloco,
+  horarioDosPeriodos,
+} from '../../utils/reservaArea';
+import {
   TIPO_RECORRENCIA,
   conflitosRecorrencia,
+  datasConflitantesRecorrencia,
   gerarDatasRecorrencia,
   montarRecorrencia,
   validarRecorrencia,
 } from '../../utils/recorrencia';
 import styles from './ReservaAreaModal.module.css';
-
-const HORARIOS = Array.from({ length: 32 }, (_, indice) => {
-  const total = 7 * 60 + indice * 30;
-  const horas = String(Math.floor(total / 60)).padStart(2, '0');
-  const minutos = String(total % 60).padStart(2, '0');
-
-  return `${horas}:${minutos}`;
-});
 
 // Término sugerido: uma hora depois do início, limitado ao último horário da lista
 function horarioFimSugerido(horarioInicio) {
@@ -36,11 +33,6 @@ function horarioFimSugerido(horarioInicio) {
   );
 
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
-}
-
-function nomeBloco(area, blocos) {
-  const blocoId = typeof area.bloco === 'object' ? area.bloco?.id : area.bloco;
-  return blocos.find((bloco) => String(bloco.id) === String(blocoId));
 }
 
 function ReservaAreaModal({
@@ -71,7 +63,7 @@ function ReservaAreaModal({
   const [recorrente, setRecorrente] = useState(false);
   const [tipoRecorrencia, setTipoRecorrencia] = useState(TIPO_RECORRENCIA.SEMANAL);
   const [dataFimRecorrencia, setDataFimRecorrencia] = useState('');
-  const [conflitos, setConflitos] = useState([]);
+  const [falhaRecorrencia, setFalhaRecorrencia] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState('');
 
@@ -102,7 +94,7 @@ function ReservaAreaModal({
     setRecorrente(false);
     setTipoRecorrencia(TIPO_RECORRENCIA.SEMANAL);
     setDataFimRecorrencia('');
-    setConflitos([]);
+    setFalhaRecorrencia(null);
     setErro('');
   }, [aberto, areaInicial, reservaEdicao, dataInicial, horarioInicial]);
 
@@ -115,34 +107,34 @@ function ReservaAreaModal({
       ? gerarDatasRecorrencia(data, tipoRecorrencia, dataFimRecorrencia).length
       : 1;
 
-  const gruposArea = [...blocos]
-    .sort((a, b) => (a.numero ?? 0) - (b.numero ?? 0))
-    .map((bloco) => ({
-      rotulo: bloco.nome,
-      opcoes: areas
-        .filter((area) => nomeBloco(area, blocos)?.id === bloco.id)
-        .map((area) => ({
-          valor: String(area.id),
-          rotulo: `${area.nome} · ${TIPO_AREA_LABEL[area.tipo] || area.tipo} · ${area.capacidade} pax${
-            area.status !== 'ATIVO'
-              ? ` (${STATUS_RECURSO_LABEL[area.status]?.toLowerCase() || ''})`
-              : ''
-          }`,
-          desabilitado: area.status !== 'ATIVO',
-        })),
-    }))
-    .filter((grupo) => grupo.opcoes.length > 0);
+  const gruposArea = gruposAreaPorBloco(areas, blocos);
 
   const periodosDoTurno = PERIODOS_POR_TURNO[turno];
-  const indicesSelecionados = periodosSelecionados
-    .map((id) => periodosDoTurno.findIndex((periodo) => periodo.id === id))
-    .filter((indice) => indice !== -1);
-  const horarioInicioAula = indicesSelecionados.length
-    ? periodosDoTurno[Math.min(...indicesSelecionados)].inicio
-    : '';
-  const horarioFimAula = indicesSelecionados.length
-    ? periodosDoTurno[Math.max(...indicesSelecionados)].fim
-    : '';
+  const { inicio: horarioInicioAula, fim: horarioFimAula } = horarioDosPeriodos(
+    periodosSelecionados,
+    periodosDoTurno
+  );
+
+  const dadosReserva = {
+    nome: titulo.trim(),
+    descricao: observacoes.trim(),
+    data,
+    horario_inicio: aula ? horarioInicioAula : horarioInicio,
+    horario_fim: aula ? horarioFimAula : horarioFim,
+    area: Number(areaId),
+    aula,
+  };
+
+  const assinaturaPedido = JSON.stringify([
+    dadosReserva.area,
+    data,
+    dadosReserva.horario_inicio,
+    dadosReserva.horario_fim,
+    tipoRecorrencia,
+    dataFimRecorrencia,
+  ]);
+  const falhaAtual =
+    falhaRecorrencia?.assinatura === assinaturaPedido ? falhaRecorrencia : null;
 
   function alterarTurno(novoTurno) {
     setTurno(novoTurno);
@@ -156,22 +148,18 @@ function ReservaAreaModal({
         ? anteriores.filter((item) => item !== id)
         : [...anteriores, id];
 
-      if (atualizados.length === 0) return atualizados;
-
-      const indices = atualizados
-        .map((itemId) => periodosDoTurno.findIndex((periodo) => periodo.id === itemId))
-        .filter((indice) => indice !== -1);
-      const minIndice = Math.min(...indices);
-      const maxIndice = Math.max(...indices);
-
-      return periodosDoTurno.slice(minIndice, maxIndice + 1).map((periodo) => periodo.id);
+      return ajustarPeriodosContiguos(atualizados, periodosDoTurno);
     });
   }
 
-  async function enviar(evento) {
+  function enviar(evento) {
     evento.preventDefault();
+    salvar();
+  }
+
+  async function salvar({ pularConflitos = false } = {}) {
     setErro('');
-    setConflitos([]);
+    setFalhaRecorrencia(null);
 
     if (!areaId) {
       setErro('Selecione uma área.');
@@ -208,34 +196,32 @@ function ReservaAreaModal({
     try {
       setEnviando(true);
 
-      const dados = {
-        nome: titulo.trim(),
-        descricao: observacoes.trim(),
-        data,
-        horario_inicio: aula ? horarioInicioAula : horarioInicio,
-        horario_fim: aula ? horarioFimAula : horarioFim,
-        area: Number(areaId),
-        aula,
-      };
-
       const resultado = reservaEdicao
-        ? await atualizarReservaArea(reservaEdicao.id, dados)
+        ? await atualizarReservaArea(reservaEdicao.id, dadosReserva)
         : await criarReservaArea({
-            ...dados,
+            ...dadosReserva,
             tipo_reserva: usuario?.perfil_acesso === 'convidado' ? 'EXTERNA' : 'INTERNA',
             recorrencia: montarRecorrencia(
               recorrenciaAtiva,
               tipoRecorrencia,
-              dataFimRecorrencia
+              dataFimRecorrencia,
+              pularConflitos
             ),
           });
 
       aoReservar(resultado);
     } catch (erroRequisicao) {
-      const conflitosRequisicao = conflitosRecorrencia(erroRequisicao);
+      const conflitos = conflitosRecorrencia(erroRequisicao);
 
-      setConflitos(conflitosRequisicao);
-      setErro(conflitosRequisicao.length ? '' : erroRequisicao.message);
+      if (conflitos.length) {
+        setFalhaRecorrencia({
+          assinatura: assinaturaPedido,
+          conflitos,
+          datas: datasConflitantesRecorrencia(erroRequisicao),
+        });
+      } else {
+        setErro(erroRequisicao.message);
+      }
     } finally {
       setEnviando(false);
     }
@@ -388,7 +374,10 @@ function ReservaAreaModal({
             dataFim={dataFimRecorrencia}
             aoAlterarDataFim={setDataFimRecorrencia}
             dataInicio={data}
-            conflitos={conflitos}
+            conflitos={falhaAtual?.conflitos}
+            datasConflitantes={falhaAtual?.datas}
+            aoPularConflitos={() => salvar({ pularConflitos: true })}
+            desabilitado={enviando}
           />
         )}
 

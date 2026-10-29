@@ -1,11 +1,13 @@
 from django.utils import timezone
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from api.permissions.regras_comuns import UsuarioAutenticado
+from hub_integrations.authentication import HubJWTAuthenticationOpcional
 
 class DataAtualView(APIView):
-    permission_classes = [UsuarioAutenticado]
+    authentication_classes = [HubJWTAuthenticationOpcional]
+    permission_classes = [AllowAny]
 
     def get(self, request):
         agora = timezone.localtime()

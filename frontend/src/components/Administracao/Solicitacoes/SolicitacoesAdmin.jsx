@@ -258,7 +258,7 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
     } else {
       modal = <ModalDetalheReserva reserva={selecionada} modalidade={modalidade(selecionada)}
         item={selecionada.item} responsavel={selecionada.responsavel} periodo={periodo(selecionada)}
-        administrativo exigeTermo aoFechar={() => setSelecionada(null)}
+        administrativo exigeTermo={selecionada.modalidade !== 'veiculo'} aoFechar={() => setSelecionada(null)}
         detalhes={[
           { rotulo: 'Finalidade', valor: selecionada.finalidade || selecionada.descricao, icone: Info },
           { rotulo: 'Destino', valor: selecionada.destino, icone: MapPin },

@@ -7,6 +7,7 @@ import { extrairMensagemErro } from '../../Grupos/gruposUtils';
 import {
     ACAO_AUDITORIA_LABEL,
     ENTIDADE_AUDITORIA_LABEL,
+    PERFIL_RESPONSAVEL_LABEL,
     formatarDataHoraAuditoria,
     rotuloAcaoAuditoria,
 } from '../../../utils/auditoria';
@@ -19,7 +20,8 @@ import ModalDetalheAuditoria from './ModalDetalheAuditoria/ModalDetalheAuditoria
 const ITENS_POR_PAGINA = 20;
 
 const FILTROS_INICIAIS = {
-    admin: '',
+    responsavel: '',
+    perfil_responsavel: '',
     usuario_afetado: '',
     acao: '',
     entidade: '',
@@ -90,9 +92,16 @@ function AuditoriaAdmin() {
             renderizar: (log) => formatarDataHoraAuditoria(log.data),
         },
         {
-            chave: 'admin',
-            titulo: 'Admin',
-            renderizar: (log) => log.admin_nome || log.admin_email,
+            chave: 'responsavel',
+            titulo: 'Responsável',
+            renderizar: (log) => (
+                <span className={styles.responsavel}>
+                    {log.responsavel_nome || log.responsavel_email}
+                    <span className={styles.perfil} data-perfil={log.perfil_responsavel}>
+                        {PERFIL_RESPONSAVEL_LABEL[log.perfil_responsavel] || log.perfil_responsavel_descricao}
+                    </span>
+                </span>
+            ),
         },
         {
             chave: 'acao',
@@ -138,9 +147,6 @@ function AuditoriaAdmin() {
             <div className={styles.cabecalho}>
                 <div>
                     <h2 className={styles.titulo}>Registros de auditoria</h2>
-                    <p className={styles.subtitulo}>
-                        Ações feitas por administradores em reservas, grupos e cadastros.
-                    </p>
                 </div>
                 {!carregando && (
                     <span className={styles.total}>
@@ -151,13 +157,25 @@ function AuditoriaAdmin() {
 
             <div className={styles.filtros}>
                 <label className={styles.campo}>
-                    Admin
+                    Responsável
                     <input
                         type="search"
                         className={styles.input}
-                        value={filtros.admin}
-                        onChange={(evento) => alterarFiltro('admin', evento.target.value)}
+                        value={filtros.responsavel}
+                        onChange={(evento) => alterarFiltro('responsavel', evento.target.value)}
                         placeholder="Nome ou e-mail"
+                    />
+                </label>
+
+                <label className={styles.campo}>
+                    Perfil
+                    <Select
+                        valor={filtros.perfil_responsavel}
+                        aoAlterar={(valor) => alterarFiltro('perfil_responsavel', valor)}
+                        opcoes={paraOpcoes(PERFIL_RESPONSAVEL_LABEL)}
+                        valorTodos=""
+                        rotuloTodos="Todos os perfis"
+                        ariaLabel="Filtrar por perfil do responsável"
                     />
                 </label>
 

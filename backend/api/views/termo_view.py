@@ -6,6 +6,7 @@ from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
 from api.enumerations import StatusReserva, TipoTermo
 from api.enumerations.status_termo import StatusTermo
 from api.models import Reserva, TermoResponsabilidade
@@ -14,14 +15,14 @@ from api.permissions.reserva_permissions import PodeGerenciarReserva
 from api.permissions.regras_comuns import SomenteAdministrador
 from api.serializers.termo_serializer import AnaliseTermoSerializer
 from api.services.termo_service import (
-    ABERTAS, RESERVAS_VEICULO_ABERTAS, analisar_termo, enviar_termo, modelo_da_reserva, reserva_concreta,
+    ABERTAS, analisar_termo, enviar_termo, modelo_da_reserva, reserva_concreta,
     reserva_exige_termo, resumo_termo, validar_termo_operacional, montar_solicitacao_termo
 )
 
 
 def reservas_com_recurso():
     return Reserva.objects.select_related(
-        'usuario', 'reservaveiculo__veiculo', 'reservarecursogeral__recurso_geral', 'reservarecursogeral__recurso_geral__tipo_recurso',
+        'usuario', 'reservaveiculo__veiculo', 'reservarecursogeral__recurso_geral',
     ).prefetch_related('termos')
 
 
@@ -47,9 +48,12 @@ class TermoReservaView(APIView):
             queryset = Reserva.objects.all()
         reserva = get_object_or_404(queryset, pk=pk)
         self.check_object_permissions(request, reserva)
+        self.validar_modalidade(reserva)
+        return reserva
+
+    def validar_modalidade(self, reserva):
         if not reserva_exige_termo(reserva):
             raise ValidationError('Esta reserva não exige termo de responsabilidade.')
-        return reserva
 
     def get(self, request, pk):
         return Response(resumo_termo(self.obter_reserva(request, pk), request.user))
@@ -74,6 +78,11 @@ class ModeloTermoView(TermoReservaView):
 
 
 class TermoOperacionalView(TermoReservaView):
+    def validar_modalidade(self, reserva):
+        _, modalidade = reserva_concreta(reserva)
+        if modalidade != 'veiculo':
+            raise ValidationError('Este termo está disponível apenas para reservas de veículos.')
+
     def obter_tipo(self, tipo):
         tipos = {
             'retirada': TipoTermo.RETIRADA_VEICULO,
@@ -159,115 +168,63 @@ class SolicitacoesTermoView(APIView):
     permission_classes = [SomenteAdministrador]
 
     def get(self, request):
-        filtro_termo = (
+        queryset = reservas_com_recurso().filter(
             Q(reservaveiculo__isnull=False)
-            | Q(
-                reservarecursogeral__recurso_geral__tem_termo_de_responsabilidade=True
-            )
+            | Q(reservarecursogeral__recurso_geral__tem_termo_de_responsabilidade=True)
         )
-
-        queryset = reservas_com_recurso().filter(filtro_termo).distinct()
-
         modalidade = request.query_params.get('tipo', 'todos')
         status = request.query_params.get('status', 'abertas')
-        documento_parametro = request.query_params.get(
-            'documento',
-            'responsabilidade',
-        )
-
+        documento_parametro = request.query_params.get('documento', 'responsabilidade')
         documentos = {
             'todos': None,
             'responsabilidade': TipoTermo.RESPONSABILIDADE,
             'retirada': TipoTermo.RETIRADA_VEICULO,
             'devolucao': TipoTermo.DEVOLUCAO_VEICULO,
         }
-
         documento = documentos.get(documento_parametro)
-
         if documento_parametro not in documentos:
-            raise ValidationError({
-                'documento': 'Tipo de documento inválido.'
-            })
-
-        if modalidade not in (
-            'todos',
-            'veiculo',
-            'recurso_geral',
-        ):
-            raise ValidationError({
-                'tipo': 'Tipo de solicitação inválido.'
-            })
-
+            raise ValidationError({'documento': 'Tipo de documento inválido.'})
+        if modalidade not in ('todos', 'veiculo', 'recurso_geral'):
+            raise ValidationError({'tipo': 'Tipo de solicitação inválido.'})
         if modalidade != 'todos':
-            relacoes = {
-                'veiculo': 'reservaveiculo',
-                'recurso_geral': 'reservarecursogeral',
-            }
-
-            queryset = queryset.filter(
-                **{f'{relacoes[modalidade]}__isnull': False}
-            )
-
-        if (
-            documento is not None
-            and documento != TipoTermo.RESPONSABILIDADE
-        ):
-            queryset = queryset.filter(
-                termos__tipo=documento,
-                termos__atual=True,
-            )
-
-        elif documento is None:
-            queryset = queryset.filter(
-                Q(status__in=RESERVAS_VEICULO_ABERTAS)
-                | Q(termos__atual=True)
-            ).distinct()
-
+            if modalidade == 'veiculo':
+                relacao = 'reservaveiculo'
+            else:
+                relacao = 'reservarecursogeral'
+            queryset = queryset.filter(**{f'{relacao}__isnull': False})
+        aguardando_termo = (
+            Q(reservarecursogeral__isnull=False, status__in=ABERTAS)
+            | Q(reservaveiculo__isnull=False, status=StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO)
+        )
+        if documento == TipoTermo.RESPONSABILIDADE:
+            queryset = queryset.filter(reservarecursogeral__isnull=False)
+        elif documento is not None:
+            queryset = queryset.filter(termos__tipo=documento, termos__atual=True)
+        else:
+            queryset = queryset.filter(aguardando_termo | Q(termos__atual=True)).distinct()
         if status == 'abertas':
             if documento == TipoTermo.RESPONSABILIDADE:
-                queryset = queryset.filter(
-                    status__in=RESERVAS_VEICULO_ABERTAS
-                )
-
+                queryset = queryset.filter(status__in=ABERTAS)
             elif documento is None:
                 queryset = queryset.filter(
-                    Q(status__in=RESERVAS_VEICULO_ABERTAS)
-                    | Q(
-                        termos__atual=True,
-                        termos__status=StatusTermo.PENDENTE,
-                    )
+                    aguardando_termo
+                    | Q(termos__atual=True, termos__status=StatusTermo.PENDENTE)
                 ).distinct()
-
             else:
-                queryset = queryset.filter(
-                    termos__status=StatusTermo.PENDENTE
-                )
-
+                queryset = queryset.filter(termos__status=StatusTermo.PENDENTE)
         elif status == 'todos':
-            queryset = queryset.exclude(
-                status=StatusReserva.CANCELADA
-            )
-
+            queryset = queryset.exclude(status=StatusReserva.CANCELADA)
         elif status in StatusReserva.values:
             queryset = queryset.filter(status=status)
-
         else:
-            raise ValidationError({
-                'status': 'Status de solicitação inválido.'
-            })
-
+            raise ValidationError({'status': 'Status de solicitação inválido.'})
         paginacao = PaginacaoPadrao()
-        pagina = paginacao.paginate_queryset(
-            queryset.order_by('-data', '-pk'),
-            request,
-        )
-
-        resultados = []
-
-        for reserva in pagina:
-            resultados = [
-            montar_solicitacao_termo(reserva, documento_parametro)
+        pagina = paginacao.paginate_queryset(queryset.order_by('-data', '-pk'), request)
+        resultados = [
+            montar_solicitacao_termo(
+                reserva,
+                documento_parametro,
+            )
             for reserva in pagina
-            ]
-
+        ]
         return paginacao.get_paginated_response(resultados)

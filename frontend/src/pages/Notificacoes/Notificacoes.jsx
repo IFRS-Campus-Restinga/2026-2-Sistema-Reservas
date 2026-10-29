@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUsuario } from "../../hooks/useUsuario";
 import {
@@ -7,15 +7,11 @@ import {
 } from "../../utils/notificacoes";
 import { Check } from "lucide-react";
 
-import {
-  listarNotificacoes,
-  marcarNotificacaoComoLida,
-  marcarTodasNotificacoesComoLidas,
-} from "../../services";
-
 import ModalNotificacao from "../../components/Notificacoes/ModalNotificacao";
 
 import styles from "./Notificacoes.module.css";
+
+import { useNotificacoes } from "../../hooks/useNotificacoes";
 
 function formatarTempo(dataHora) {
   if (!dataHora) return "";
@@ -55,52 +51,21 @@ function formatarTempo(dataHora) {
   return data.toLocaleDateString("pt-BR");
 }
 
-
-function avisarAtualizacao() {
-  window.dispatchEvent(
-    new Event("notificacoes-atualizadas")
-  );
-}
-
-
 function Notificacoes() {
   const navigate = useNavigate();
   const usuario = useUsuario();
 
-  const [notificacoes, setNotificacoes] = useState([]);
-  const [naoLidas, setNaoLidas] = useState(0);
-
-  const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState("");
-
   const [selecionada, setSelecionada] =
     useState(null);
 
-
-  useEffect(() => {
-    carregarNotificacoes();
-  }, []);
-
-
-  async function carregarNotificacoes() {
-    try {
-      setCarregando(true);
-      setErro("");
-
-      const dados = await listarNotificacoes();
-
-      setNotificacoes(dados.notificacoes || []);
-      setNaoLidas(dados.nao_lidas || 0);
-    } catch (falha) {
-      setErro(
-        falha.message ||
-          "Não foi possível carregar as notificações."
-      );
-    } finally {
-      setCarregando(false);
-    }
-  }
-
+  const {
+    notificacoes,
+    naoLidas,
+    carregando,
+    erro,
+    marcarComoLida,
+    marcarTodasComoLidas,
+  } = useNotificacoes();
 
   async function abrirNotificacao(notificacao) {
     let atualizada = notificacao;
@@ -108,23 +73,9 @@ function Notificacoes() {
     if (!notificacao.lida) {
       try {
         atualizada =
-          await marcarNotificacaoComoLida(
+          await marcarComoLida(
             notificacao.id
           );
-
-        setNotificacoes((atuais) =>
-          atuais.map((item) =>
-            item.id === atualizada.id
-              ? atualizada
-              : item
-          )
-        );
-
-        setNaoLidas((quantidade) =>
-          Math.max(0, quantidade - 1)
-        );
-
-        avisarAtualizacao();
       } catch (falha) {
         console.error(falha);
       }
@@ -153,32 +104,6 @@ function Notificacoes() {
 
     setSelecionada(atualizada);
   }
-
-
-  async function marcarTodasComoLidas() {
-    if (naoLidas === 0) return;
-
-    try {
-      await marcarTodasNotificacoesComoLidas();
-
-      setNotificacoes((atuais) =>
-        atuais.map((notificacao) => ({
-          ...notificacao,
-          lida: true,
-        }))
-      );
-
-      setNaoLidas(0);
-
-      avisarAtualizacao();
-    } catch (falha) {
-      setErro(
-        falha.message ||
-          "Não foi possível marcar as notificações como lidas."
-      );
-    }
-  }
-
 
   return (
     <section className={styles.pagina}>
