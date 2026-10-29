@@ -134,6 +134,41 @@
   font-weight: 500;
 }
 
+.acoesDireita {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.botaoSanfona {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid #d1fae5;
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: #047857;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.botaoSanfona:hover {
+  background: #dcfce7;
+  border-color: #a7f3d0;
+}
+
+.iconeSanfona {
+  transition: transform 0.2s ease;
+}
+
+.botaoSanfona[data-expandido="true"] .iconeSanfona {
+  transform: rotate(180deg);
+}
+
 .badgeStatus[data-status="confirmada"] {
   border-color: #bbf7d0;
   background: #dcfce7;

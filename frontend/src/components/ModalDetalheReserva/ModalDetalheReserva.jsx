@@ -42,6 +42,7 @@ function ModalDetalheReserva({
   const tipo = String(reserva.tipo_reserva || '').toLowerCase();
   const status = statusReservaApresentado(reserva);
   const podeCancelar = Boolean(aoCancelar);
+  const exibirDadosRecorrencia = Boolean(reserva.recorrencia && !reserva.ehOcorrenciaIndividual);
 
   function fechar() {
     if (!bloqueado) aoFechar();
@@ -111,10 +112,15 @@ function ModalDetalheReserva({
             <span className={styles.icone}><Clock size={14} /></span>
             <div>
               <span className={styles.rotulo}>Data e horário</span>
-              <strong>{periodo || `${dataFormatada(reserva.data)} · ${reserva.horario_inicio.slice(0, 5)} às ${reserva.horario_fim.slice(0, 5)}`}</strong>
+              <div className={styles.valorDataHorario}>
+                <strong>{periodo || `${dataFormatada(exibirDadosRecorrencia ? (reserva.proxima_data || reserva.data) : reserva.data)} · ${reserva.horario_inicio.slice(0, 5)} às ${reserva.horario_fim.slice(0, 5)}`}</strong>
+                {exibirDadosRecorrencia && (
+                  <span className={styles.chipProximaReserva}>Próxima Reserva</span>
+                )}
+              </div>
             </div>
           </div>
-          {reserva.recorrencia && (
+          {exibirDadosRecorrencia && (
             <>
               <div className={styles.linha}>
                 <span className={styles.icone}><Repeat size={14} /></span>
