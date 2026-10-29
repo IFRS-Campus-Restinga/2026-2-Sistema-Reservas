@@ -6,6 +6,7 @@ import { Bell, LogIn } from "lucide-react";
 import styles from "./Header.module.css";
 
 import NovaReserva from "./NovaReserva/NovaReserva";
+import VisualizarComo from "./VisualizarComo/VisualizarComo";
 import Botao from "../Botao/Botao";
 
 import { PAPEL_USUARIO_LABEL } from "../../utils/usuario";
@@ -147,6 +148,32 @@ function Header({ titulo, usuario }) {
       console.error(erro);
     }
   }
+
+
+  const blocoPerfil = usuario && (
+    <div className="d-flex align-items-center gap-2">
+      <div className="d-none d-sm-flex flex-column align-items-end">
+        <p className="mb-0 small fw-semibold text-dark">
+          {usuario.nome}
+        </p>
+
+        <p
+          className={`mb-0 small ${styles.perfilUsuario}`}
+        >
+          {PAPEL_USUARIO_LABEL[
+            usuario.papel
+          ] ?? usuario.papel}
+        </p>
+      </div>
+
+
+      <div
+        className={`d-flex align-items-center justify-content-center rounded-circle text-white fw-semibold small ${styles.avatar}`}
+      >
+        {iniciaisDoNome(usuario.nome)}
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -338,28 +365,9 @@ function Header({ titulo, usuario }) {
 
           {/* Perfil */}
           {usuario && (
-            <div className="d-flex align-items-center gap-2">
-              <div className="d-none d-sm-flex flex-column align-items-end">
-                <p className="mb-0 small fw-semibold text-dark">
-                  {usuario.nome}
-                </p>
-
-                <p
-                  className={`mb-0 small ${styles.perfilUsuario}`}
-                >
-                  {PAPEL_USUARIO_LABEL[
-                    usuario.papel
-                  ] ?? usuario.papel}
-                </p>
-              </div>
-
-
-              <div
-                className={`d-flex align-items-center justify-content-center rounded-circle text-white fw-semibold small ${styles.avatar}`}
-              >
-                {iniciaisDoNome(usuario.nome)}
-              </div>
-            </div>
+            <VisualizarComo usuario={usuario}>
+              {blocoPerfil}
+            </VisualizarComo>
           )}
         </div>
       </header>

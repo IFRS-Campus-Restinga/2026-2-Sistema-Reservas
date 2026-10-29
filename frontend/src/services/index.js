@@ -1,4 +1,5 @@
 export { buscarUsuarioLogado } from './sessao'
+export { entrarComoPerfilDemonstracao } from './demonstracao'
 export {
   listarRecursosGerais,
   criarRecursoGeral,

@@ -62,6 +62,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'hub_integrations.middleware.RenovarTokenExpiradoMiddleware',
+    'hub_integrations.middleware.LoginDemonstracaoMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -135,6 +136,8 @@ AUTH_COOKIE_SAMESITE = env("AUTH_COOKIE_SAMESITE", default="Lax")
 
 HUB_BASE_URL = env("HUB_BASE_URL", default="http://localhost:8000")
 HUB_SYSTEM_API_KEY = env("HUB_SYSTEM_API_KEY", default="")
+
+MODO_DEMONSTRACAO = env.bool("MODO_DEMONSTRACAO", default=False)
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [

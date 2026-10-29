@@ -23,6 +23,127 @@
   gap: 10px;
 }
 
+.grupoReserva {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.listaOcorrencias {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 390px;
+  overflow-y: auto;
+  padding-left: 16px;
+  padding-right: 4px;
+}
+
+.linhaOcorrencia {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 38px;
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border: 1px solid #a7e9c2;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.linhaOcorrencia[data-tipo="externa"] {
+  border-color: #a9c7ff;
+}
+
+.linhaOcorrencia:hover {
+  background: #f8fdfb;
+}
+
+.barraStatusLinha {
+  width: 5px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: #009a44;
+}
+
+.barraStatusLinha[data-tipo="externa"] {
+  background: #2563eb;
+}
+
+.barraStatusLinha[data-status="cancelada"],
+.barraStatusLinha[data-status="rejeitada"] {
+  background: #94a3b8;
+}
+
+.conteudoLinhaOcorrencia {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.dataLinhaOcorrencia {
+  font-weight: 600;
+  color: #1f2937;
+  white-space: nowrap;
+}
+
+.horarioLinhaOcorrencia {
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.separadorLinha {
+  color: #cbd5e1;
+}
+
+.nomeLinhaOcorrencia {
+  font-weight: 500;
+  color: #374151;
+}
+
+.areaLinhaOcorrencia {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.badgeStatusLinha {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.badgeStatusLinha[data-status="confirmada"] {
+  border-color: #bbf7d0;
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.badgeStatusLinha[data-status="pendente"] {
+  border-color: #fed7aa;
+  background: #ffedd5;
+  color: #ea580c;
+}
+
+.badgeStatusLinha[data-status="cancelada"],
+.badgeStatusLinha[data-status="rejeitada"] {
+  border-color: #e2e8f0;
+  background: #f1f5f9;
+  color: #475569;
+}
+
 .aviso,
 .erro {
   border-radius: 9px;

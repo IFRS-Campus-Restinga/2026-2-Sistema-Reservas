@@ -294,6 +294,10 @@ function Calendario() {
           Reserva interna (aluno / servidor)
         </span>
         <span className="d-flex align-items-center gap-2 small text-secondary fw-medium">
+          <span className={styles.legendaCor} data-tipo="aula" />
+          Reserva de aula (recorrente)
+        </span>
+        <span className="d-flex align-items-center gap-2 small text-secondary fw-medium">
           <span className={styles.legendaCor} data-tipo="externa" />
           Reserva externa (convidado / visitante)
         </span>
@@ -392,13 +396,16 @@ function Calendario() {
                       alturaReserva(reserva.horario_inicio, reserva.horario_fim),
                       20
                     );
+                    const tipoCor = reserva.celula_timetable
+                      ? "aula"
+                      : String(reserva.tipo_reserva).toLowerCase();
 
                     return (
                       <button
-                        key={reserva.id}
+                        key={`${reserva.id}-${reserva.data}`}
                         type="button"
                         className={`${styles.reserva} ${reserva.recorrencia ? styles.recorrente : ""}`}
-                        data-tipo={String(reserva.tipo_reserva).toLowerCase()}
+                        data-tipo={tipoCor}
                         style={{ top: posicaoY(reserva.horario_inicio) + 1, height: altura - 2 }}
                         onClick={() => setReservaDetalhe(reserva)}
                       >
@@ -413,7 +420,6 @@ function Calendario() {
                           </span>
                         )}
                         <span className={styles.reservaTitulo}>
-                          {reserva.aula && "📘 "}
                           {reserva.nome}
                         </span>
                         {altura > 40 && (

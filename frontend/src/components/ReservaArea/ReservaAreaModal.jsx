@@ -58,7 +58,6 @@ function ReservaAreaModal({
   const [periodosSelecionados, setPeriodosSelecionados] = useState([]);
   const [horarioInicio, setHorarioInicio] = useState('08:00');
   const [horarioFim, setHorarioFim] = useState('10:00');
-  const [participantes, setParticipantes] = useState(10);
   const [observacoes, setObservacoes] = useState('');
   const [recorrente, setRecorrente] = useState(false);
   const [tipoRecorrencia, setTipoRecorrencia] = useState(TIPO_RECORRENCIA.SEMANAL);
@@ -89,7 +88,6 @@ function ReservaAreaModal({
       reservaEdicao?.horario_fim?.slice(0, 5) ||
         (horarioInicial ? horarioFimSugerido(horarioInicial) : '10:00')
     );
-    setParticipantes(10);
     setObservacoes(reservaEdicao?.descricao || '');
     setRecorrente(false);
     setTipoRecorrencia(TIPO_RECORRENCIA.SEMANAL);
@@ -97,8 +95,6 @@ function ReservaAreaModal({
     setFalhaRecorrencia(null);
     setErro('');
   }, [aberto, areaInicial, reservaEdicao, dataInicial, horarioInicial]);
-
-  const areaSelecionada = areas.find((area) => String(area.id) === areaId);
 
   // A recorrência só é definida na criação, a edição altera apenas a reserva aberta
   const recorrenciaAtiva = recorrente && !reservaEdicao;
@@ -181,12 +177,6 @@ function ReservaAreaModal({
       return;
     }
 
-    if (participantes < 1 || (areaSelecionada && participantes > areaSelecionada.capacidade)) {
-      setErro(
-        `Número de participantes acima da capacidade da área (${areaSelecionada?.capacidade} pax).`
-      );
-      return;
-    }
 
     // O erro da recorrência já é exibido dentro de CamposRecorrencia
     if (recorrenciaAtiva && validarRecorrencia(data, tipoRecorrencia, dataFimRecorrencia)) {
@@ -380,23 +370,6 @@ function ReservaAreaModal({
             desabilitado={enviando}
           />
         )}
-
-        <Form.Group>
-          <Form.Label>Número de participantes</Form.Label>
-          <Form.Control
-            type="number"
-            min={1}
-            max={areaSelecionada?.capacidade || 999}
-            value={participantes}
-            onChange={(evento) => setParticipantes(Number(evento.target.value))}
-            required
-          />
-          {areaSelecionada && participantes > areaSelecionada.capacidade && (
-            <Form.Text className="text-danger">
-              Acima da capacidade da área ({areaSelecionada.capacidade} pax).
-            </Form.Text>
-          )}
-        </Form.Group>
 
         <Form.Group>
           <Form.Label>Finalidade</Form.Label>
