@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
@@ -15,4 +16,5 @@ def quem_sou_eu(request):
         'papel': usuario.papel,
         'permissoes': permissoes_do_usuario(usuario),
         'autorizacoes': resumo_autorizacoes(usuario),
+        'modo_demonstracao': settings.MODO_DEMONSTRACAO,
     })
