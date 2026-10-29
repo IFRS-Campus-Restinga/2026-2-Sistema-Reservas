@@ -223,7 +223,7 @@ def popular():
                 reservas_areas.append(ReservaArea.objects.create(
                     nome=f'Encontro no {NOMES_AREAS[indice]}',
                     descricao='Atividade fictícia para testar a listagem de reservas.',
-                    status=StatusReserva.PENDENTE, data=data_reserva,
+                    status=StatusReserva.CONFIRMADA, data=data_reserva,
                     horario_inicio=time(9, 0), horario_fim=time(10, 0),
                     tipo_reserva=TipoReserva.INTERNA, usuario=administrador,
                     area=areas[indice], aula=False,
@@ -231,7 +231,8 @@ def popular():
                 reservas_recursos.append(ReservaRecursoGeral.objects.create(
                     nome=f'Oficina {NOMES_GRUPOS[indice]}',
                     descricao='Reserva fictícia para validar filtros e paginação.',
-                    status=StatusReserva.PENDENTE, data=data_reserva,
+                    status=(StatusReserva.AGUARDANDO_TERMO if recursos[indice].tem_termo_de_responsabilidade
+                            else StatusReserva.CONFIRMADA), data=data_reserva,
                     horario_inicio=time(10, 0), horario_fim=time(11, 0),
                     tipo_reserva=TipoReserva.INTERNA, usuario=administrador,
                     recurso_geral=recursos[indice], data_devolucao_prevista=data_reserva,
