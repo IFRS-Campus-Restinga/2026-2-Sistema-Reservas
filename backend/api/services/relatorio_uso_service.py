@@ -20,7 +20,6 @@ FIM_OPERACAO = time(23)
 HORAS_OPERACAO_DIA = 16
 STATUS_DESCARTADOS = ('CANCELADA', 'REJEITADA')
 MODALIDADES = ('area', 'veiculo', 'recurso_geral')
-LIMITE_REGISTROS = 5000
 
 
 def _modalidade_e_item(reserva):
@@ -122,14 +121,6 @@ def gerar_relatorio(parametros, periodo_inicio, periodo_fim):
         reservas = reservas.filter(filtro).distinct()
     if parametros.get('incluir_canceladas') != 'true':
         reservas = reservas.exclude(status__in=STATUS_DESCARTADOS)
-    if reservas.count() > LIMITE_REGISTROS:
-        raise ValidationError({
-            'detail': (
-                f'O relatório ultrapassa {LIMITE_REGISTROS} registros. '
-                'Reduza o período ou aplique mais filtros.'
-            ),
-        })
-
     ocorrencias = []
     for reserva in reservas:
         area = getattr(reserva, 'reservaarea', None)
@@ -138,12 +129,8 @@ def gerar_relatorio(parametros, periodo_inicio, periodo_fim):
                 ocorrencia = copy(reserva)
                 ocorrencia.data = projetada.data
                 ocorrencias.append(ocorrencia)
-                if len(ocorrencias) > LIMITE_REGISTROS:
-                    raise ValidationError({'detail': f'O relatório ultrapassa {LIMITE_REGISTROS} registros. Reduza o período ou aplique mais filtros.'})
         else:
             ocorrencias.append(reserva)
-        if len(ocorrencias) > LIMITE_REGISTROS:
-            raise ValidationError({'detail': f'O relatório ultrapassa {LIMITE_REGISTROS} registros. Reduza o período ou aplique mais filtros.'})
 
     resultados = []
     grupos = defaultdict(lambda: {'total_reservas': 0, 'total_horas': 0})
