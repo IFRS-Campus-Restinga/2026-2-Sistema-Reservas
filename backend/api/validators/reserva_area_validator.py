@@ -35,16 +35,7 @@ def validar_disponibilidade_area(dados, excluir_reserva=None):
     inicio = datetime.combine(dados["data"], dados["horario_inicio"])
     fim = datetime.combine(dados["data"], dados["horario_fim"])
 
-    status_ativos = [StatusReserva.PENDENTE, StatusReserva.CONFIRMADA]
-
-    reservas = ReservaArea.objects.filter(
-        area=area,
-        status__in=status_ativos,
-        data=dados["data"],
-    )
-
-    if excluir_reserva is not None:
-        reservas = reservas.exclude(pk=excluir_reserva)
+    reservas = reservas_ativas_area(area, [dados["data"]], excluir_reserva)
 
     for reserva in reservas:
         inicio_reserva = datetime.combine(reserva.data, reserva.horario_inicio)
@@ -54,3 +45,14 @@ def validar_disponibilidade_area(dados, excluir_reserva=None):
             raise ValidationError(
                 {"horario_inicio": "Já existe uma reserva nesse período para essa área."}
             )
+
+
+def reservas_ativas_area(area, datas, excluir_reserva=None):
+    """Consulta compartilhada pelo calendário e pela validação de reservas."""
+    reservas = ReservaArea.objects.filter(
+        area=area, data__in=datas,
+        status__in=[StatusReserva.PENDENTE, StatusReserva.CONFIRMADA],
+    )
+    if excluir_reserva is not None:
+        reservas = reservas.exclude(pk=excluir_reserva)
+    return reservas

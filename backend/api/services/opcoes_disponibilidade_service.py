@@ -4,11 +4,11 @@ from datetime import date, datetime, time, timedelta
 from django.db.models import Q
 from django.utils import timezone
 
-from api.enumerations import StatusReserva, StatusRecurso
+from api.enumerations import StatusRecurso
 from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
 from api.models.area_model import Area
 from api.models.recurso_geral_model import RecursoGeral
-from api.models.reserva_area_model import ReservaArea
+from api.validators.reserva_area_validator import reservas_ativas_area
 from api.models.reserva_recurso_geral_model import ReservaRecursoGeral
 from api.models.reserva_veiculo_model import ReservaVeiculo
 from api.models.veiculo_model import Veiculo
@@ -68,12 +68,7 @@ def opcoes_area(recurso_id, ano, mes, excluir_reserva=None, usuario=None):
         usuario, TipoRecursoReservavel.AREA, data=dia,
     )]
     intervalos = {dia: [] for dia in datas}
-    reservas = ReservaArea.objects.filter(
-        area=area, data__in=datas,
-        status__in=[StatusReserva.PENDENTE, StatusReserva.CONFIRMADA],
-    )
-    if excluir_reserva:
-        reservas = reservas.exclude(pk=excluir_reserva)
+    reservas = reservas_ativas_area(area, datas, excluir_reserva)
     for reserva in reservas:
         intervalos[reserva.data].append((
             datetime.combine(reserva.data, reserva.horario_inicio),
