@@ -1,5 +1,6 @@
 import SelectRemoto from '../SelectRemoto/SelectRemoto';
 import useListaPaginada from '../../hooks/useListaPaginada';
+import useDisponibilidadeReserva, { intervaloDisponivel } from '../../hooks/useDisponibilidadeReserva';
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Clock3 } from 'lucide-react';
@@ -88,6 +89,10 @@ function ReservaVeiculoModal({
   }, [aberto, veiculoInicial, reservaEdicao]);
 
   const veiculo = consultaVeiculo.itens[0] || veiculoInicial;
+  const disponibilidade = useDisponibilidadeReserva({
+    tipo: 'VEICULO', recurso: veiculoId, mes: mesSaida,
+    excluirReserva: reservaEdicao?.id,
+  }, aberto && Boolean(veiculoId));
   const intervaloCompleto = Boolean(
     veiculoId && data && dataRetorno && horarioInicio && horarioFim &&
     new Date(`${dataRetorno}T${horarioFim}:00`) > new Date(`${data}T${horarioInicio}:00`)
@@ -150,11 +155,20 @@ function ReservaVeiculoModal({
     setHorarioFim('');
   }
 
-  const horariosSaida = opcoesHorario(data, reservaEdicao?.data === data ? horarioInicio : '');
+  const mesExibido = `${mesSaida.getFullYear()}-${String(mesSaida.getMonth() + 1).padStart(2, '0')}`;
+  const disponibilidadeSaida = data.startsWith(mesExibido)
+    ? (disponibilidade.horarios[data] || [])
+    : null;
+  const horariosSaida = opcoesHorario(data, reservaEdicao?.data === data ? horarioInicio : '')
+    .filter((horario) => disponibilidadeSaida === null || disponibilidadeSaida.includes(horario));
   const horariosRetorno = opcoesHorario(
     dataRetorno,
     reservaEdicao?.data_devolucao_prevista === dataRetorno ? horarioFim : ''
-  ).filter((horario) => dataRetorno !== data || horario > horarioInicio);
+  ).filter((horario) => {
+    if (!(disponibilidade.horarios[dataRetorno] || []).includes(horario)) return false;
+    return dataRetorno !== data ||
+      (horario > horarioInicio && intervaloDisponivel(disponibilidade.horarios[data] || [], horarioInicio, horario));
+  });
 
   async function enviar(evento) {
     evento.preventDefault();
@@ -235,7 +249,10 @@ function ReservaVeiculoModal({
 
         <label>
           Veículo
-          <SelectRemoto url="/api/veiculos/" ativo={aberto} filtros={{ status: 'ATIVO' }} required ariaLabel="Veículo" valor={veiculoId} aoAlterar={(valor) => { setVeiculoId(valor); setDisponivel(null); }} />
+          <SelectRemoto url="/api/veiculos/" ativo={aberto}
+            filtros={{ status: 'ATIVO', page_size: 100 }} mostrarBusca={false}
+            required ariaLabel="Veículo" valor={veiculoId}
+            aoAlterar={(valor) => { setVeiculoId(valor); setData(''); setDataRetorno(''); setHorarioInicio(''); setHorarioFim(''); setDisponivel(null); }} />
         </label>
 
         <div className={styles.campo}>
@@ -247,6 +264,9 @@ function ReservaVeiculoModal({
             selecionar={escolherData}
             inicioPeriodo={data}
             fimPeriodo={dataRetorno}
+            datasDisponiveis={disponibilidade.diasDisponiveis}
+            carregandoDisponibilidade={disponibilidade.carregando}
+            erroDisponibilidade={disponibilidade.erro}
           />
           <small>
             {!data

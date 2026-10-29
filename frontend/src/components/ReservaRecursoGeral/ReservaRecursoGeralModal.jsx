@@ -1,5 +1,6 @@
 import SelectRemoto from '../SelectRemoto/SelectRemoto';
 import useListaPaginada from '../../hooks/useListaPaginada';
+import useDisponibilidadeReserva, { intervaloDisponivel } from '../../hooks/useDisponibilidadeReserva';
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
@@ -71,6 +72,23 @@ function ReservaRecursoGeralModal({
   const tipoSelecionado = consultaTipo.itens[0];
   const consultaRecurso = useListaPaginada('/api/recursos-gerais/', { id: recursoId }, aberto && Boolean(recursoId));
   const recurso = consultaRecurso.itens[0];
+  const disponibilidade = useDisponibilidadeReserva({
+    tipo: 'RECURSO_GERAL', recurso: recursoId, mes, quantidade,
+    excluirReserva: reservaEdicao?.id,
+  }, aberto && Boolean(recursoId));
+  const horariosDoDia = disponibilidade.horarios[data] || [];
+  const horariosInicioDisponiveis = HORARIOS.filter((horario) => horariosDoDia.includes(horario));
+  const horariosFimDisponiveis = HORARIOS.filter(
+    (horario) => horario > horarioInicio && intervaloDisponivel(horariosDoDia, horarioInicio, horario)
+  );
+
+  function selecionarDataDisponivel(novaData) {
+    setData(novaData);
+    const primeiro = disponibilidade.horarios[novaData]?.[0] || '';
+    setHorarioInicio(primeiro);
+    const indice = HORARIOS.indexOf(primeiro);
+    setHorarioFim(indice >= 0 ? HORARIOS[Math.min(indice + 2, HORARIOS.length - 1)] : '');
+  }
 
   const prazoLongo = recurso?.tipo_prazo === 'LONGO_PRAZO';
   const devolucaoEscolhida = prazoLongo ? dataDevolucao : data;
@@ -141,6 +159,9 @@ function ReservaRecursoGeralModal({
 
   function selecionarRecurso(id) {
     setRecursoId(id);
+    setData('');
+    setHorarioInicio('');
+    setHorarioFim('');
     setQuantidade(1);
     setDataDevolucao('');
     setDisponiveisPeriodo(null);
@@ -238,12 +259,17 @@ function ReservaRecursoGeralModal({
         </label>
 
         <label>Tipo de recurso
-          <SelectRemoto url="/api/tipos-recurso/" ativo={aberto} required ariaLabel="Tipo de recurso" valor={tipoId} aoAlterar={selecionarTipo} />
+          <SelectRemoto url="/api/tipos-recurso/" ativo={aberto}
+            filtros={{ page_size: 100 }} mostrarBusca={false}
+            required ariaLabel="Tipo de recurso" valor={tipoId} aoAlterar={selecionarTipo} />
         </label>
 
         <label>
           Item específico
-          <SelectRemoto url="/api/recursos-gerais/" ativo={aberto} filtros={{ tipo_recurso: tipoId, disponiveis: true }} required ariaLabel="Item específico" valor={recursoId} aoAlterar={selecionarRecurso} disabled={!tipoId} />
+          <SelectRemoto url="/api/recursos-gerais/" ativo={aberto}
+            filtros={{ tipo_recurso: tipoId, disponiveis: true, page_size: 100 }} mostrarBusca={false}
+            required ariaLabel="Item específico" valor={recursoId}
+            aoAlterar={selecionarRecurso} disabled={!tipoId} />
         </label>
 
         {recurso && (
@@ -259,7 +285,10 @@ function ReservaRecursoGeralModal({
             mes={mes}
             alterarMes={setMes}
             selecionada={data}
-            selecionar={setData}
+            selecionar={selecionarDataDisponivel}
+            datasDisponiveis={disponibilidade.diasDisponiveis}
+            carregandoDisponibilidade={disponibilidade.carregando}
+            erroDisponibilidade={disponibilidade.erro}
           />
         </div>
 
@@ -270,7 +299,8 @@ function ReservaRecursoGeralModal({
               value={horarioInicio}
               onChange={(evento) => setHorarioInicio(evento.target.value)}
             >
-              {HORARIOS.map((horario) => (
+              <option value="">Selecione</option>
+              {horariosInicioDisponiveis.map((horario) => (
                 <option key={horario} value={horario}>
                   {horario}
                 </option>
@@ -284,7 +314,8 @@ function ReservaRecursoGeralModal({
               value={horarioFim}
               onChange={(evento) => setHorarioFim(evento.target.value)}
             >
-              {HORARIOS.map((horario) => (
+              <option value="">Selecione</option>
+              {horariosFimDisponiveis.map((horario) => (
                 <option key={horario} value={horario}>
                   {horario}
                 </option>
@@ -300,7 +331,12 @@ function ReservaRecursoGeralModal({
             min={1}
             max={limite || 1}
             value={quantidade}
-            onChange={(evento) => setQuantidade(Number(evento.target.value))}
+            onChange={(evento) => {
+              setQuantidade(Number(evento.target.value));
+              setData('');
+              setHorarioInicio('');
+              setHorarioFim('');
+            }}
             required
             disabled={!recurso}
           />

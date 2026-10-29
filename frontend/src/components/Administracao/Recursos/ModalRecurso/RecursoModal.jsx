@@ -158,7 +158,10 @@ function RecursoModal({
                 <div className={styles.linhaDupla}>
                     <div className={styles.campo}>
                         <label htmlFor="tipo_recurso">Tipo de recurso *</label>
-                        <SelectRemoto id="tipo_recurso" url="/api/tipos-recurso/" ativo={aberto} required ariaLabel="Tipo de recurso" valor={formulario.tipo_recurso} aoAlterar={(valor) => alterarCampo({ target: { name: 'tipo_recurso', value: valor } })} />
+                        <SelectRemoto id="tipo_recurso" url="/api/tipos-recurso/" ativo={aberto}
+                            filtros={{ page_size: 100 }} mostrarBusca={false} required
+                            ariaLabel="Tipo de recurso" valor={formulario.tipo_recurso}
+                            aoAlterar={(valor) => alterarCampo({ target: { name: 'tipo_recurso', value: valor } })} />
                         {mensagemErro('tipo_recurso')}
                     </div>
 

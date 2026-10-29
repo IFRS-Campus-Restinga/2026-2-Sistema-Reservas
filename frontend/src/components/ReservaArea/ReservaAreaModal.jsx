@@ -1,5 +1,6 @@
 import SelectRemoto from '../SelectRemoto/SelectRemoto';
 import useListaPaginada from '../../hooks/useListaPaginada';
+import useDisponibilidadeReserva, { intervaloDisponivel } from '../../hooks/useDisponibilidadeReserva';
 import { useEffect, useState } from 'react';
 import { Form, Alert } from 'react-bootstrap';
 import { CheckCircle2 } from 'lucide-react';
@@ -42,6 +43,7 @@ function ReservaAreaModal({
   aoReservar,
 }) {
   const [areaId, setAreaId] = useState('');
+  const [blocoId, setBlocoId] = useState('');
   const [titulo, setTitulo] = useState('');
   const [data, setData] = useState('');
   const [mes, setMes] = useState(
@@ -65,6 +67,7 @@ function ReservaAreaModal({
     if (!aberto) return;
 
     setAreaId(String(reservaEdicao?.area || areaInicial?.id || ''));
+    setBlocoId(String(reservaEdicao?.area_detalhe?.bloco || areaInicial?.bloco || ''));
     setTitulo(reservaEdicao?.nome || '');
     const dataPreenchida = reservaEdicao?.data || dataInicial || '';
     const inicioPreenchido = reservaEdicao?.horario_inicio?.slice(0, 5) || horarioInicial;
@@ -94,6 +97,36 @@ function ReservaAreaModal({
 
   const consultaArea = useListaPaginada('/api/areas/', { id: areaId }, aberto && Boolean(areaId));
   const areaSelecionada = consultaArea.itens[0];
+  const disponibilidade = useDisponibilidadeReserva({
+    tipo: 'AREA', recurso: areaId, mes,
+    excluirReserva: reservaEdicao?.id,
+  }, aberto && Boolean(areaId));
+  const horariosDoDia = disponibilidade.horarios[data] || [];
+  const horariosInicioDisponiveis = HORARIOS.filter((horario) => horariosDoDia.includes(horario));
+  const horariosFimDisponiveis = HORARIOS.filter(
+    (horario) => horario > horarioInicio && intervaloDisponivel(horariosDoDia, horarioInicio, horario)
+  );
+
+  function selecionarDataDisponivel(novaData) {
+    setData(novaData);
+    const primeiro = disponibilidade.horarios[novaData]?.[0] || '';
+    setHorarioInicio(primeiro);
+    setHorarioFim(primeiro ? horarioFimSugerido(primeiro) : '');
+    setPeriodosSelecionados([]);
+  }
+
+  function selecionarAreaDisponivel(novoId) {
+    setAreaId(novoId);
+    setData('');
+    setHorarioInicio('');
+    setHorarioFim('');
+    setPeriodosSelecionados([]);
+  }
+
+  function selecionarBloco(novoId) {
+    setBlocoId(novoId);
+    selecionarAreaDisponivel('');
+  }
 
   // A recorrência só é definida na criação, a edição altera apenas a reserva aberta
   const recorrenciaAtiva = recorrente && !reservaEdicao;
@@ -238,14 +271,26 @@ function ReservaAreaModal({
         </Form.Group>
 
         <Form.Group>
+          <Form.Label>Bloco</Form.Label>
+          <SelectRemoto url="/api/blocos/" ativo={aberto}
+            filtros={{ page_size: 100 }} mostrarBusca={false}
+            valor={blocoId} aoAlterar={selecionarBloco}
+            valorTodos="" rotuloTodos="Selecione um bloco"
+            ariaLabel="Bloco" required larguraTotal
+          />
+        </Form.Group>
+
+        <Form.Group>
           <Form.Label>Área</Form.Label>
-          <SelectRemoto url="/api/areas/" ativo={aberto} filtros={{ disponiveis: true }}
+          <SelectRemoto url="/api/areas/" ativo={aberto && Boolean(blocoId)}
+            filtros={{ disponiveis: true, bloco: blocoId, page_size: 100 }} mostrarBusca={false}
             valor={areaId}
-            aoAlterar={setAreaId}
+            aoAlterar={selecionarAreaDisponivel}
             valorTodos=""
             rotuloTodos="Selecione uma área"
             ariaLabel="Área"
             required
+            disabled={!blocoId}
             larguraTotal
           />
         </Form.Group>
@@ -256,7 +301,10 @@ function ReservaAreaModal({
             mes={mes}
             alterarMes={setMes}
             selecionada={data}
-            selecionar={setData}
+            selecionar={selecionarDataDisponivel}
+            datasDisponiveis={disponibilidade.diasDisponiveis}
+            carregandoDisponibilidade={disponibilidade.carregando}
+            erroDisponibilidade={disponibilidade.erro}
           />
         </Form.Group>
 
@@ -309,6 +357,7 @@ function ReservaAreaModal({
                       label={`${periodo.numero}º período (${periodo.inicio}–${periodo.fim})`}
                       checked={periodosSelecionados.includes(periodo.id)}
                       onChange={() => alternarPeriodo(periodo.id)}
+                      disabled={!data || !intervaloDisponivel(horariosDoDia, periodo.inicio, periodo.fim)}
                     />
                   </div>
                 ))}
@@ -323,7 +372,8 @@ function ReservaAreaModal({
                 value={horarioInicio}
                 onChange={(evento) => setHorarioInicio(evento.target.value)}
               >
-                {HORARIOS.map((horario) => (
+                <option value="">Selecione</option>
+                {horariosInicioDisponiveis.map((horario) => (
                   <option key={horario} value={horario}>
                     {horario}
                   </option>
@@ -337,7 +387,8 @@ function ReservaAreaModal({
                 value={horarioFim}
                 onChange={(evento) => setHorarioFim(evento.target.value)}
               >
-                {HORARIOS.map((horario) => (
+                <option value="">Selecione</option>
+                {horariosFimDisponiveis.map((horario) => (
                   <option key={horario} value={horario}>
                     {horario}
                   </option>

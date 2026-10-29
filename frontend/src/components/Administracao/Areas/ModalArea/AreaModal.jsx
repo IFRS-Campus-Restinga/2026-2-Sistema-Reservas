@@ -169,7 +169,10 @@ function AreaModal({
                         <label htmlFor="bloco">
                             Bloco *
                         </label>
-                        <SelectRemoto id="bloco" url="/api/blocos/" ativo={aberto} required ariaLabel="Bloco" valor={formulario.bloco} aoAlterar={(valor) => alterarCampo({ target: { name: 'bloco', value: valor } })} />
+                        <SelectRemoto id="bloco" url="/api/blocos/" ativo={aberto}
+                            filtros={{ page_size: 100 }} mostrarBusca={false} required
+                            ariaLabel="Bloco" valor={formulario.bloco}
+                            aoAlterar={(valor) => alterarCampo({ target: { name: 'bloco', value: valor } })} />
                         {mensagemErro('bloco')}
                     </div>
                 </div>
