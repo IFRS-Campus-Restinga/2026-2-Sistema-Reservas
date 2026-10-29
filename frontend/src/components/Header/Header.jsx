@@ -2,11 +2,15 @@ import useListaPaginada from '../../hooks/useListaPaginada';
 import Paginacao from '../Administracao/Paginacao/Paginacao';
 import { useEffect, useRef, useState } from "react";
 import { Button } from "react-bootstrap";
-import { Bell, Box, Building2, Car, ChevronDown, Plus } from "lucide-react";
+import { Bell, LogIn } from "lucide-react";
 
 import styles from "./Header.module.css";
 
+import NovaReserva from "./NovaReserva/NovaReserva";
+import Botao from "../Botao/Botao";
+
 import { PAPEL_USUARIO_LABEL } from "../../utils/usuario";
+import { HUB_URL } from "../../config/hub";
 
 import { marcarNotificacaoComoLida } from "../../services";
 
@@ -35,15 +39,7 @@ function formatarDataHora(dataHora) {
 }
 
 
-function Header({
-  titulo,
-  usuario,
-  aoReservarEspaco,
-  aoReservarVeiculo,
-  aoReservarRecursoGeral,
-}) {
-  const [menuReservaAberto, setMenuReservaAberto] = useState(false);
-
+function Header({ titulo, usuario }) {
   const [notificacoesAbertas, setNotificacoesAbertas] = useState(false);
   const consultaNotificacoes = useListaPaginada('/api/notificacoes/', {}, Boolean(usuario));
   const notificacoes = consultaNotificacoes.itens;
@@ -55,19 +51,11 @@ function Header({
   const [notificacaoSelecionada, setNotificacaoSelecionada] =
     useState(null);
 
-  const containerReservaRef = useRef(null);
   const containerNotificacoesRef = useRef(null);
 
 
   useEffect(() => {
     function fecharAoClicarFora(evento) {
-      if (
-        containerReservaRef.current &&
-        !containerReservaRef.current.contains(evento.target)
-      ) {
-        setMenuReservaAberto(false);
-      }
-
       if (
         containerNotificacoesRef.current &&
         !containerNotificacoesRef.current.contains(evento.target)
@@ -79,7 +67,6 @@ function Header({
 
     function fecharComEsc(evento) {
       if (evento.key === "Escape") {
-        setMenuReservaAberto(false);
         setNotificacoesAbertas(false);
       }
     }
@@ -95,16 +82,9 @@ function Header({
   }, []);
 
 
-  function escolherReserva(acao) {
-    setMenuReservaAberto(false);
-    acao?.();
-  }
-
-
   async function alternarNotificacoes() {
     const vaiAbrir = !notificacoesAbertas;
 
-    setMenuReservaAberto(false);
     setNotificacoesAbertas(vaiAbrir);
 
     if (vaiAbrir) {
@@ -156,214 +136,147 @@ function Header({
         <div className="d-flex align-items-center gap-2 flex-shrink-0">
 
           {/* Nova reserva */}
-          <div
-            className="position-relative"
-            ref={containerReservaRef}
-          >
-            <Button
-              type="button"
-              variant="success"
-              size="sm"
-              className="d-flex align-items-center gap-2 px-3"
-              onClick={() =>
-                setMenuReservaAberto((aberto) => !aberto)
-              }
-              aria-expanded={menuReservaAberto}
-              aria-haspopup="menu"
-            >
-              <Plus size={15} />
-
-              <span>Nova reserva</span>
-
-              <ChevronDown
-                size={14}
-                className={
-                  menuReservaAberto
-                    ? styles.setaAberta
-                    : ""
-                }
-              />
-            </Button>
+          <NovaReserva usuario={usuario} />
 
 
-            {menuReservaAberto && (
-              <div
-                className={styles.menuReserva}
-                role="menu"
-              >
-                <button
-                  type="button"
-                  className={styles.itemReserva}
-                  onClick={() =>
-                    escolherReserva(aoReservarEspaco)
-                  }
-                  role="menuitem"
-                >
-                  <Building2 size={16} />
-
-                  <span>Reservar espaço</span>
-                </button>
-
-
-                <button
-                  type="button"
-                  className={styles.itemReserva}
-                  onClick={() =>
-                    escolherReserva(aoReservarVeiculo)
-                  }
-                  role="menuitem"
-                >
-                  <Car size={16} />
-
-                  <span>Reservar veículo</span>
-                </button>
-
-
-                <button
-                  type="button"
-                  className={styles.itemReserva}
-                  onClick={() =>
-                    escolherReserva(
-                      aoReservarRecursoGeral
-                    )
-                  }
-                  role="menuitem"
-                >
-                  <Box size={16} />
-
-                  <span>Reservar recurso geral</span>
-                </button>
-              </div>
-            )}
-          </div>
+          {/* Visitante */}
+          {!usuario && (
+            <Botao
+              titulo="Entrar"
+              icone={LogIn}
+              aoClicar={() => (window.location.href = HUB_URL)}
+            />
+          )}
 
 
           {/* Notificações */}
-          <div
-            className="position-relative"
-            ref={containerNotificacoesRef}
-          >
-            <Button
-              type="button"
-              variant="light"
-              className={`position-relative d-flex align-items-center justify-content-center border-0 p-2 ${styles.botaoNotificacao}`}
-              aria-label={
-                naoLidas
-                  ? `Notificações: ${naoLidas} não lida${
-                      naoLidas === 1 ? "" : "s"
-                    }`
-                  : "Notificações"
-              }
-              aria-expanded={notificacoesAbertas}
-              aria-haspopup="menu"
-              onClick={alternarNotificacoes}
+          {usuario && (
+            <div
+              className="position-relative"
+              ref={containerNotificacoesRef}
             >
-              <Bell size={18} />
-
-              {naoLidas > 0 && (
-                <span
-                  className={styles.contadorNotificacoes}
-                >
-                  {naoLidas > 9 ? "9+" : naoLidas}
-                </span>
-              )}
-            </Button>
-
-
-            {notificacoesAbertas && (
-              <div
-                className={styles.menuNotificacoes}
-                role="menu"
+              <Button
+                type="button"
+                variant="light"
+                className={`position-relative d-flex align-items-center justify-content-center border-0 p-2 ${styles.botaoNotificacao}`}
+                aria-label={
+                  naoLidas
+                    ? `Notificações: ${naoLidas} não lida${
+                        naoLidas === 1 ? "" : "s"
+                      }`
+                    : "Notificações"
+                }
+                aria-expanded={notificacoesAbertas}
+                aria-haspopup="menu"
+                onClick={alternarNotificacoes}
               >
+                <Bell size={18} />
+
+                {naoLidas > 0 && (
+                  <span
+                    className={styles.contadorNotificacoes}
+                  >
+                    {naoLidas > 9 ? "9+" : naoLidas}
+                  </span>
+                )}
+              </Button>
+
+
+              {notificacoesAbertas && (
                 <div
-                  className={styles.cabecalhoNotificacoes}
+                  className={styles.menuNotificacoes}
+                  role="menu"
                 >
-                  <strong>Notificações</strong>
+                  <div
+                    className={styles.cabecalhoNotificacoes}
+                  >
+                    <strong>Notificações</strong>
 
-                  {naoLidas > 0 && (
-                    <span>
-                      {naoLidas} não lida
-                      {naoLidas === 1 ? "" : "s"}
-                    </span>
-                  )}
-                </div>
+                    {naoLidas > 0 && (
+                      <span>
+                        {naoLidas} não lida
+                        {naoLidas === 1 ? "" : "s"}
+                      </span>
+                    )}
+                  </div>
 
 
-                <div
-                  className={styles.listaNotificacoes}
-                >
-                  {carregandoNotificacoes ? (
-                    <p
-                      className={
-                        styles.estadoNotificacoes
-                      }
-                    >
-                      Carregando...
-                    </p>
-                  ) : erroNotificacoes ? (
-                    <p
-                      className={`${styles.estadoNotificacoes} ${styles.erroNotificacoes}`}
-                    >
-                      {erroNotificacoes}
-                    </p>
-                  ) : notificacoes.length === 0 ? (
-                    <p
-                      className={
-                        styles.estadoNotificacoes
-                      }
-                    >
-                      Nenhuma notificação por enquanto.
-                    </p>
-                  ) : (
-                    notificacoes.map((notificacao) => (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        key={notificacao.id}
-                        className={`${
-                          styles.itemNotificacao
-                        } ${
-                          notificacao.lida
-                            ? ""
-                            : styles.naoLida
-                        }`}
-                        onClick={() =>
-                          abrirNotificacao(notificacao)
+                  <div
+                    className={styles.listaNotificacoes}
+                  >
+                    {carregandoNotificacoes ? (
+                      <p
+                        className={
+                          styles.estadoNotificacoes
                         }
                       >
-                        <span
-                          className={
-                            styles.indicadorLeitura
-                          }
-                        />
-
-                        <span
-                          className={
-                            styles.conteudoNotificacao
+                        Carregando...
+                      </p>
+                    ) : erroNotificacoes ? (
+                      <p
+                        className={`${styles.estadoNotificacoes} ${styles.erroNotificacoes}`}
+                      >
+                        {erroNotificacoes}
+                      </p>
+                    ) : notificacoes.length === 0 ? (
+                      <p
+                        className={
+                          styles.estadoNotificacoes
+                        }
+                      >
+                        Nenhuma notificação por enquanto.
+                      </p>
+                    ) : (
+                      notificacoes.map((notificacao) => (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          key={notificacao.id}
+                          className={`${
+                            styles.itemNotificacao
+                          } ${
+                            notificacao.lida
+                              ? ""
+                              : styles.naoLida
+                          }`}
+                          onClick={() =>
+                            abrirNotificacao(notificacao)
                           }
                         >
-                          <strong>
-                            {notificacao.titulo}
-                          </strong>
+                          <span
+                            className={
+                              styles.indicadorLeitura
+                            }
+                          />
 
-                          <span>
-                            {notificacao.mensagem}
+                          <span
+                            className={
+                              styles.conteudoNotificacao
+                            }
+                          >
+                            <strong>
+                              {notificacao.titulo}
+                            </strong>
+
+                            <span>
+                              {notificacao.mensagem}
+                            </span>
+
+                            <small>
+                              {formatarDataHora(
+                                notificacao.criada_em
+                              )}
+                            </small>
                           </span>
-
-                          <small>
-                            {formatarDataHora(
-                              notificacao.criada_em
-                            )}
-                          </small>
-                        </span>
-                      </button>
-                    ))
-                  )}
-                  <Paginacao {...consultaNotificacoes.paginacao} />
+                        </button>
+                      ))
+                    )}
+                    <Paginacao {...consultaNotificacoes.paginacao} />
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
 
           {/* Perfil */}

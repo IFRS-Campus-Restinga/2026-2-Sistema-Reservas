@@ -87,3 +87,39 @@ export async function cancelarReservaArea(id) {
 
   return tratarResposta(resposta);
 }
+
+export async function buscarRecorrenciaArea(id) {
+  const resposta = await fetch(`${URL}recorrencias/${id}/`, {
+    credentials: 'include',
+  });
+
+  return tratarResposta(resposta);
+}
+
+export async function atualizarRecorrenciaArea(id, dados) {
+  const resposta = await fetch(`${URL}recorrencias/${id}/`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(dados),
+  });
+
+  return tratarResposta(resposta);
+}
+
+export async function cancelarRecorrenciaArea(id) {
+  const resposta = await fetch(`${URL}recorrencias/${id}/`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      status: 'CANCELADA',
+    }),
+  });
+
+  return tratarResposta(resposta);
+}

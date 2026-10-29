@@ -1,12 +1,9 @@
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { matchPath, Outlet, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import Sidebar from '../components/SideBar/SideBar'
 import Header from '../components/Header/Header'
-import ReservaAreaModal from '../components/ReservaArea/ReservaAreaModal'
-import ReservaVeiculoModal from '../components/ReservaVeiculo/ReservaVeiculoModal'
-import ReservaRecursoGeralModal from '../components/ReservaRecursoGeral/ReservaRecursoGeralModal'
 import NaoAutenticado from '../pages/NaoAutenticado/NaoAutenticado'
-import { ITENS_MENU } from '../config/rotas'
+import { ITENS_MENU, ROTAS } from '../config/rotas'
 import { UsuarioContext } from '../contexts/UsuarioContext'
 import { buscarUsuarioLogado } from '../services'
 import styles from './MainLayout.module.css'
@@ -16,10 +13,7 @@ function MainLayout() {
   const [usuario, setUsuario] = useState(null)
   const [carregando, setCarregando] = useState(true)
 
-  const [reservaRapida, setReservaRapida] = useState(null)
-
   const location = useLocation()
-  const navigate = useNavigate()
 
   useEffect(() => {
     const telaPequena = window.matchMedia('(max-width: 767px)')
@@ -41,22 +35,15 @@ function MainLayout() {
       .finally(() => setCarregando(false))
   }, [])
 
-  function abrirReservaEspaco() { setReservaRapida('area') }
-  function abrirReservaVeiculo() { setReservaRapida('veiculo') }
-  function abrirReservaRecursoGeral() { setReservaRapida('recurso') }
-
-  function reservaCriada(tipo) {
-    setReservaRapida(null)
-    navigate('/minhas-reservas', {
-      state: { criada: true, tipo },
-    })
-  }
-
   if (carregando) {
     return null
   }
 
-  if (!usuario) {
+  // Visitante só acessa rotas públicas; a "/" redireciona para o calendário (RotaProtegida).
+  const rotaPublica = location.pathname === '/' ||
+    ROTAS.some((rota) => rota.publica && matchPath(rota.path, location.pathname))
+
+  if (!usuario && !rotaPublica) {
     return <NaoAutenticado />
   }
 
@@ -73,9 +60,6 @@ function MainLayout() {
           <Header
             titulo={paginaAtual}
             usuario={usuario}
-            aoReservarEspaco={abrirReservaEspaco}
-            aoReservarVeiculo={abrirReservaVeiculo}
-            aoReservarRecursoGeral={abrirReservaRecursoGeral}
           />
 
           <main className={styles.content}>
@@ -83,27 +67,6 @@ function MainLayout() {
           </main>
         </div>
       </div>
-
-      <ReservaAreaModal
-        aberto={reservaRapida === 'area'}
-        areaInicial={null}
-        usuario={usuario}
-        aoFechar={() => setReservaRapida(null)}
-        aoReservar={() => reservaCriada('area')}
-      />
-
-      <ReservaVeiculoModal
-        aberto={reservaRapida === 'veiculo'}
-        veiculoInicial={null}
-        aoFechar={() => setReservaRapida(null)}
-        aoReservar={() => reservaCriada('veiculo')}
-      />
-
-      <ReservaRecursoGeralModal
-        aberto={reservaRapida === 'recurso'}
-        aoFechar={() => setReservaRapida(null)}
-        aoReservar={() => reservaCriada('recurso_geral')}
-      />
     </UsuarioContext>
   )
 }

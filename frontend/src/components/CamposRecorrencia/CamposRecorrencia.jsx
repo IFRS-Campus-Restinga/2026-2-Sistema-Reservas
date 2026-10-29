@@ -1,5 +1,6 @@
 import { Alert, Form } from 'react-bootstrap';
 import { Repeat } from 'lucide-react';
+import Botao from '../Botao/Botao';
 import Select from '../Select/Select';
 import { formatarDataCurta, somarDias } from '../../utils/data';
 import {
@@ -20,6 +21,9 @@ import styles from './CamposRecorrencia.module.css';
  *   aoAlterarDataFim={setDataFimRecorrencia}
  *   dataInicio={data}
  *   conflitos={conflitos}
+ *   datasConflitantes={datasConflitantes}
+ *   aoPularConflitos={() => salvar({ pularConflitos: true })}
+ *   desabilitado={enviando}
  * />
  *
  * Props:
@@ -31,6 +35,10 @@ import styles from './CamposRecorrencia.module.css';
  * - aoAlterarDataFim: função chamada ao alterar a data final
  * - dataInicio: data "AAAA-MM-DD" da primeira reserva
  * - conflitos (opcional): mensagens devolvidas pelo backend ao recusar a recorrência
+ * - datasConflitantes (opcional): datas "AAAA-MM-DD" em conflito que podem ser puladas
+ * - aoPularConflitos (opcional): função chamada para criar a recorrência sem as datas em
+ *   conflito; quando não informada, o botão "Pular datas" não é exibido
+ * - desabilitado (opcional, default false): desabilita o botão "Pular datas" (ex.: enquanto salva)
  */
 
 function CamposRecorrencia({
@@ -42,9 +50,14 @@ function CamposRecorrencia({
   aoAlterarDataFim,
   dataInicio,
   conflitos = [],
+  datasConflitantes = [],
+  aoPularConflitos,
+  desabilitado = false,
 }) {
   const erro = dataFim ? validarRecorrencia(dataInicio, tipo, dataFim) : '';
   const datas = erro ? [] : gerarDatasRecorrencia(dataInicio, tipo, dataFim);
+  const restantes = datas.filter((data) => !datasConflitantes.includes(data)).length;
+  const podePular = Boolean(aoPularConflitos) && datasConflitantes.length > 0;
 
   return (
     <div className="border rounded-3 p-3 d-flex flex-column gap-3">
@@ -108,6 +121,24 @@ function CamposRecorrencia({
                   <li key={conflito}>{conflito}</li>
                 ))}
               </ul>
+
+              {podePular && restantes >= 2 && (
+                <div className="mt-2">
+                  <Botao
+                    titulo={`Pular ${datasConflitantes.length} data(s) e criar ${restantes} reservas`}
+                    estilo="secundario"
+                    tamanhoFonte="13px"
+                    aoClicar={aoPularConflitos}
+                    desabilitado={desabilitado}
+                  />
+                </div>
+              )}
+
+              {podePular && restantes < 2 && (
+                <p className="small mb-0 mt-2">
+                  Não há reservas suficientes para criar a recorrência sem essas datas.
+                </p>
+              )}
             </Alert>
           )}
         </>

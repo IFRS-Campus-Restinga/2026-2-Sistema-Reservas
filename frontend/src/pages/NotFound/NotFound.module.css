@@ -1,0 +1,26 @@
+.card {
+  max-width: 360px;
+  border-color: #f3f4f6;
+}
+
+.icone {
+  width: 56px;
+  height: 56px;
+  background-color: var(--cor-marca-clara);
+  color: var(--cor-marca);
+}
+
+.codigo {
+  font-size: 40px;
+  line-height: 1;
+  color: var(--cor-marca);
+}
+
+.botao {
+  --bs-btn-bg: var(--cor-marca);
+  --bs-btn-border-color: var(--cor-marca);
+  --bs-btn-hover-bg: var(--cor-marca-escura);
+  --bs-btn-hover-border-color: var(--cor-marca-escura);
+  --bs-btn-active-bg: var(--cor-marca-escura);
+  --bs-btn-active-border-color: var(--cor-marca-escura);
+}

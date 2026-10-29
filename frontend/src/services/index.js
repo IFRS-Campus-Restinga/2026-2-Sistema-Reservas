@@ -51,6 +51,9 @@ export {
   criarReservaArea,
   cancelarReservaArea,
   buscarAgendaArea,
+  buscarRecorrenciaArea,
+  atualizarRecorrenciaArea,
+  cancelarRecorrenciaArea,
 } from './reservasAreas';
 export {
   listarReservasVeiculos,

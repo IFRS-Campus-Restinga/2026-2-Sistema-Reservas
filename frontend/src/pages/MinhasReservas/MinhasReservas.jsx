@@ -62,7 +62,7 @@ function MinhasReservas() {
   const [aviso, setAviso] = useState(
     location.state?.criada
       ? location.state?.tipo === 'veiculo'
-        ? 'Reserva registrada — aguardando termo.'
+        ? 'Reserva enviada! Aguardando confirmação de um administrador.'
         : 'Reserva enviada! Acompanhe sua reserva abaixo.'
       : ''
   );
@@ -328,7 +328,7 @@ function MinhasReservas() {
           item={nomeItem(selecionada)}
           responsavel={nomeResponsavel(selecionada)}
           periodo={periodoVeiculo(selecionada)}
-          exigeTermo={selecionada.modalidade === 'veiculo' || Boolean(recursoDaReserva(selecionada)?.tem_termo_de_responsabilidade)}
+          exigeTermo={selecionada.modalidade === 'recurso_geral' && Boolean(recursoDaReserva(selecionada)?.tem_termo_de_responsabilidade)}
           aoAtualizarTermo={atualizarSituacaoTermo}
           conteudoExtra={selecionada.modalidade === 'veiculo' ? (
             <>

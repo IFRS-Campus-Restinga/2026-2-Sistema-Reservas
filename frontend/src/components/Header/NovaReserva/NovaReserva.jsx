@@ -1,15 +1,23 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Dropdown } from 'react-bootstrap';
-import { Car, ChevronDown, DoorOpen, Package, Plus } from 'lucide-react';
+import { Box, Building2, Car, ChevronDown, Plus } from 'lucide-react';
 import ReservaAreaModal from '../../ReservaArea/ReservaAreaModal';
 import ReservaVeiculoModal from '../../ReservaVeiculo/ReservaVeiculoModal';
-import { podeReservarArea, podeReservarRecursoGeral, podeReservarVeiculo } from '../../../utils/permissoes';
+import ReservaRecursoGeralModal from '../../ReservaRecursoGeral/ReservaRecursoGeralModal';
+import {
+  podeReservarArea,
+  podeReservarRecursoGeral,
+  podeReservarVeiculo,
+} from '../../../utils/permissoes';
 import { TIPO_RECURSO_RESERVAVEL } from '../../../utils/tipoRecursoReservavel';
 import styles from './NovaReserva.module.css';
 
 /**
  * Botão "Nova reserva" do cabeçalho.
+ * Mostra apenas os tipos de reserva que o usuário pode fazer:
+ * nenhum tipo oculta o botão, um tipo executa a ação direto e
+ * dois ou mais abrem um menu.
  *
  * Exemplo de uso:
  * <NovaReserva usuario={usuario} />
@@ -22,7 +30,7 @@ const OPCOES = [
   {
     tipo: TIPO_RECURSO_RESERVAVEL.AREA,
     rotulo: 'Reservar área',
-    icone: DoorOpen,
+    icone: Building2,
     permissao: podeReservarArea,
   },
   {
@@ -34,7 +42,7 @@ const OPCOES = [
   {
     tipo: TIPO_RECURSO_RESERVAVEL.RECURSO_GERAL,
     rotulo: 'Reservar recurso',
-    icone: Package,
+    icone: Box,
     permissao: podeReservarRecursoGeral,
   },
 ];
@@ -43,6 +51,7 @@ function NovaReserva({ usuario }) {
   const navigate = useNavigate();
   const [modal, setModal] = useState(null);
   const carregando = false;
+  const [menuAberto, setMenuAberto] = useState(false);
 
   const opcoes = OPCOES.filter((opcao) => opcao.permissao(usuario));
 
@@ -50,11 +59,6 @@ function NovaReserva({ usuario }) {
 
 
   async function abrir(opcao) {
-    if (opcao.tipo === TIPO_RECURSO_RESERVAVEL.RECURSO_GERAL) {
-      navigate('/recursos');
-      return;
-    }
-
     setModal({ tipo: opcao.tipo });
   }
 
@@ -68,7 +72,8 @@ function NovaReserva({ usuario }) {
       {opcoes.length === 1 ? (
         <Button
           variant="success"
-          className={`d-flex align-items-center gap-2 fw-semibold px-2 px-sm-3 py-2 ${styles.botao}`}
+          size="sm"
+          className={`d-flex align-items-center gap-2 px-2 px-sm-3 ${styles.botao}`}
           aria-label="Nova reserva"
           disabled={carregando}
           onClick={() => abrir(opcoes[0])}
@@ -77,19 +82,29 @@ function NovaReserva({ usuario }) {
           <span className="d-none d-sm-inline">Nova reserva</span>
         </Button>
       ) : (
-        <Dropdown>
+        <Dropdown onToggle={setMenuAberto}>
           <Dropdown.Toggle
             variant="success"
-            className={`d-flex align-items-center gap-2 fw-semibold px-2 px-sm-3 py-2 ${styles.botao}`}
+            size="sm"
+            className={`d-flex align-items-center gap-2 px-2 px-sm-3 ${styles.botao}`}
             aria-label="Nova reserva"
             disabled={carregando}
           >
             <Plus size={15} />
             <span className="d-none d-sm-inline">Nova reserva</span>
-            <ChevronDown size={13} className="d-none d-sm-block" />
+            <ChevronDown
+              size={14}
+              className={`d-none d-sm-block ${menuAberto ? styles.setaAberta : ''}`}
+            />
           </Dropdown.Toggle>
 
-          <Dropdown.Menu align="end" className="py-1 border-0 rounded-3 shadow-lg">
+          <Dropdown.Menu
+            align="end"
+            className={styles.menu}
+            popperConfig={{
+              modifiers: [{ name: 'offset', options: { offset: [0, 8] } }],
+            }}
+          >
             {opcoes.map((opcao) => {
               const Icone = opcao.icone;
 
@@ -98,11 +113,11 @@ function NovaReserva({ usuario }) {
                   key={opcao.tipo}
                   as="button"
                   type="button"
-                  className="d-flex align-items-center gap-2 px-3 py-2 small"
+                  className={`d-flex align-items-center ${styles.item}`}
                   onClick={() => abrir(opcao)}
                 >
-                  <Icone size={15} className={styles.icone} />
-                  {opcao.rotulo}
+                  <Icone size={16} />
+                  <span>{opcao.rotulo}</span>
                 </Dropdown.Item>
               );
             })}
@@ -129,6 +144,15 @@ function NovaReserva({ usuario }) {
           veiculos={modal.veiculos}
           aoFechar={() => setModal(null)}
           aoReservar={() => concluir({ criada: true, tipo: 'veiculo' })}
+        />
+      )}
+
+      {modal?.tipo === TIPO_RECURSO_RESERVAVEL.RECURSO_GERAL && (
+        <ReservaRecursoGeralModal
+          aberto
+          recursoInicial={null}
+          aoFechar={() => setModal(null)}
+          aoReservar={() => concluir({ criada: true, tipo: 'recurso_geral' })}
         />
       )}
     </>
