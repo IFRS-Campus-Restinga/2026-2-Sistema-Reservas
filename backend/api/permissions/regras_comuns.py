@@ -2,16 +2,16 @@ from rest_framework import permissions
 from accounts.enumerations import Papel
 from django.db.models import Q
 
-PAPEIS_ADMINISTRATIVOS = (Papel.ADMIN,)
-
 def usuario_e_admin(user):
-    return bool(user and (user.is_staff or getattr(user, 'papel', None) in PAPEIS_ADMINISTRATIVOS))
+    return bool(user and (user.is_staff or getattr(user, 'papel', None) in Papel.ADMIN))
+
 
 def filtro_usuario_admin():
     return (
         Q(is_staff=True)
-        | Q(papel__in=PAPEIS_ADMINISTRATIVOS)
+        | Q(papel__in=Papel.ADMIN)
     )
+
 
 class UsuarioAutenticado(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -19,6 +19,7 @@ class UsuarioAutenticado(permissions.BasePermission):
 
     def tem_permissao(self, request, view):
         return True
+
 
 class SomenteAdministrador(UsuarioAutenticado):
     message = 'Somente administradores podem acessar esta funcionalidade.'
