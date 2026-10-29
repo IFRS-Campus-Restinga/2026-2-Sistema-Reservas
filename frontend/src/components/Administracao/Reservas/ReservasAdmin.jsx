@@ -7,12 +7,10 @@ import RelatorioUso from '../RelatorioUso/RelatorioUso';
 import {
   buscarAreas,
   buscarBlocos,
-  buscarVeiculos,
   cancelarReservaAdmin,
-  listarRecursosGerais,
   listarReservasAdmin,
-  listarTiposRecurso,
 } from '../../../services';
+import { consultarTodasPaginas } from '../../../services/paginacao';
 
 import CampoBusca from '../CampoBusca/CampoBusca';
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
@@ -186,7 +184,13 @@ function ReservasAdmin() {
 
   useEffect(() => {
     let ativo = true;
-    Promise.all([buscarAreas(), buscarBlocos(), buscarVeiculos(), listarRecursosGerais(), listarTiposRecurso()])
+    Promise.all([
+      buscarAreas(),
+      buscarBlocos(),
+      consultarTodasPaginas('/api/veiculos/'),
+      consultarTodasPaginas('/api/recursos-gerais/'),
+      consultarTodasPaginas('/api/tipos-recurso/'),
+    ])
       .then(([areas, blocos, veiculos, recursos, tipos]) => {
         if (!ativo) return;
         setAreas(areas || []); setBlocos(blocos || []); setVeiculos(veiculos || []);
