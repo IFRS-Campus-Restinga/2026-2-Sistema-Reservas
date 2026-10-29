@@ -10,6 +10,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from django.utils import timezone
 from django.utils.text import slugify
 
 from accounts.enumerations import Papel
@@ -197,7 +198,7 @@ def popular():
                         nome=f'{nome} - conjunto {indice:02d} {sigla}',
                         tipo_recurso=tipo, codigo=f'AC-{sigla}-{indice:02d}',
                         tipo_prazo=TipoPrazo.CURTO_PRAZO, quantidade_total=40,
-                        quantidade_reservada=0, tem_termo_de_responsabilidade=False,
+                        quantidade_reservada=0, tem_termo_de_responsabilidade=True,
                         observacao='Item fictício para teste de paginação.', status='ATIVO',
                     ))
 
@@ -213,7 +214,7 @@ def popular():
             grupo_membros = next(grupo for grupo in grupos if grupo.tipo_membro_permitido == Papel.ALUNO)
             membros = [MembroGrupo.objects.create(grupo=grupo_membros, usuario=pessoa) for pessoa in pessoas]
 
-            primeiro_dia = date.today() + timedelta(days=35)
+            primeiro_dia = date.today() + timedelta(days=7)
             reservas_areas = []
             reservas_recursos = []
             reservas_veiculos = []
@@ -247,6 +248,23 @@ def popular():
                     data_devolucao_prevista=data_reserva, veiculo=veiculos[indice],
                 ))
 
+            retirada_inicio = timezone.localtime() + timedelta(minutes=30)
+            retirada_fim = retirada_inicio + timedelta(hours=2)
+            reserva_retirada = ReservaVeiculo.objects.create(
+                nome=f'Retirada agendada da {NOMES_VEICULOS[0]}',
+                descricao='Reserva fictícia confirmada para testar o envio do termo de retirada.',
+                status=StatusReserva.CONFIRMADA, data=retirada_inicio.date(),
+                horario_inicio=time(retirada_inicio.hour, retirada_inicio.minute),
+                horario_fim=time(retirada_fim.hour, retirada_fim.minute),
+                tipo_reserva=TipoReserva.INTERNA, usuario=administrador,
+                destino='Pavilhão das Araucárias', finalidade='Deslocamento de demonstração',
+                quantidade_passageiros=3, data_devolucao_prevista=retirada_fim.date(),
+                veiculo=veiculos[0],
+            )
+            ReservaVeiculo.objects.filter(pk=reserva_retirada.pk).update(status=StatusReserva.CONFIRMADA)
+            reserva_retirada.refresh_from_db()
+            reservas_veiculos.append(reserva_retirada)
+
             notificacoes = [
                 Notificacao.objects.create(
                     usuario=administrador, reserva=reserva,
@@ -258,18 +276,19 @@ def popular():
             ]
 
             manifesto_termos = []
-            for indice, reserva in enumerate(reservas_veiculos, start=1):
-                nome_termo = f'Termo de responsabilidade da {reserva.reservaveiculo.veiculo.nome}'
+            for indice, reserva in enumerate(reservas_recursos[:-1], start=1):
+                recurso = reserva.reservarecursogeral.recurso_geral
+                nome_termo = f'Termo de responsabilidade do {recurso.nome}'
                 termo = TermoResponsabilidade(
                     reserva=reserva, nome_original=f'{nome_termo}.pdf',
                     tipo=TipoTermo.RESPONSABILIDADE, status=StatusTermo.PENDENTE,
                     atual=True, enviado_por=administrador,
                 )
                 conteudo_pdf = ContentFile(pdf_ficticio(nome_termo))
-                termo.arquivo_original.save(f'reserva-{indice:02d}-original.pdf', conteudo_pdf, save=False)
+                termo.arquivo_original.save(f'recurso-{indice:02d}-original.pdf', conteudo_pdf, save=False)
                 arquivos_criados.append(termo.arquivo_original.name)
                 termo.arquivo_assinado.save(
-                    f'reserva-{indice:02d}-assinado.pdf',
+                    f'recurso-{indice:02d}-assinado.pdf',
                     ContentFile(pdf_ficticio(f'Cópia assinada: {nome_termo}')),
                     save=False,
                 )
@@ -280,7 +299,8 @@ def popular():
             grupo_auditoria = grupos[0]
             logs = [
                 LogAuditoria.objects.create(
-                    admin=administrador, acao=AcaoAuditoria.CRIAR,
+                    responsavel=administrador, perfil_responsavel=Papel.ADMIN,
+                    acao=AcaoAuditoria.CRIAR,
                     entidade=EntidadeAuditoria.GRUPO, objeto_id=grupo_auditoria.pk,
                     descricao=f'{grupo_auditoria.nome} - ação administrativa {indice:02d}',
                 )
@@ -314,6 +334,8 @@ def popular():
         'Dados inseridos para testar áreas, blocos, recursos, veículos, grupos, membros,',
         'reservas, solicitações de termos, notificações e auditoria.',
         f'Foram criados {len(grupos)} grupos, {len(membros)} membros e {len(tipos)} tipos de recurso.',
+        'Uma reserva de recurso geral aguarda envio do termo assinado.',
+        'Incluída reserva de veículo confirmada com termo de retirada disponível em 30 minutos.',
         f'IDs do lote registrados em: {salvo_em}',
     ))
 
