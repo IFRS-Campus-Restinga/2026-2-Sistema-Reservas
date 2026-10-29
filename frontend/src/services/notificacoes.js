@@ -10,8 +10,9 @@ async function tratarResposta(resposta, mensagemPadrao) {
   return dados;
 }
 
-export async function listarNotificacoes() {
-  const resposta = await fetch(URL, {
+export async function listarNotificacoes(pagina = 1, signal) {
+  const resposta = await fetch(`${URL}?page=${pagina}&page_size=20`, {
+    signal,
     credentials: 'include',
   });
 
@@ -33,5 +34,20 @@ export async function marcarNotificacaoComoLida(id) {
   return tratarResposta(
     resposta,
     'Não foi possível marcar a notificação como lida.'
+  );
+}
+
+export async function marcarTodasNotificacoesComoLidas() {
+  const resposta = await fetch(`${URL}lidas/`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  return tratarResposta(
+    resposta,
+    'Não foi possível marcar todas as notificações como lidas.'
   );
 }

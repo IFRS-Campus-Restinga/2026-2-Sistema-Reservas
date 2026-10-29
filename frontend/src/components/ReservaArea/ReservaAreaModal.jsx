@@ -1,3 +1,5 @@
+import SelectRemoto from '../SelectRemoto/SelectRemoto';
+import useDisponibilidadeReserva, { intervaloDisponivel } from '../../hooks/useDisponibilidadeReserva';
 import { useEffect, useState } from 'react';
 import { Form, Alert } from 'react-bootstrap';
 import { CheckCircle2 } from 'lucide-react';
@@ -5,28 +7,23 @@ import Modal from '../Administracao/Modal/Modal';
 import Botao from '../Botao/Botao';
 import CalendarioReserva from '../CalendarioReserva/CalendarioReserva';
 import CamposRecorrencia from '../CamposRecorrencia/CamposRecorrencia';
-import Select from '../Select/Select';
 import { criarReservaArea, atualizarReservaArea } from '../../services/reservasAreas';
-import { TIPO_AREA_LABEL } from '../../utils/tipoArea';
-import { STATUS_RECURSO_LABEL } from '../../utils/statusRecurso';
 import { TURNO_LABEL, PERIODOS_POR_TURNO } from '../../utils/periodosAula';
 import { horarioParaMinutos } from '../../utils/data';
 import {
+  HORARIOS,
+  ajustarPeriodosContiguos,
+  horarioDosPeriodos,
+} from '../../utils/reservaArea';
+import {
   TIPO_RECORRENCIA,
   conflitosRecorrencia,
+  datasConflitantesRecorrencia,
   gerarDatasRecorrencia,
   montarRecorrencia,
   validarRecorrencia,
 } from '../../utils/recorrencia';
 import styles from './ReservaAreaModal.module.css';
-
-const HORARIOS = Array.from({ length: 32 }, (_, indice) => {
-  const total = 7 * 60 + indice * 30;
-  const horas = String(Math.floor(total / 60)).padStart(2, '0');
-  const minutos = String(total % 60).padStart(2, '0');
-
-  return `${horas}:${minutos}`;
-});
 
 // Término sugerido: uma hora depois do início, limitado ao último horário da lista
 function horarioFimSugerido(horarioInicio) {
@@ -38,16 +35,9 @@ function horarioFimSugerido(horarioInicio) {
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
 
-function nomeBloco(area, blocos) {
-  const blocoId = typeof area.bloco === 'object' ? area.bloco?.id : area.bloco;
-  return blocos.find((bloco) => String(bloco.id) === String(blocoId));
-}
-
 function ReservaAreaModal({
   aberto,
   areaInicial,
-  areas = [],
-  blocos = [],
   usuario,
   reservaEdicao,
   dataInicial,
@@ -56,6 +46,7 @@ function ReservaAreaModal({
   aoReservar,
 }) {
   const [areaId, setAreaId] = useState('');
+  const [blocoId, setBlocoId] = useState('');
   const [titulo, setTitulo] = useState('');
   const [data, setData] = useState('');
   const [mes, setMes] = useState(
@@ -66,12 +57,11 @@ function ReservaAreaModal({
   const [periodosSelecionados, setPeriodosSelecionados] = useState([]);
   const [horarioInicio, setHorarioInicio] = useState('08:00');
   const [horarioFim, setHorarioFim] = useState('10:00');
-  const [participantes, setParticipantes] = useState(10);
   const [observacoes, setObservacoes] = useState('');
   const [recorrente, setRecorrente] = useState(false);
   const [tipoRecorrencia, setTipoRecorrencia] = useState(TIPO_RECORRENCIA.SEMANAL);
   const [dataFimRecorrencia, setDataFimRecorrencia] = useState('');
-  const [conflitos, setConflitos] = useState([]);
+  const [falhaRecorrencia, setFalhaRecorrencia] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState('');
 
@@ -79,6 +69,7 @@ function ReservaAreaModal({
     if (!aberto) return;
 
     setAreaId(String(reservaEdicao?.area || areaInicial?.id || ''));
+    setBlocoId(String(reservaEdicao?.area_detalhe?.bloco || areaInicial?.bloco || ''));
     setTitulo(reservaEdicao?.nome || '');
     const dataPreenchida = reservaEdicao?.data || dataInicial || '';
     const inicioPreenchido = reservaEdicao?.horario_inicio?.slice(0, 5) || horarioInicial;
@@ -97,16 +88,44 @@ function ReservaAreaModal({
       reservaEdicao?.horario_fim?.slice(0, 5) ||
         (horarioInicial ? horarioFimSugerido(horarioInicial) : '10:00')
     );
-    setParticipantes(10);
     setObservacoes(reservaEdicao?.descricao || '');
     setRecorrente(false);
     setTipoRecorrencia(TIPO_RECORRENCIA.SEMANAL);
     setDataFimRecorrencia('');
-    setConflitos([]);
+    setFalhaRecorrencia(null);
     setErro('');
   }, [aberto, areaInicial, reservaEdicao, dataInicial, horarioInicial]);
 
-  const areaSelecionada = areas.find((area) => String(area.id) === areaId);
+  const disponibilidade = useDisponibilidadeReserva({
+    tipo: 'AREA', recurso: areaId, mes,
+    excluirReserva: reservaEdicao?.id,
+  }, aberto && Boolean(areaId));
+  const horariosDoDia = disponibilidade.horarios[data] || [];
+  const horariosInicioDisponiveis = HORARIOS.filter((horario) => horariosDoDia.includes(horario));
+  const horariosFimDisponiveis = HORARIOS.filter(
+    (horario) => horario > horarioInicio && intervaloDisponivel(horariosDoDia, horarioInicio, horario)
+  );
+
+  function selecionarDataDisponivel(novaData) {
+    setData(novaData);
+    const primeiro = disponibilidade.horarios[novaData]?.[0] || '';
+    setHorarioInicio(primeiro);
+    setHorarioFim(primeiro ? horarioFimSugerido(primeiro) : '');
+    setPeriodosSelecionados([]);
+  }
+
+  function selecionarAreaDisponivel(novoId) {
+    setAreaId(novoId);
+    setData('');
+    setHorarioInicio('');
+    setHorarioFim('');
+    setPeriodosSelecionados([]);
+  }
+
+  function selecionarBloco(novoId) {
+    setBlocoId(novoId);
+    selecionarAreaDisponivel('');
+  }
 
   // A recorrência só é definida na criação, a edição altera apenas a reserva aberta
   const recorrenciaAtiva = recorrente && !reservaEdicao;
@@ -115,34 +134,32 @@ function ReservaAreaModal({
       ? gerarDatasRecorrencia(data, tipoRecorrencia, dataFimRecorrencia).length
       : 1;
 
-  const gruposArea = [...blocos]
-    .sort((a, b) => (a.numero ?? 0) - (b.numero ?? 0))
-    .map((bloco) => ({
-      rotulo: bloco.nome,
-      opcoes: areas
-        .filter((area) => nomeBloco(area, blocos)?.id === bloco.id)
-        .map((area) => ({
-          valor: String(area.id),
-          rotulo: `${area.nome} · ${TIPO_AREA_LABEL[area.tipo] || area.tipo} · ${area.capacidade} pax${
-            area.status !== 'ATIVO'
-              ? ` (${STATUS_RECURSO_LABEL[area.status]?.toLowerCase() || ''})`
-              : ''
-          }`,
-          desabilitado: area.status !== 'ATIVO',
-        })),
-    }))
-    .filter((grupo) => grupo.opcoes.length > 0);
-
   const periodosDoTurno = PERIODOS_POR_TURNO[turno];
-  const indicesSelecionados = periodosSelecionados
-    .map((id) => periodosDoTurno.findIndex((periodo) => periodo.id === id))
-    .filter((indice) => indice !== -1);
-  const horarioInicioAula = indicesSelecionados.length
-    ? periodosDoTurno[Math.min(...indicesSelecionados)].inicio
-    : '';
-  const horarioFimAula = indicesSelecionados.length
-    ? periodosDoTurno[Math.max(...indicesSelecionados)].fim
-    : '';
+  const { inicio: horarioInicioAula, fim: horarioFimAula } = horarioDosPeriodos(
+    periodosSelecionados,
+    periodosDoTurno
+  );
+
+  const dadosReserva = {
+    nome: titulo.trim(),
+    descricao: observacoes.trim(),
+    data,
+    horario_inicio: aula ? horarioInicioAula : horarioInicio,
+    horario_fim: aula ? horarioFimAula : horarioFim,
+    area: Number(areaId),
+    aula,
+  };
+
+  const assinaturaPedido = JSON.stringify([
+    dadosReserva.area,
+    data,
+    dadosReserva.horario_inicio,
+    dadosReserva.horario_fim,
+    tipoRecorrencia,
+    dataFimRecorrencia,
+  ]);
+  const falhaAtual =
+    falhaRecorrencia?.assinatura === assinaturaPedido ? falhaRecorrencia : null;
 
   function alterarTurno(novoTurno) {
     setTurno(novoTurno);
@@ -156,22 +173,18 @@ function ReservaAreaModal({
         ? anteriores.filter((item) => item !== id)
         : [...anteriores, id];
 
-      if (atualizados.length === 0) return atualizados;
-
-      const indices = atualizados
-        .map((itemId) => periodosDoTurno.findIndex((periodo) => periodo.id === itemId))
-        .filter((indice) => indice !== -1);
-      const minIndice = Math.min(...indices);
-      const maxIndice = Math.max(...indices);
-
-      return periodosDoTurno.slice(minIndice, maxIndice + 1).map((periodo) => periodo.id);
+      return ajustarPeriodosContiguos(atualizados, periodosDoTurno);
     });
   }
 
-  async function enviar(evento) {
+  function enviar(evento) {
     evento.preventDefault();
+    salvar();
+  }
+
+  async function salvar({ pularConflitos = false } = {}) {
     setErro('');
-    setConflitos([]);
+    setFalhaRecorrencia(null);
 
     if (!areaId) {
       setErro('Selecione uma área.');
@@ -193,12 +206,6 @@ function ReservaAreaModal({
       return;
     }
 
-    if (participantes < 1 || (areaSelecionada && participantes > areaSelecionada.capacidade)) {
-      setErro(
-        `Número de participantes acima da capacidade da área (${areaSelecionada?.capacidade} pax).`
-      );
-      return;
-    }
 
     // O erro da recorrência já é exibido dentro de CamposRecorrencia
     if (recorrenciaAtiva && validarRecorrencia(data, tipoRecorrencia, dataFimRecorrencia)) {
@@ -208,34 +215,32 @@ function ReservaAreaModal({
     try {
       setEnviando(true);
 
-      const dados = {
-        nome: titulo.trim(),
-        descricao: observacoes.trim(),
-        data,
-        horario_inicio: aula ? horarioInicioAula : horarioInicio,
-        horario_fim: aula ? horarioFimAula : horarioFim,
-        area: Number(areaId),
-        aula,
-      };
-
       const resultado = reservaEdicao
-        ? await atualizarReservaArea(reservaEdicao.id, dados)
+        ? await atualizarReservaArea(reservaEdicao.id, dadosReserva)
         : await criarReservaArea({
-            ...dados,
+            ...dadosReserva,
             tipo_reserva: usuario?.perfil_acesso === 'convidado' ? 'EXTERNA' : 'INTERNA',
             recorrencia: montarRecorrencia(
               recorrenciaAtiva,
               tipoRecorrencia,
-              dataFimRecorrencia
+              dataFimRecorrencia,
+              pularConflitos
             ),
           });
 
       aoReservar(resultado);
     } catch (erroRequisicao) {
-      const conflitosRequisicao = conflitosRecorrencia(erroRequisicao);
+      const conflitos = conflitosRecorrencia(erroRequisicao);
 
-      setConflitos(conflitosRequisicao);
-      setErro(conflitosRequisicao.length ? '' : erroRequisicao.message);
+      if (conflitos.length) {
+        setFalhaRecorrencia({
+          assinatura: assinaturaPedido,
+          conflitos,
+          datas: datasConflitantesRecorrencia(erroRequisicao),
+        });
+      } else {
+        setErro(erroRequisicao.message);
+      }
     } finally {
       setEnviando(false);
     }
@@ -269,15 +274,26 @@ function ReservaAreaModal({
         </Form.Group>
 
         <Form.Group>
+          <Form.Label>Bloco</Form.Label>
+          <SelectRemoto url="/api/blocos/" ativo={aberto}
+            filtros={{ page_size: 100 }} mostrarBusca={false}
+            valor={blocoId} aoAlterar={selecionarBloco}
+            valorTodos="" rotuloTodos="Selecione um bloco"
+            ariaLabel="Bloco" required larguraTotal
+          />
+        </Form.Group>
+
+        <Form.Group>
           <Form.Label>Área</Form.Label>
-          <Select
+          <SelectRemoto url="/api/areas/" ativo={aberto && Boolean(blocoId)}
+            filtros={{ disponiveis: true, bloco: blocoId, page_size: 100 }} mostrarBusca={false}
             valor={areaId}
-            aoAlterar={setAreaId}
-            grupos={gruposArea}
+            aoAlterar={selecionarAreaDisponivel}
             valorTodos=""
             rotuloTodos="Selecione uma área"
             ariaLabel="Área"
             required
+            disabled={!blocoId}
             larguraTotal
           />
         </Form.Group>
@@ -288,7 +304,10 @@ function ReservaAreaModal({
             mes={mes}
             alterarMes={setMes}
             selecionada={data}
-            selecionar={setData}
+            selecionar={selecionarDataDisponivel}
+            datasDisponiveis={disponibilidade.diasDisponiveis}
+            carregandoDisponibilidade={disponibilidade.carregando}
+            erroDisponibilidade={disponibilidade.erro}
           />
         </Form.Group>
 
@@ -341,6 +360,7 @@ function ReservaAreaModal({
                       label={`${periodo.numero}º período (${periodo.inicio}–${periodo.fim})`}
                       checked={periodosSelecionados.includes(periodo.id)}
                       onChange={() => alternarPeriodo(periodo.id)}
+                      disabled={!data || !intervaloDisponivel(horariosDoDia, periodo.inicio, periodo.fim)}
                     />
                   </div>
                 ))}
@@ -355,7 +375,8 @@ function ReservaAreaModal({
                 value={horarioInicio}
                 onChange={(evento) => setHorarioInicio(evento.target.value)}
               >
-                {HORARIOS.map((horario) => (
+                <option value="">Selecione</option>
+                {horariosInicioDisponiveis.map((horario) => (
                   <option key={horario} value={horario}>
                     {horario}
                   </option>
@@ -369,7 +390,8 @@ function ReservaAreaModal({
                 value={horarioFim}
                 onChange={(evento) => setHorarioFim(evento.target.value)}
               >
-                {HORARIOS.map((horario) => (
+                <option value="">Selecione</option>
+                {horariosFimDisponiveis.map((horario) => (
                   <option key={horario} value={horario}>
                     {horario}
                   </option>
@@ -388,26 +410,12 @@ function ReservaAreaModal({
             dataFim={dataFimRecorrencia}
             aoAlterarDataFim={setDataFimRecorrencia}
             dataInicio={data}
-            conflitos={conflitos}
+            conflitos={falhaAtual?.conflitos}
+            datasConflitantes={falhaAtual?.datas}
+            aoPularConflitos={() => salvar({ pularConflitos: true })}
+            desabilitado={enviando}
           />
         )}
-
-        <Form.Group>
-          <Form.Label>Número de participantes</Form.Label>
-          <Form.Control
-            type="number"
-            min={1}
-            max={areaSelecionada?.capacidade || 999}
-            value={participantes}
-            onChange={(evento) => setParticipantes(Number(evento.target.value))}
-            required
-          />
-          {areaSelecionada && participantes > areaSelecionada.capacidade && (
-            <Form.Text className="text-danger">
-              Acima da capacidade da área ({areaSelecionada.capacidade} pax).
-            </Form.Text>
-          )}
-        </Form.Group>
 
         <Form.Group>
           <Form.Label>Finalidade</Form.Label>

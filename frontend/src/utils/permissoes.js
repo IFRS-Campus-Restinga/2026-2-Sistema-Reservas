@@ -12,12 +12,15 @@ export const podeGerenciarGrupos = (usuario) => (usuario?.permissoes?.criar_grup
 
 export const podeReservar = (usuario, tipoRecurso) =>
   Boolean(usuario?.permissoes?.reservar_sem_grupo?.includes(tipoRecurso)) ||
-  Boolean(usuario?.autorizacoes?.some((autorizacao) => autorizacao.tipo_recurso_autorizado === tipoRecurso));
+  Boolean(usuario?.autorizacoes?.some((autorizacao) => autorizacao.tipos_recurso_autorizados?.includes(tipoRecurso)));
 
 export const podeReservarArea = (usuario) => podeReservar(usuario, TIPO_RECURSO_RESERVAVEL.AREA);
 
 export const podeReservarVeiculo = (usuario) => podeReservar(usuario, TIPO_RECURSO_RESERVAVEL.VEICULO);
 
 export const podeReservarRecursoGeral = (usuario) => podeReservar(usuario, TIPO_RECURSO_RESERVAVEL.RECURSO_GERAL);
+
+export const podeReservarAlgo = (usuario) =>
+  podeReservarArea(usuario) || podeReservarVeiculo(usuario) || podeReservarRecursoGeral(usuario);
 
 export const temPermissao = (usuario, regra) => !regra || Boolean(regra(usuario));

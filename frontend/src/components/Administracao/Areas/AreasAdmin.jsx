@@ -1,52 +1,23 @@
-import { useEffect, useState } from 'react';
+import useListaPaginada from '../../../hooks/useListaPaginada';
+import Paginacao from '../Paginacao/Paginacao';
+import { useState } from 'react';
 import { Pencil, Plus, Trash2, ToggleLeft, ToggleRight, CheckCircle, XCircle } from 'lucide-react';
 import styles from './AreasAdmin.module.css';
 
-import {
-    buscarAreas,
-    criarArea,
-    atualizarArea,
-    excluirArea,
-    buscarBlocos,
-} from '../../../services';
+import { criarArea, atualizarArea, excluirArea } from '../../../services';
 
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import AreaModal from './ModalArea/AreaModal';
 import ModalConfirmacao from '../ModalConfirmacao/ModalConfirmacao';
 
 function AreasAdministracao() {
-    const [areas, setAreas] = useState([]);
-    const [blocos, setBlocos] = useState([]);
-    const [carregando, setCarregando] = useState(true);
-    const [erro, setErro] = useState('');
 
     const [modalAreaAberto, setModalAreaAberto] = useState(false);
     const [areaEditando, setAreaEditando] = useState(null);
     const [areaExcluindo, setAreaExcluindo] = useState(null);
 
-    useEffect(() => {
-        carregarDados();
-    }, []);
 
-    async function carregarDados() {
-        try {
-            setCarregando(true);
-            setErro('');
-
-            const [dadosAreas, dadosBlocos] = await Promise.all([
-                buscarAreas(),
-                buscarBlocos()
-            ]);
-
-            setAreas(dadosAreas);
-            setBlocos(dadosBlocos);
-        } catch (erro) {
-            console.error(erro);
-            setErro('Não foi possível carregar as áreas.');
-        } finally {
-            setCarregando(false);
-        }
-    }
+    const { itens: areas, carregando, erro, setErro, recarregar: carregarDados, paginacao } = useListaPaginada('/api/areas/', {});
 
     function abrirCadastro() {
         setAreaEditando(null);
@@ -120,14 +91,7 @@ function AreasAdministracao() {
         {
             chave: 'bloco',
             titulo: 'Bloco',
-            renderizar: (area) => {
-                // Se a API não popular o objeto bloco completo, procuramos na lista
-                if (typeof area.bloco === 'number' || typeof area.bloco === 'string') {
-                    const blocoEncontrado = blocos.find(b => b.id == area.bloco);
-                    return blocoEncontrado ? blocoEncontrado.nome : area.bloco;
-                }
-                return area.bloco?.nome || 'N/A';
-            }
+            renderizar: (area) => area.bloco_nome || area.bloco
         },
         {
             chave: 'capacidade',
@@ -219,10 +183,11 @@ function AreasAdministracao() {
                 />
             )}
 
+            <Paginacao {...paginacao} />
+
             <AreaModal
                 aberto={modalAreaAberto}
                 area={areaEditando}
-                blocos={blocos}
                 aoFechar={fecharModalArea}
                 aoSalvar={salvarArea}
             />

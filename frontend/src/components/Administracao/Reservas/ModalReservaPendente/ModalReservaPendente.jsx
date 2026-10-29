@@ -94,7 +94,7 @@ function ModalReservaPendente({ aberto, reserva, aoFechar, aoConfirmar, confirma
               disabled={ocupado}
             >
               <XCircle size={16} />
-              {cancelando ? 'Cancelando...' : 'Confirmar cancelamento'}
+              {cancelando ? 'Cancelando...' : 'Confirmar rejeição'}
             </button>
           </div>
         ) : (
@@ -115,7 +115,7 @@ function ModalReservaPendente({ aberto, reserva, aoFechar, aoConfirmar, confirma
               disabled={ocupado}
             >
               <XCircle size={16} />
-              Cancelar reserva
+              Rejeitar solicitação
             </button>
 
             <button
@@ -155,7 +155,7 @@ function ModalReservaPendente({ aberto, reserva, aoFechar, aoConfirmar, confirma
             <div>
               <h4>Motivo do cancelamento *</h4>
               <p>
-                O aluno receberá esse motivo na notificação.
+                O solicitante receberá esse motivo na notificação.
               </p>
             </div>
 

@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Clock, Globe, Info, MapPin, Pencil, Trash2, UserRound, X } from 'lucide-react';
+import { CalendarCheck, Clock, Globe, Info, MapPin, Pencil, Repeat, Trash2, UserRound, X } from 'lucide-react';
 import useFocoModal from '../../hooks/useFocoModal';
 import TermoReserva from '../TermoReserva/TermoReserva';
-import { STATUS_RESERVA_LABEL, statusReservaApresentado } from '../../utils/reserva';
+import { TIPO_RECORRENCIA_LABEL } from '../../utils/recorrencia';
+import { SITUACAO_RESERVA_LABEL, statusReservaApresentado } from '../../utils/reserva';
 import styles from './ModalDetalheReserva.module.css';
 import ModalConfirmacao from '../Administracao/ModalConfirmacao/ModalConfirmacao';
 
@@ -25,6 +26,7 @@ function ModalDetalheReserva({
   conteudoExtra,
   aoEditar,
   aoCancelar,
+  aoGerenciarRecorrencia,
   motivoAcoesIndisponiveis,
   aoFechar,
 }) {
@@ -40,6 +42,7 @@ function ModalDetalheReserva({
   const tipo = String(reserva.tipo_reserva || '').toLowerCase();
   const status = statusReservaApresentado(reserva);
   const podeCancelar = Boolean(aoCancelar);
+  const exibirDadosRecorrencia = Boolean(reserva.recorrencia && !reserva.ehOcorrenciaIndividual);
 
   function fechar() {
     if (!bloqueado) aoFechar();
@@ -91,7 +94,7 @@ function ModalDetalheReserva({
             <span className={styles.sobretitulo}>{modalidade}</span>
             <h2 id="titulo-detalhe-reserva">{reserva.nome}</h2>
             <div className={styles.etiquetas}>
-              <span className={styles.status}>{STATUS_RESERVA_LABEL[status] || reserva.status}</span>
+              <span className={styles.status}>{SITUACAO_RESERVA_LABEL[status] || reserva.status}</span>
               {tipo === 'externa' && <span className={styles.status}><Globe size={10} />Externo</span>}
             </div>
           </div>
@@ -109,9 +112,26 @@ function ModalDetalheReserva({
             <span className={styles.icone}><Clock size={14} /></span>
             <div>
               <span className={styles.rotulo}>Data e horário</span>
-              <strong>{periodo || `${dataFormatada(reserva.data)} · ${reserva.horario_inicio.slice(0, 5)} às ${reserva.horario_fim.slice(0, 5)}`}</strong>
+              <div className={styles.valorDataHorario}>
+                <strong>{periodo || `${dataFormatada(exibirDadosRecorrencia ? (reserva.proxima_data || reserva.data) : reserva.data)} · ${reserva.horario_inicio.slice(0, 5)} às ${reserva.horario_fim.slice(0, 5)}`}</strong>
+                {exibirDadosRecorrencia && (
+                  <span className={styles.chipProximaReserva}>Próxima Reserva</span>
+                )}
+              </div>
             </div>
           </div>
+          {exibirDadosRecorrencia && (
+            <>
+              <div className={styles.linha}>
+                <span className={styles.icone}><Repeat size={14} /></span>
+                <div><span className={styles.rotulo}>Recorrência</span><strong>{TIPO_RECORRENCIA_LABEL[reserva.recorrencia.tipo] || reserva.recorrencia.tipo}</strong></div>
+              </div>
+              <div className={styles.linha}>
+                <span className={styles.icone}><CalendarCheck size={14} /></span>
+                <div><span className={styles.rotulo}>Fim da recorrência</span><strong>{dataFormatada(reserva.recorrencia.data_fim)}</strong></div>
+              </div>
+            </>
+          )}
           <div className={styles.linha}>
             <span className={styles.icone}><UserRound size={14} /></span>
             <div><span className={styles.rotulo}>Responsável</span><strong>{responsavel || 'Não informado'}</strong></div>
@@ -148,6 +168,11 @@ function ModalDetalheReserva({
               <button type="button" className={styles.cancelar} disabled={!podeCancelar || bloqueado} onClick={() => setConfirmando(true)}>
                 <Trash2 size={13} /> Cancelar
               </button>
+              {reserva.recorrencia && aoGerenciarRecorrencia && (
+                <button type="button" className={styles.larguraTotal} disabled={bloqueado} onClick={aoGerenciarRecorrencia}>
+                  <Repeat size={13} /> Gerenciar Recorrência
+                </button>
+              )}
             </div>
           )}
         </div>

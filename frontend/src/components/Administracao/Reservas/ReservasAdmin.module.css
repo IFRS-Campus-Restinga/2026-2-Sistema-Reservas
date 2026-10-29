@@ -167,3 +167,132 @@
     max-width: none;
   }
 }
+
+/* ADICIONADO */
+
+.nomeReserva {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #374151;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nomeReserva:hover {
+  color: var(--cor-marca);
+  text-decoration: underline;
+}
+
+
+.acoes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+
+.editar,
+.cancelar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+
+.editar {
+  color: #6b7280;
+}
+
+.editar:hover:not(:disabled) {
+  background: var(--cor-marca-clara);
+  color: var(--cor-marca);
+}
+
+
+.cancelar {
+  color: #9ca3af;
+}
+
+.cancelar:hover:not(:disabled) {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+
+.editar:disabled,
+.cancelar:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+
+.status[data-status='CONFIRMADA'] {
+  background: #ecfdf5;
+  color: #15803d;
+}
+
+.status[data-status='PENDENTE'],
+.status[data-status='AGUARDANDO_TERMO'],
+.status[data-status='AGUARDANDO_TERMO_DEVOLUCAO'] {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.status[data-status='CANCELADA'],
+.status[data-status='REJEITADA'] {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.status[data-status='CONCLUIDA'] {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+
+.campoMotivo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.campoMotivo label {
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.campoMotivo textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 9px 11px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  color: #374151;
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+
+.campoMotivo textarea:focus {
+  border-color: var(--cor-marca);
+}
+
+.campoMotivo small {
+  align-self: flex-end;
+  color: #9ca3af;
+  font-size: 11px;
+}

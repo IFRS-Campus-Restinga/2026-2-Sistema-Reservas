@@ -1,3 +1,4 @@
+from .view_helpers import listar
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_date
@@ -8,13 +9,14 @@ from rest_framework.views import APIView
 from api.enumerations.status_reserva import StatusReserva
 from api.models.area_model import Area
 from api.models.reserva_area_model import ReservaArea
-from api.permissions.regras_comuns import UsuarioAutenticado
+from api.permissions.regras_comuns import LeituraPublica, UsuarioAutenticado
 from api.permissions.reserva_permissions import PodeGerenciarReserva
 from api.serializers.reserva_area_serializer import ReservaAreaSerializer, serializar_recorrencia
 from api.services.recorrencia_service import criar_reservas_recorrentes
 from api.validators.reserva_area_validator import validar_autorizacao, validar_disponibilidade_area
 from api.enumerations.auditoria_enumerations import AcaoAuditoria
 from api.services.auditoria import foto, registrar_auditoria
+from hub_integrations.authentication import HubJWTAuthenticationOpcional
 
 
 STATUS_ALTERAVEIS = [
@@ -34,14 +36,14 @@ CAMPOS_EDICAO = {
 
 
 class ReservaAreaListCreateView(APIView):
-    permission_classes = [UsuarioAutenticado]
+    authentication_classes = [HubJWTAuthenticationOpcional]
+    permission_classes = [LeituraPublica | UsuarioAutenticado]
 
     def get(self, request):
-        reservas = ReservaArea.objects.filter(
-            status=StatusReserva.CONFIRMADA
-        ).select_related("area__bloco", "usuario", "recorrencia").order_by("-data", "-horario_inicio")
+        from api.services.timetable.reservas_timetable_service import ReservasTimetableService
 
-        for parametro, filtro in (("data_inicio", "data__gte"), ("data_fim", "data__lte")):
+        filtros_data = {}
+        for parametro in ("data_inicio", "data_fim"):
             valor = request.query_params.get(parametro)
 
             if valor is None:
@@ -58,10 +60,27 @@ class ReservaAreaListCreateView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            reservas = reservas.filter(**{filtro: data})
+            filtros_data[parametro] = data
+
+        reservas_normais = ReservaArea.objects.filter(
+            status=StatusReserva.CONFIRMADA,
+            celula_timetable__isnull=True,
+        ).select_related("area__bloco", "usuario", "recorrencia")
+
+        if "data_inicio" in filtros_data:
+            reservas_normais = reservas_normais.filter(data__gte=filtros_data["data_inicio"])
+        if "data_fim" in filtros_data:
+            reservas_normais = reservas_normais.filter(data__lte=filtros_data["data_fim"])
+
+        reservas_timetable = ReservasTimetableService.projetar_reservas_no_intervalo(
+            data_inicio=filtros_data.get("data_inicio"),
+            data_fim=filtros_data.get("data_fim"),
+        )
+
+        reservas = list(reservas_normais) + reservas_timetable
+        reservas.sort(key=lambda r: (r.data, r.horario_inicio), reverse=True)
 
         serializer = ReservaAreaSerializer(reservas, many=True)
-
         return Response(serializer.data)
 
     def post(self, request):
@@ -80,10 +99,12 @@ class ReservaAreaListCreateView(APIView):
             dados["area"] = area
 
             if dados_recorrencia:
-                recorrencia = criar_reservas_recorrentes(request.user, dados, dados_recorrencia)
+                recorrencia, datas_puladas = criar_reservas_recorrentes(
+                    request.user, dados, dados_recorrencia
+                )
 
                 return Response(
-                    serializar_recorrencia(recorrencia),
+                    {**serializar_recorrencia(recorrencia), "datas_puladas": datas_puladas},
                     status=status.HTTP_201_CREATED,
                 )
 
@@ -105,9 +126,7 @@ class MinhasReservasAreaListView(APIView):
             usuario=request.user
         ).select_related("area__bloco", "recorrencia").order_by("-data", "-horario_inicio")
 
-        serializer = ReservaAreaSerializer(reservas, many=True)
-
-        return Response(serializer.data)
+        return listar(request, reservas, ReservaAreaSerializer)
 
 
 class ReservaAreaDetailView(APIView):

@@ -1,21 +1,8 @@
+import { consultarTodasPaginas } from './paginacao';
 import axios from 'axios';
 const BLOCOS_URL = '/api/blocos/';
 
-export const buscarBlocos = async () => {
-    try {
-        const response = await axios.get(
-            BLOCOS_URL,
-            {
-                withCredentials: true,
-            }
-        );
-
-        return response.data;
-    } catch (erro) {
-        console.error('Erro ao buscar blocos:', erro.response?.data);
-        throw erro;
-    }
-};
+export const buscarBlocos = (parametros, signal) => consultarTodasPaginas('/api/blocos/', parametros, signal);
 
 export const buscarBloco = async (id) => {
     if (!id) return null;

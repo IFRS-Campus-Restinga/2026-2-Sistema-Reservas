@@ -13,31 +13,36 @@ from api.enumerations import StatusReserva, TipoTermo
 from api.enumerations.status_termo import StatusTermo
 from api.models import Reserva, TermoResponsabilidade
 from api.permissions.regras_comuns import usuario_e_admin
+from api.services.situacao_reserva_service import situacao_reserva
+from api.services.notificacao_service import criar_notificacao_termo_aprovado, criar_notificacao_termo_enviado, criar_notificacao_termo_rejeitado
 
 
 ABERTAS = (StatusReserva.AGUARDANDO_TERMO, StatusReserva.PENDENTE)
-RESERVAS_VEICULO_ABERTAS = ABERTAS + (StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO,)
 MODELOS = Path(__file__).resolve().parent.parent / 'documentos' / 'termos'
 
 MODELOS_POR_TIPO = {
-    TipoTermo.RESPONSABILIDADE: {'veiculo': 'termo-veiculos.docx', 'recurso_geral': 'termo-recursos.docx'},
+    TipoTermo.RESPONSABILIDADE: {'recurso_geral': 'termo-recursos.docx'},
     TipoTermo.RETIRADA_VEICULO: {'veiculo': 'termo-retirada-veiculo.docx'},
     TipoTermo.DEVOLUCAO_VEICULO: {'veiculo': 'termo-devolucao-veiculo.docx'},
 }
 
 
 def reserva_concreta(reserva):
+    if hasattr(reserva, 'reservaarea'):
+        return reserva.reservaarea, 'area'
     if hasattr(reserva, 'reservaveiculo'):
         return reserva.reservaveiculo, 'veiculo'
     if hasattr(reserva, 'reservarecursogeral'):
         return reserva.reservarecursogeral, 'recurso_geral'
-    raise ValidationError('Esta modalidade não possui termo de responsabilidade.')
+    raise ValidationError('Não foi possível identificar a modalidade da reserva.')
 
 
 def reserva_exige_termo(reserva, recurso=None):
     concreta, modalidade = reserva_concreta(reserva)
+    if modalidade == 'area':
+        return False
     if modalidade == 'veiculo':
-        return True
+        return False
     if recurso is not None:
         item = recurso
     else:
@@ -152,6 +157,7 @@ def enviar_termo(reserva, usuario, arquivo, tipo=TipoTermo.RESPONSABILIDADE):
         validar_termo_operacional(reserva, tipo)
     validar_pdf(arquivo)
     atual = reserva.termos.filter(tipo=tipo, atual=True).first()
+    reenviado = bool(atual and atual.status == StatusTermo.REJEITADO)
     if atual and atual.status != StatusTermo.REJEITADO:
         raise ValidationError('Já existe um termo em análise ou aprovado para esta reserva.')
     modelo = modelo_da_reserva(reserva, tipo)
@@ -163,9 +169,10 @@ def enviar_termo(reserva, usuario, arquivo, tipo=TipoTermo.RESPONSABILIDADE):
             termo.arquivo_assinado.save(arquivo.name, arquivo, save=False)
             termo.save()
             if tipo == TipoTermo.RESPONSABILIDADE:
-                reserva.status = StatusReserva.PENDENTE
-                Reserva.objects.filter(pk=reserva.pk).update(status=reserva.status)
-            elif tipo == TipoTermo.DEVOLUCAO_VEICULO:
+                criar_notificacao_termo_enviado(
+                    termo,
+                    reenviado=reenviado,
+                )
                 reserva.status = StatusReserva.PENDENTE
                 Reserva.objects.filter(pk=reserva.pk).update(status=reserva.status)
     except Exception:
@@ -183,11 +190,20 @@ def invalidar_termo_apos_edicao(reserva, dados):
     if not any(campo in dados and dados[campo] != getattr(reserva, campo, None) for campo in campos):
         return
     reserva.termos.filter(atual=True).update(atual=False)
-    exige_termo = reserva_exige_termo(reserva, recurso=dados.get('recurso_geral'))
-    if exige_termo:
-        reserva.status = StatusReserva.AGUARDANDO_TERMO
-    else:
+    _, modalidade = reserva_concreta(reserva)
+
+    if modalidade == 'veiculo':
         reserva.status = StatusReserva.PENDENTE
+    else:
+        exige_termo = reserva_exige_termo(
+            reserva,
+            recurso=dados.get('recurso_geral'),
+        )
+
+        if exige_termo:
+            reserva.status = StatusReserva.AGUARDANDO_TERMO
+        else:
+            reserva.status = StatusReserva.CONFIRMADA
     reserva.save(update_fields=['status'])
 
 
@@ -207,7 +223,7 @@ def validar_termo_operacional(reserva, tipo):
         if timezone.now() < inicio - timedelta(hours=1):
             raise ValidationError('O termo de retirada fica disponível uma hora antes do início da reserva.')
     if tipo == TipoTermo.DEVOLUCAO_VEICULO:
-        if reserva.status not in (StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO, StatusReserva.PENDENTE):
+        if (reserva.status != StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO):
             raise ValidationError('A devolução só pode ser enviada após a aprovação da retirada.')
         retirada = reserva.termos.filter(tipo=TipoTermo.RETIRADA_VEICULO, atual=True).first()
         if not retirada or retirada.status != StatusTermo.APROVADO:
@@ -231,26 +247,27 @@ def analisar_termo(reserva, termo_id, usuario, decisao, motivo, tipo=TipoTermo.R
         if not retirada:
             raise ValidationError('A devolução só pode ser analisada após a aprovação da retirada.')
     if decisao == StatusTermo.APROVADO and tipo == TipoTermo.RESPONSABILIDADE:
-        concreta, modalidade = reserva_concreta(reserva)
-        if modalidade == 'veiculo':
-            from api.models import Veiculo
-            from api.services.reserva_veiculo_service import validar_reserva
-            concreta.veiculo = Veiculo.objects.select_for_update().get(pk=concreta.veiculo_id)
-            validar_reserva(usuario, {}, concreta)
-        else:
-            from api.models import RecursoGeral
-            from api.validators.reserva_recurso_geral_validator import validar_autorizacao, validar_disponibilidade
-            concreta.recurso_geral = RecursoGeral.objects.select_for_update().get(pk=concreta.recurso_geral_id)
-            dados = {campo: getattr(concreta, campo) for campo in (
-                'recurso_geral', 'data', 'data_devolucao_prevista', 'horario_inicio', 'horario_fim', 'quantidades',
-            )}
-            validar_autorizacao(concreta.usuario, dados)
-            validar_disponibilidade(dados, excluir_reserva=concreta.pk)
+        concreta, _ = reserva_concreta(reserva)
+        from api.models import RecursoGeral
+        from api.validators.reserva_recurso_geral_validator import validar_autorizacao, validar_disponibilidade
+        concreta.recurso_geral = RecursoGeral.objects.select_for_update().get(pk=concreta.recurso_geral_id)
+        dados = {campo: getattr(concreta, campo) for campo in (
+            'recurso_geral', 'data', 'data_devolucao_prevista', 'horario_inicio', 'horario_fim', 'quantidades',
+        )}
+        validar_autorizacao(concreta.usuario, dados)
+        validar_disponibilidade(dados, excluir_reserva=concreta.pk)
         novo_status = StatusReserva.CONFIRMADA
     elif tipo == TipoTermo.RESPONSABILIDADE:
         novo_status = StatusReserva.AGUARDANDO_TERMO
+    elif (
+        tipo == TipoTermo.RETIRADA_VEICULO
+        and decisao == StatusTermo.APROVADO
+    ):
+        novo_status = (
+            StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO
+        )
     elif tipo == TipoTermo.RETIRADA_VEICULO:
-        novo_status = StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO
+        novo_status = StatusReserva.CONFIRMADA
     elif decisao == StatusTermo.APROVADO and tipo == TipoTermo.DEVOLUCAO_VEICULO:
         novo_status = StatusReserva.CONCLUIDA
     elif tipo == TipoTermo.DEVOLUCAO_VEICULO:
@@ -265,4 +282,116 @@ def analisar_termo(reserva, termo_id, usuario, decisao, motivo, tipo=TipoTermo.R
     termo.save(update_fields=['status', 'validado_por', 'data_validacao', 'motivo_rejeicao'])
     if tipo == TipoTermo.RESPONSABILIDADE or tipo in (TipoTermo.RETIRADA_VEICULO, TipoTermo.DEVOLUCAO_VEICULO):
         reserva.status = novo_status
-        Reserva.objects.filter(pk=reserva.pk).update(status=reserva.status)
+        Reserva.objects.filter(pk=reserva.pk).update(
+            status=reserva.status
+        )
+
+    if tipo == TipoTermo.RESPONSABILIDADE:
+        if decisao == StatusTermo.APROVADO:
+            criar_notificacao_termo_aprovado(reserva)
+
+        elif decisao == StatusTermo.REJEITADO:
+            criar_notificacao_termo_rejeitado(
+                reserva,
+                motivo,
+            )
+
+def montar_solicitacao_termo(reserva, documento_parametro):
+    concreta, modalidade = reserva_concreta(reserva)
+
+    if modalidade == 'area':
+        nome_item = concreta.area.nome
+    elif modalidade == 'veiculo':
+        item = concreta.veiculo
+        nome_item = f'{item.nome} · {item.placa}'
+    else:
+        item = concreta.recurso_geral
+        nome_item = item.nome
+
+    termos_atuais = getattr(reserva, 'termos_atuais', None)
+    if termos_atuais is None:
+        termos_atuais = list(reserva.termos.filter(atual=True))
+    tipo_filtrado = {
+        'responsabilidade': TipoTermo.RESPONSABILIDADE,
+        'retirada': TipoTermo.RETIRADA_VEICULO,
+        'devolucao': TipoTermo.DEVOLUCAO_VEICULO,
+    }.get(documento_parametro)
+    termos_atuais = [
+        termo
+        for termo in termos_atuais
+        if tipo_filtrado is None or termo.tipo == tipo_filtrado
+    ]
+
+    solicitacao_reserva = (
+        reserva.status == StatusReserva.PENDENTE
+        and not termos_atuais
+        and (modalidade != 'recurso_geral' or not concreta.recurso_geral.tem_termo_de_responsabilidade)
+    )
+
+    termo_atual = next(
+        (
+            termo
+            for termo in termos_atuais
+            if termo.status == StatusTermo.PENDENTE
+        ),
+        None,
+    )
+
+    if termo_atual is None:
+        termo_atual = next(
+            (
+                termo
+                for termo in termos_atuais
+                if termo.tipo == TipoTermo.RESPONSABILIDADE
+            ),
+            None,
+        )
+
+    if termo_atual is None and termos_atuais:
+        termo_atual = termos_atuais[0]
+
+    tipo_resultado = documento_parametro
+
+    if tipo_resultado == 'todos':
+        tipo_resultado = (
+            'devolucao' if reserva.status == StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO
+            else 'retirada' if modalidade == 'veiculo' else 'responsabilidade'
+        )
+
+    status_termo = None
+
+    if termo_atual is not None:
+        tipo_resultado = {
+            TipoTermo.RESPONSABILIDADE: 'responsabilidade',
+            TipoTermo.RETIRADA_VEICULO: 'retirada',
+            TipoTermo.DEVOLUCAO_VEICULO: 'devolucao',
+        }[termo_atual.tipo]
+
+        status_termo = termo_atual.status
+
+    return {
+        'id': reserva.pk,
+        'nome': reserva.nome,
+        'descricao': reserva.descricao,
+        'status': reserva.status,
+        'situacao': situacao_reserva(reserva),
+        'modalidade': modalidade,
+        'tipo_reserva': reserva.tipo_reserva,
+        'origem_solicitacao': ('RESERVA' if solicitacao_reserva else 'TERMO'),
+        'data': reserva.data,
+        'horario_inicio': reserva.horario_inicio,
+        'horario_fim': reserva.horario_fim,
+        'data_devolucao_prevista': getattr(
+            concreta,
+            'data_devolucao_prevista',
+            reserva.data,
+        ),
+        'responsavel': reserva.usuario.nome or reserva.usuario.email,
+        'item': nome_item,
+        'destino': getattr(concreta, 'destino', ''),
+        'finalidade': getattr(concreta, 'finalidade', ''),
+        'quantidade': getattr(concreta, 'quantidades', None),
+        'ocupantes': getattr(concreta, 'quantidade_passageiros', None),
+        'termo_tipo': tipo_resultado,
+        'termo_status': status_termo,
+    }

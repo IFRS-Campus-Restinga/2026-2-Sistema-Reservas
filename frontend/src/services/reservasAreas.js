@@ -1,3 +1,4 @@
+import { consultarPagina } from './paginacao';
 
 const URL = '/api/reservas/areas/';
 
@@ -35,13 +36,7 @@ export async function listarReservasAreas({ dataInicio, dataFim } = {}) {
   return tratarResposta(resposta);
 }
 
-export async function listarMinhasReservasAreas() {
-  const resposta = await fetch(`${URL}minhas/`, {
-    credentials: 'include',
-  });
-
-  return tratarResposta(resposta);
-}
+export const listarMinhasReservasAreas = (parametros, signal) => consultarPagina('/api/reservas/areas/minhas/', parametros, signal);
 
 export async function buscarAgendaArea(id) {
   const parametros = new URLSearchParams({ tipo: 'AREA', recurso: id });
@@ -80,6 +75,42 @@ export async function atualizarReservaArea(id, dados) {
 
 export async function cancelarReservaArea(id) {
   const resposta = await fetch(`${URL}${id}/`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      status: 'CANCELADA',
+    }),
+  });
+
+  return tratarResposta(resposta);
+}
+
+export async function buscarRecorrenciaArea(id) {
+  const resposta = await fetch(`${URL}recorrencias/${id}/`, {
+    credentials: 'include',
+  });
+
+  return tratarResposta(resposta);
+}
+
+export async function atualizarRecorrenciaArea(id, dados) {
+  const resposta = await fetch(`${URL}recorrencias/${id}/`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(dados),
+  });
+
+  return tratarResposta(resposta);
+}
+
+export async function cancelarRecorrenciaArea(id) {
+  const resposta = await fetch(`${URL}recorrencias/${id}/`, {
     method: 'PATCH',
     credentials: 'include',
     headers: {

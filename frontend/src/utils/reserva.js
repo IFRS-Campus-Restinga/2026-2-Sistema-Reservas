@@ -8,12 +8,24 @@ export const STATUS_RESERVA_LABEL = {
   concluida: "Concluída",
 };
 
+export const SITUACAO_RESERVA_LABEL = {
+  aguardando_confirmacao: 'Aguardando confirmação',
+  aguardando_envio_termo: 'Aguardando envio do termo',
+  termo_em_analise: 'Termo em análise',
+  aguardando_envio_termo_retirada: 'Aguardando envio do termo de retirada',
+  confirmada: 'Confirmada',
+  aguardando_termo_devolucao: 'Aguardando envio do termo de devolução',
+  concluida: 'Concluída',
+  cancelada: 'Cancelada',
+  rejeitada: 'Rejeitada',
+};
+
 export function statusReservaApresentado(reserva, agora = new Date()) {
-  const status = String(reserva?.status || '').toLowerCase();
-  if (status !== 'aguardando_termo_devolucao') return status;
+  const situacao = String(reserva?.situacao || reserva?.status || '').toLowerCase();
+  if (situacao !== 'aguardando_termo_devolucao') return situacao;
 
   const inicio = new Date(`${reserva.data}T${reserva.horario_inicio}`);
-  if (Number.isNaN(inicio.getTime()) || agora >= inicio) return status;
+  if (Number.isNaN(inicio.getTime()) || agora >= inicio) return situacao;
   return 'confirmada';
 }
 

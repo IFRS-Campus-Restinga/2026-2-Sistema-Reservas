@@ -1,41 +1,23 @@
-import { useEffect, useState } from 'react';
+import useListaPaginada from '../../../hooks/useListaPaginada';
+import Paginacao from '../Paginacao/Paginacao';
+import { useState } from 'react';
 import { Pencil, Plus, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import styles from './BlocosAdmin.module.css';
 
-import { buscarBlocos, criarBloco, atualizarBloco, excluirBloco } from '../../../services';
+import { criarBloco, atualizarBloco, excluirBloco } from '../../../services';
 
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import BlocoModal from './ModalBloco/BlocoModal';
 import ModalConfirmacao from '../ModalConfirmacao/ModalConfirmacao';
 
 function BlocosAdministracao() {
-    const [blocos, setBlocos] = useState([]);
-    const [carregando, setCarregando] = useState(true);
-    const [erro, setErro] = useState('');
 
     const [modalBlocoAberto, setModalBlocoAberto] = useState(false);
     const [blocoEditando, setBlocoEditando] = useState(null);
     const [blocoExcluindo, setBlocoExcluindo] = useState(null);
 
-    useEffect(() => {
-        carregarBlocos();
-    }, []);
 
-    async function carregarBlocos() {
-        try {
-            setCarregando(true);
-            setErro('');
-
-            const dados = await buscarBlocos();
-
-            setBlocos(dados);
-        } catch (erro) {
-            console.error(erro);
-            setErro('Não foi possível carregar os blocos.');
-        } finally {
-            setCarregando(false);
-        }
-    }
+    const { itens: blocos, carregando, erro, setErro, recarregar: carregarBlocos, paginacao } = useListaPaginada('/api/blocos/', {});
 
     function abrirCadastro() {
         setBlocoEditando(null);
@@ -181,6 +163,8 @@ function BlocosAdministracao() {
                     mensagemVazia="Nenhum bloco cadastrado."
                 />
             )}
+
+            <Paginacao {...paginacao} />
 
             <BlocoModal
                 aberto={modalBlocoAberto}

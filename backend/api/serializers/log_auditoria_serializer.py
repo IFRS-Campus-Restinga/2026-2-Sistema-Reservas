@@ -5,8 +5,9 @@ from api.services.auditoria import rotulos_campos
 
 
 class LogAuditoriaSerializer(serializers.ModelSerializer):
-    admin_nome = serializers.CharField(source='admin.nome', read_only=True)
-    admin_email = serializers.CharField(source='admin.email', read_only=True)
+    responsavel_nome = serializers.CharField(source='responsavel.nome', read_only=True)
+    responsavel_email = serializers.CharField(source='responsavel.email', read_only=True)
+    perfil_responsavel_descricao = serializers.CharField(source='get_perfil_responsavel_display', read_only=True)
     usuario_afetado_nome = serializers.CharField(source='usuario_afetado.nome', read_only=True, default=None)
     usuario_afetado_email = serializers.CharField(source='usuario_afetado.email', read_only=True, default=None)
     acao_descricao = serializers.CharField(source='get_acao_display', read_only=True)
@@ -17,9 +18,11 @@ class LogAuditoriaSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'data',
-            'admin',
-            'admin_nome',
-            'admin_email',
+            'responsavel',
+            'responsavel_nome',
+            'responsavel_email',
+            'perfil_responsavel',
+            'perfil_responsavel_descricao',
             'acao',
             'acao_descricao',
             'entidade',

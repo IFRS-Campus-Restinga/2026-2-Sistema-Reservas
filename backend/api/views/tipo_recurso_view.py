@@ -1,3 +1,6 @@
+from .view_helpers import listar
+from django.db.models import Count, Sum, Q
+from api.services.catalogo_recursos import categorias_catalogo
 from django.db import transaction
 from rest_framework import status
 from rest_framework.views import APIView
@@ -13,8 +16,14 @@ class TipoRecursoCreateView(APIView):
 
     def get(self, request):
         tipos = TipoRecurso.objects.all()
-        serializer = TipoRecursoSerializer(tipos, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        if request.query_params.get('catalogo') == 'true':
+            from api.serializers.tipo_recurso_serializer import TipoRecursoCatalogoSerializer
+            tipos = categorias_catalogo(tipos).filter(recursos__status='ATIVO', recursos__quantidade_total__gt=0).annotate(
+                total_itens=Count('recursos'), total_unidades=Sum('recursos__quantidade_total'),
+                total_termos=Count('recursos', filter=Q(recursos__tem_termo_de_responsabilidade=True)),
+            ).order_by('descricao')
+            return listar(request, tipos, TipoRecursoCatalogoSerializer)
+        return listar(request, tipos, TipoRecursoSerializer)
 
     def post(self, request):
         serializer = TipoRecursoSerializer(data=request.data)

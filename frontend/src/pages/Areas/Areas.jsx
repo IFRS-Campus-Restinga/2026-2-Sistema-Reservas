@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import useListaPaginada from '../../hooks/useListaPaginada';
+import Paginacao from '../../components/Administracao/Paginacao/Paginacao';
+import SelectRemoto from '../../components/SelectRemoto/SelectRemoto';
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Row, Col } from "react-bootstrap";
 import { Search } from "lucide-react";
-import { buscarAreas, buscarBlocos } from "../../services";
 import CampoBusca from "../../components/Administracao/CampoBusca/CampoBusca";
 import Select from "../../components/Select/Select";
 import CardArea from "../../components/CardArea/CardArea";
@@ -17,60 +19,23 @@ const OPCOES_CAPACIDADE = [
 function Areas() {
   const navigate = useNavigate();
 
-  const [areas, setAreas] = useState([]);
-  const [blocos, setBlocos] = useState([]);
-  const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState("");
 
   const [busca, setBusca] = useState("");
   const [filtroBloco, setFiltroBloco] = useState("todos");
   const [filtroCapacidade, setFiltroCapacidade] = useState("0");
 
-  useEffect(() => {
-    async function carregarDados() {
-      try {
-        setCarregando(true);
-        setErro("");
-
-        const [dadosAreas, dadosBlocos] = await Promise.all([
-          buscarAreas(),
-          buscarBlocos(),
-        ]);
-
-        setAreas(dadosAreas);
-        setBlocos(dadosBlocos);
-      } catch (erro) {
-        console.error(erro);
-        setErro("Não foi possível carregar as áreas.");
-      } finally {
-        setCarregando(false);
-      }
-    }
-
-    carregarDados();
-  }, []);
-
-  const opcoesBloco = blocos.map((bloco) => ({ valor: bloco.id, rotulo: bloco.nome }));
-
-  const termo = busca.trim().toLowerCase();
-  const areasFiltradas = areas.filter((area) => {
-    const combinaNome = area.nome.toLowerCase().includes(termo);
-    const combinaBloco = filtroBloco === "todos" || String(area.bloco) === String(filtroBloco);
-    const combinaCapacidade =
-      Number(filtroCapacidade) === 0 || area.capacidade >= Number(filtroCapacidade);
-
-    return combinaNome && combinaBloco && combinaCapacidade;
-  });
+  const { itens: areasFiltradas, carregando, erro, paginacao } = useListaPaginada('/api/areas/', { busca, bloco: filtroBloco, capacidade: filtroCapacidade });
 
   return (
     <div className="d-flex flex-column gap-4 p-3 p-md-4">
       <div className="d-flex flex-wrap align-items-center justify-content-center gap-2">
         <CampoBusca valor={busca} aoAlterar={setBusca} placeholder="Buscar área" />
 
-        <Select
+        <SelectRemoto url="/api/blocos/"
           valor={filtroBloco}
           aoAlterar={setFiltroBloco}
-          opcoes={opcoesBloco}
+          filtros={{ page_size: 100 }}
+          mostrarBusca={false}
           valorTodos="todos"
           rotuloTodos="Todos os blocos"
           ariaLabel="Filtrar por bloco"
@@ -103,13 +68,14 @@ function Areas() {
             <Col key={area.id}>
               <CardArea
                 area={area}
-                blocoNome={blocos.find((bloco) => bloco.id == area.bloco)?.nome}
+                blocoNome={area.bloco_nome}
                 aoClicar={(area) => navigate(`/areas/${area.id}`)}
               />
             </Col>
           ))}
         </Row>
       )}
+      <Paginacao {...paginacao} />
     </div>
   );
 }

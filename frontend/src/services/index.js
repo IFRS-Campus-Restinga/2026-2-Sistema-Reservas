@@ -1,10 +1,12 @@
 export { buscarUsuarioLogado } from './sessao'
+export { entrarComoPerfilDemonstracao } from './demonstracao'
 export {
   listarRecursosGerais,
   criarRecursoGeral,
   atualizarRecursoGeral,
   excluirRecursoGeral,
   listarTiposRecurso,
+  listarTodosTiposRecurso,
 } from './recursos'
 
 export { 
@@ -50,6 +52,9 @@ export {
   criarReservaArea,
   cancelarReservaArea,
   buscarAgendaArea,
+  buscarRecorrenciaArea,
+  atualizarRecorrenciaArea,
+  cancelarRecorrenciaArea,
 } from './reservasAreas';
 export {
   listarReservasVeiculos,
@@ -60,16 +65,19 @@ export {
   buscarAgendaVeiculo,
 } from './reservasVeiculos';
 export { 
-  listarReservasPendentes,
   confirmarReservaPendente, 
   cancelarReservaAdmin,
 } from './reservasPendentes';
 export {
   listarNotificacoes,
   marcarNotificacaoComoLida,
+  marcarTodasNotificacoesComoLidas,
 } from './notificacoes';
 export { buscarDataAtual } from './dataAtual';
 export {
   buscarLogsAuditoria,
   buscarLogAuditoria,
 } from './auditoria';
+export {
+  listarReservasAdmin,
+} from './reservasAdmin';

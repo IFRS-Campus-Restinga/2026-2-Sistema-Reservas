@@ -1,3 +1,4 @@
+from .view_helpers import listar
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -6,18 +7,20 @@ from rest_framework.views import APIView
 
 from api.models.area_model import Area
 from api.permissions.escrita_admin import EscritaAdmin
+from api.permissions.regras_comuns import LeituraPublica
 from api.serializers.area_serializer import AreaSerializer
 from api.enumerations.auditoria_enumerations import AcaoAuditoria
 from api.services.auditoria import foto, registrar_auditoria
+from hub_integrations.authentication import HubJWTAuthenticationOpcional
 
 
 class AreaListCreateView(APIView):
-    permission_classes = [EscritaAdmin]
+    authentication_classes = [HubJWTAuthenticationOpcional]
+    permission_classes = [LeituraPublica | EscritaAdmin]
 
     def get(self, request):
         areas = Area.objects.all().select_related('bloco')
-        serializer = AreaSerializer(areas, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return listar(request, areas, AreaSerializer)
 
     def post(self, request):
         serializer = AreaSerializer(data=request.data)

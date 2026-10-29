@@ -1,3 +1,4 @@
+from .view_helpers import listar
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -9,15 +10,17 @@ from api.serializers.bloco_serializer import BlocoSerializer
 from api.enumerations.auditoria_enumerations import AcaoAuditoria
 from api.services.auditoria import foto, registrar_auditoria
 from api.permissions.escrita_admin import EscritaAdmin
+from api.permissions.regras_comuns import LeituraPublica
+from hub_integrations.authentication import HubJWTAuthenticationOpcional
 
 
 class BlocoListCreateView(APIView):
-    permission_classes = [EscritaAdmin]
+    authentication_classes = [HubJWTAuthenticationOpcional]
+    permission_classes = [LeituraPublica | EscritaAdmin]
 
     def get(self, request):
         blocos = Bloco.objects.all()
-        serializer = BlocoSerializer(blocos, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return listar(request, blocos, BlocoSerializer)
 
     def post(self, request):
         serializer = BlocoSerializer(data=request.data)

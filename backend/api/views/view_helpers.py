@@ -6,6 +6,7 @@ from rest_framework.response import Response
 
 from api.enumerations.auditoria_enumerations import AcaoAuditoria
 from api.pagination import PaginacaoPadrao
+from api.services.filtros_listagem import filtrar_listagem
 from api.services.auditoria import foto, registrar_auditoria
 
 class BuscarObjetoComPermissaoMixin:
@@ -21,6 +22,7 @@ class BuscarObjetoComPermissaoMixin:
 
 
 def listar(request, queryset, serializer_class):
+    queryset = filtrar_listagem(request, queryset)
     paginator = PaginacaoPadrao()
     pagina = paginator.paginate_queryset(queryset, request)
     serializer = serializer_class(pagina, many=True)

@@ -1,3 +1,4 @@
+from .view_helpers import listar
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.db.models.deletion import ProtectedError
@@ -19,8 +20,7 @@ class VeiculoCreateView(APIView):
 
     def get(self, request):
         veiculos = Veiculo.objects.all().order_by("id")
-        serializer = VeiculoSerializer(veiculos, many=True)
-        return Response(serializer.data)
+        return listar(request, veiculos, VeiculoSerializer)
 
     def post(self, request):
         serializer = VeiculoSerializer(data=request.data)

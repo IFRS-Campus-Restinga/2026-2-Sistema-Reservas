@@ -18,6 +18,9 @@ function CalendarioReserva({
   dataMinima,
   inicioPeriodo,
   fimPeriodo,
+  datasDisponiveis,
+  carregandoDisponibilidade = false,
+  erroDisponibilidade = '',
 }) {
   const hoje = dataISO(new Date());
   const primeiraData = dataMinima && dataMinima > hoje ? dataMinima : hoje;
@@ -85,6 +88,7 @@ function CalendarioReserva({
             valor > inicioPeriodo && valor < fimPeriodo
           );
           const limiteDoPeriodo = valor === inicioPeriodo || valor === fimPeriodo;
+          const indisponivel = Array.isArray(datasDisponiveis) && !datasDisponiveis.includes(valor);
           const classes = [
             valor === selecionada ? styles.selecionado : '',
             dentroDoPeriodo ? styles.noPeriodo : '',
@@ -95,7 +99,7 @@ function CalendarioReserva({
             <button
               type="button"
               key={valor}
-              disabled={valor < primeiraData}
+              disabled={valor < primeiraData || indisponivel || carregandoDisponibilidade}
               className={classes}
               aria-pressed={valor === selecionada}
               onClick={() => selecionar(valor)}
@@ -107,7 +111,11 @@ function CalendarioReserva({
       </div>
 
       <p className={styles.nota}>
-        A disponibilidade será confirmada ao enviar a reserva
+        {erroDisponibilidade || (carregandoDisponibilidade
+          ? 'Consultando dias disponíveis...'
+          : Array.isArray(datasDisponiveis)
+            ? 'Dias sem horários livres estão bloqueados'
+            : 'Selecione um recurso para consultar a disponibilidade')}
       </p>
     </div>
   );

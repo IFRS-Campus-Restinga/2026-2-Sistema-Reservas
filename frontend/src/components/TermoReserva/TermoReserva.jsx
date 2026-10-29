@@ -26,7 +26,7 @@ function HistoricoTermos({ termos }) {
 }
 
 export default function TermoReserva({
-  reservaId, modalidade, administrativo = false, somenteResumo = false,
+  reservaId, administrativo = false, somenteResumo = false,
   rejeitarInicialmente = false, aoAtualizar, aoProcessar,
   tipoDocumento = 'responsabilidade',
   ocultarIndisponivel = false,
@@ -135,10 +135,6 @@ export default function TermoReserva({
 
     let nomeModelo = 'Termo de responsabilidade — recursos.docx';
     let tituloDocumento = 'Termo deste recurso';
-    if (modalidade === 'veiculo') {
-      nomeModelo = 'Termo de responsabilidade — veículos.docx';
-      tituloDocumento = 'Termo deste veículo';
-    }
     if (tipoDocumento === 'retirada') {
       nomeModelo = 'Termo de retirada de veículo';
       tituloDocumento = 'Termo de retirada';
@@ -229,7 +225,9 @@ export default function TermoReserva({
           <span className={styles.iconeModelo}><FileText size={14} /></span>
           <div><span>Modelo original</span><strong>{nomeModelo}</strong></div>
         </div>
-        <a className={styles.link} href={dados.url_modelo}><Download size={13} />Baixar modelo em branco</a>
+        {atual?.status !== 'APROVADO' && (
+          <a className={styles.link} href={dados.url_modelo}><Download size={13} />Baixar modelo em branco</a>
+        )}
         {documento}
         {acoesAnalise}
         <HistoricoTermos termos={dados.historico} />
@@ -239,7 +237,9 @@ export default function TermoReserva({
         {resumo}
         <div className={styles.arquivos}>
           <strong>{tituloDocumento}</strong>
-          <a className={styles.link} href={dados.url_modelo}><Download size={13} />Baixar termo em branco</a>
+          {dados.pode_enviar && (
+            <a className={styles.link} href={dados.url_modelo}><Download size={13} />Baixar termo em branco</a>
+          )}
           {documento}
           {dados.pode_enviar && <>
             <p>Baixe o Word, preencha os dados e assine. Depois, envie o documento em PDF.</p>

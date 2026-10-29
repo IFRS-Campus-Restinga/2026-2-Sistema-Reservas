@@ -1,3 +1,4 @@
+import { consultarPagina } from './paginacao';
 const URL = '/api/reservas/veiculos/';
 
 async function tratarResposta(resposta) {
@@ -15,10 +16,7 @@ async function tratarResposta(resposta) {
   return dados;
 }
 
-export async function listarReservasVeiculos() {
-  const resposta = await fetch(URL, { credentials: 'include' });
-  return tratarResposta(resposta);
-}
+export const listarReservasVeiculos = (parametros, signal) => consultarPagina('/api/reservas/veiculos/', parametros, signal);
 
 export async function criarReservaVeiculo(dados) {
   const resposta = await fetch(URL, {

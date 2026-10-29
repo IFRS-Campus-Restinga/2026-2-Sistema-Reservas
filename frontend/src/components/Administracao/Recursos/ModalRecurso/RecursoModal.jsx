@@ -1,3 +1,4 @@
+import SelectRemoto from '../../../SelectRemoto/SelectRemoto';
 import { useEffect, useState } from 'react';
 import Modal from '../../Modal/Modal';
 import styles from './RecursoModal.module.css';
@@ -16,7 +17,6 @@ const formularioInicial = {
 function RecursoModal({
     aberto,
     recurso,
-    tipos,
     aoFechar,
     aoSalvar,
 }) {
@@ -39,12 +39,12 @@ function RecursoModal({
         } else {
             setFormulario({
                 ...formularioInicial,
-                tipo_recurso: tipos[0]?.id || '',
+                tipo_recurso: '',
             });
         }
 
         setErros({});
-    }, [recurso, aberto, tipos]);
+    }, [recurso, aberto]);
 
     function alterarCampo(evento) {
         const { name, value, type, checked } = evento.target;
@@ -158,21 +158,10 @@ function RecursoModal({
                 <div className={styles.linhaDupla}>
                     <div className={styles.campo}>
                         <label htmlFor="tipo_recurso">Tipo de recurso *</label>
-                        <select
-                            id="tipo_recurso"
-                            name="tipo_recurso"
-                            value={formulario.tipo_recurso}
-                            onChange={alterarCampo}
-                            aria-invalid={Boolean(erros.tipo_recurso)}
-                            aria-describedby="erro-tipo_recurso"
-                            required
-                        >
-                            {tipos.map((tipo) => (
-                                <option key={tipo.id} value={tipo.id}>
-                                    {tipo.descricao}
-                                </option>
-                            ))}
-                        </select>
+                        <SelectRemoto id="tipo_recurso" url="/api/tipos-recurso/" ativo={aberto}
+                            filtros={{ page_size: 100 }} mostrarBusca={false} required
+                            ariaLabel="Tipo de recurso" valor={formulario.tipo_recurso}
+                            aoAlterar={(valor) => alterarCampo({ target: { name: 'tipo_recurso', value: valor } })} />
                         {mensagemErro('tipo_recurso')}
                     </div>
 

@@ -33,3 +33,13 @@ class HubJWTAuthentication(BaseAuthentication):
 
     def authenticate_header(self, request):
         return 'Bearer'
+
+
+class HubJWTAuthenticationOpcional(HubJWTAuthentication):
+    """Trata token inválido ou expirado como visitante, para não bloquear rotas públicas."""
+
+    def authenticate(self, request):
+        try:
+            return super().authenticate(request)
+        except AuthenticationFailed:
+            return None
