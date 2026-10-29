@@ -217,11 +217,9 @@ class SolicitacoesTermoView(APIView):
                 Q(status=StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO)
                 | Q(termos__tipo=documento, termos__atual=True)
             ).distinct()
-        else:
-            queryset = queryset.filter(
-                aguardando_confirmacao | aguardando_retirada | aguardando_termo | Q(termos__atual=True)
-            ).distinct()
-        if situacao in ('ABERTAS', 'TODOS'):
+        if situacao == 'TODOS':
+            queryset = queryset.exclude(status=StatusReserva.CANCELADA)
+        elif situacao == 'ABERTAS':
             if documento == TipoTermo.RESPONSABILIDADE:
                 queryset = queryset.filter(status__in=ABERTAS)
             elif documento is None:
