@@ -3,20 +3,45 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.db.models import Prefetch
 
+from api.enumerations.status_termo import StatusTermo
+from api.models.termo_responsabilidade_model import TermoResponsabilidade
 from api.models.notificacao_model import Notificacao
 from api.permissions.regras_comuns import UsuarioAutenticado
 from api.serializers.notificacao_serializer import NotificacaoSerializer
 
+def notificacoes_com_relacoes():
+    return (
+        Notificacao.objects
+        .select_related(
+            'reserva',
+            'reserva__cancelada_por',
+            'reserva__reservaarea',
+            'reserva__reservaveiculo',
+            'reserva__reservarecursogeral',
+        )
+        .prefetch_related(
+            Prefetch(
+                'reserva__termos',
+                queryset=(
+                    TermoResponsabilidade.objects
+                    .filter(status=StatusTermo.REJEITADO)
+                    .exclude(motivo_rejeicao='')
+                    .order_by('-data_validacao', '-pk')
+                ),
+                to_attr='termos_rejeitados',
+            )
+        )
+    )
 
 class MinhasNotificacoesListView(APIView):
     permission_classes = [UsuarioAutenticado]
 
     def get(self, request):
         notificacoes = (
-            Notificacao.objects
+            notificacoes_com_relacoes()
             .filter(usuario=request.user)
-            .select_related("reserva", "reserva__cancelada_por")
             .order_by("-criada_em")
         )
 
@@ -31,7 +56,7 @@ class MarcarNotificacaoLidaView(APIView):
 
     def patch(self, request, pk):
         notificacao = get_object_or_404(
-            Notificacao.objects.select_related("reserva", "reserva__cancelada_por"),
+            notificacoes_com_relacoes(),
             pk=pk,
             usuario=request.user,
         )
@@ -42,3 +67,20 @@ class MarcarNotificacaoLidaView(APIView):
             notificacao.save(update_fields=["lida", "lida_em"])
 
         return Response(NotificacaoSerializer(notificacao).data)
+
+class MarcarTodasNotificacoesLidasView(APIView):
+    permission_classes = [UsuarioAutenticado]
+
+    def patch(self, request):
+        Notificacao.objects.filter(
+            usuario=request.user,
+            lida=False,
+        ).update(
+            lida=True,
+            lida_em=timezone.now(),
+        )
+
+        return Response({
+            "detail": "Todas as notificações foram marcadas como lidas.",
+            "nao_lidas": 0,
+        })

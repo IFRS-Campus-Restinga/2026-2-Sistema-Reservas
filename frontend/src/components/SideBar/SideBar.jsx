@@ -1,12 +1,12 @@
 import { useNavigate  } from "react-router-dom";
 import {
-    LogOut,
     ChevronLeft,
     ChevronRight,
     ExternalLink
 } from "lucide-react";
 import { ITENS_MENU } from "../../config/rotas";
 import { useUsuario } from "../../hooks/useUsuario";
+import { useNotificacoes } from "../../hooks/useNotificacoes";
 import { temPermissao } from "../../utils/permissoes";
 import styles from "./SideBar.module.css";
 import { HUB_URL } from "../../config/hub"
@@ -18,6 +18,7 @@ export default function Sidebar({
 }) {
     const navigate = useNavigate();
     const usuario = useUsuario();
+    const { naoLidas } = useNotificacoes();
     const itens = ITENS_MENU.filter((item) => temPermissao(usuario, item.permissao));
 
     return (
@@ -63,6 +64,12 @@ export default function Sidebar({
                             >
                                 <span className={styles.iconeItem}>
                                     <Icon size={18} />
+
+                                    {id === "notificacoes" && naoLidas > 0 && (
+                                        <span className={styles.contadorNotificacoes}>
+                                        {naoLidas > 9 ? "9+" : naoLidas}
+                                        </span>
+                                    )}
                                 </span>
 
                                 {!menuRecolhido && (

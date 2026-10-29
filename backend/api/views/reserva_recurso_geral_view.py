@@ -20,6 +20,7 @@ from .view_helpers import BuscarObjetoComPermissaoMixin
 
 STATUS_ALTERAVEIS = [
     StatusReserva.PENDENTE,
+    StatusReserva.CONFIRMADA,
     StatusReserva.AGUARDANDO_TERMO,
 ]
 
@@ -59,7 +60,8 @@ class ReservaRecursoGeralListCreateView(APIView):
             dados["recurso_geral"] = recurso
             validar_autorizacao(request.user, dados)
             validar_disponibilidade(dados)
-            serializer.save(usuario=request.user)
+
+            serializer.save(usuario=request.user, status=StatusReserva.CONFIRMADA)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

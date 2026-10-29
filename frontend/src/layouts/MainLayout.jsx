@@ -5,6 +5,7 @@ import Header from '../components/Header/Header'
 import NaoAutenticado from '../pages/NaoAutenticado/NaoAutenticado'
 import { ITENS_MENU, ROTAS } from '../config/rotas'
 import { UsuarioContext } from '../contexts/UsuarioContext'
+import { NotificacoesProvider } from '../contexts/NotificacoesContext'
 import { buscarUsuarioLogado } from '../services'
 import styles from './MainLayout.module.css'
 
@@ -49,24 +50,26 @@ function MainLayout() {
 
   return (
     <UsuarioContext value={usuario}>
-      <div className={styles.app}>
-        <Sidebar
-          menuRecolhido={menuRecolhido}
-          recolherMenu={() => setMenuRecolhido((n) => !n)}
-          paginaAtual={paginaAtual}
-        />
-
-        <div className={styles.main}>
-          <Header
-            titulo={paginaAtual}
-            usuario={usuario}
+      <NotificacoesProvider key={usuario?.id || 'anonimo'} usuario={usuario}>
+        <div className={styles.app}>
+          <Sidebar
+            menuRecolhido={menuRecolhido}
+            recolherMenu={() => setMenuRecolhido((n) => !n)}
+            paginaAtual={paginaAtual}
           />
 
-          <main className={styles.content}>
-            <Outlet />
-          </main>
+          <div className={styles.main}>
+            <Header
+              titulo={paginaAtual}
+              usuario={usuario}
+            />
+
+            <main className={styles.content}>
+              <Outlet />
+            </main>
+          </div>
         </div>
-      </div>
+      </NotificacoesProvider>
     </UsuarioContext>
   )
 }

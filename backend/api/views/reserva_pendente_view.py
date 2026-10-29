@@ -1,4 +1,5 @@
 from .view_helpers import listar
+from api.permissions.regras_comuns import SomenteAdmin
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
@@ -11,12 +12,12 @@ from api.enumerations.status_reserva import StatusReserva
 from api.enumerations.status_termo import StatusTermo
 from api.enumerations import TipoTermo
 from api.models.reserva_model import Reserva
-from api.permissions.regras_comuns import SomenteAdmin
 from api.permissions.reserva_permissions import PodeCancelarReserva,PodeConfirmarReserva
-from api.serializers.reserva_pendente_serializer import ReservaPendenteSerializer
+from api.serializers.reserva_serializer import ReservaSerializer
 from api.services.auditoria import foto, registrar_auditoria
 from api.services.termo_service import analisar_termo
 from api.services.notificacao_service import criar_notificacao_cancelamento, criar_notificacao_confirmacao
+from api.services.termo_service import reserva_exige_termo
 
 def _entidade_reserva(reserva):
     if getattr(reserva, "reservaarea", None) is not None:
@@ -43,7 +44,7 @@ class ReservasPendentesListView(APIView):
             .order_by("data", "horario_inicio")
         )
 
-        return listar(request, reservas, ReservaPendenteSerializer)
+        return listar(request, reservas, ReservaSerializer)
 
 class ConfirmarReservaView(APIView):
     permission_classes = [PodeConfirmarReserva]
@@ -63,6 +64,20 @@ class ConfirmarReservaView(APIView):
             if reserva.status != StatusReserva.PENDENTE:
                 raise ValidationError({
                     "status": "Somente reservas pendentes podem ser confirmadas."
+                })
+
+            reserva_veiculo = getattr(
+                reserva,
+                "reservaveiculo",
+                None,
+            )
+
+            if (reserva_exige_termo(reserva) and reserva_veiculo is None):
+                raise ValidationError({
+                    "detail": (
+                        "Reservas que exigem termo devem ser analisadas "
+                        "em Solicitações."
+                    )
                 })
 
             entidade = _entidade_reserva(reserva)
@@ -100,7 +115,7 @@ class ConfirmarReservaView(APIView):
 
             criar_notificacao_confirmacao(reserva)
 
-        return Response(ReservaPendenteSerializer(reserva).data)
+        return Response(ReservaSerializer(reserva).data)
 
 class CancelarReservaAdminView(APIView):
     permission_classes = [PodeCancelarReserva]
@@ -133,6 +148,7 @@ class CancelarReservaAdminView(APIView):
                 StatusReserva.PENDENTE,
                 StatusReserva.CONFIRMADA,
                 StatusReserva.AGUARDANDO_TERMO,
+                StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO,
             }
 
             if reserva.status not in status_cancelaveis:
@@ -173,4 +189,4 @@ class CancelarReservaAdminView(APIView):
 
             criar_notificacao_cancelamento(reserva)
 
-        return Response(ReservaPendenteSerializer(reserva).data)
+        return Response(ReservaSerializer(reserva).data)

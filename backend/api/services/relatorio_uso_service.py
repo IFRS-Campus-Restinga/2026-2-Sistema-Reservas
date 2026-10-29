@@ -20,6 +20,7 @@ FIM_OPERACAO = time(23)
 HORAS_OPERACAO_DIA = 16
 STATUS_DESCARTADOS = ('CANCELADA', 'REJEITADA')
 MODALIDADES = ('area', 'veiculo', 'recurso_geral')
+LIMITE_REGISTROS = 10000
 
 
 def _modalidade_e_item(reserva):
@@ -129,8 +130,12 @@ def gerar_relatorio(parametros, periodo_inicio, periodo_fim):
                 ocorrencia = copy(reserva)
                 ocorrencia.data = projetada.data
                 ocorrencias.append(ocorrencia)
+                if len(ocorrencias) > LIMITE_REGISTROS:
+                    raise ValidationError({'filtros': 'Reduza o período ou refine os filtros do relatório.'})
         else:
             ocorrencias.append(reserva)
+            if len(ocorrencias) > LIMITE_REGISTROS:
+                raise ValidationError({'filtros': 'Reduza o período ou refine os filtros do relatório.'})
 
     resultados = []
     grupos = defaultdict(lambda: {'total_reservas': 0, 'total_horas': 0})
