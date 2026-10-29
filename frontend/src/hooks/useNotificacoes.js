@@ -2,7 +2,7 @@ import { useContext } from 'react';
 
 import {
   NotificacoesContext,
-} from '../contexts/NotificacoesContext';
+} from '../contexts/notificacoes-context';
 
 export function useNotificacoes() {
   const contexto = useContext(NotificacoesContext);

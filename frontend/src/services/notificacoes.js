@@ -10,8 +10,9 @@ async function tratarResposta(resposta, mensagemPadrao) {
   return dados;
 }
 
-export async function listarNotificacoes() {
-  const resposta = await fetch(URL, {
+export async function listarNotificacoes(pagina = 1, signal) {
+  const resposta = await fetch(`${URL}?page=${pagina}&page_size=20`, {
+    signal,
     credentials: 'include',
   });
 

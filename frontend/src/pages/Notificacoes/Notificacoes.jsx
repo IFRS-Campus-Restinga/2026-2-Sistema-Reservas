@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Paginacao from '../../components/Administracao/Paginacao/Paginacao';
 import { useNavigate } from "react-router-dom";
 import { useUsuario } from "../../hooks/useUsuario";
 import {
@@ -65,6 +66,7 @@ function Notificacoes() {
     erro,
     marcarComoLida,
     marcarTodasComoLidas,
+    paginacao,
   } = useNotificacoes();
 
   async function abrirNotificacao(notificacao) {
@@ -205,6 +207,7 @@ function Notificacoes() {
       </div>
 
 
+      <Paginacao {...paginacao} />
       <ModalNotificacao
         notificacao={selecionada}
         aoFechar={() => setSelecionada(null)}

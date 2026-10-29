@@ -1,3 +1,4 @@
+import SelectRemoto from '../../../SelectRemoto/SelectRemoto';
 import { useEffect, useState } from 'react';
 import Modal from '../../Modal/Modal';
 import styles from './AreaModal.module.css';
@@ -16,7 +17,6 @@ const formularioInicial = {
 function AreaModal({
     aberto,
     area,
-    blocos,
     aoFechar,
     aoSalvar,
 }) {
@@ -169,22 +169,10 @@ function AreaModal({
                         <label htmlFor="bloco">
                             Bloco *
                         </label>
-                        <select
-                            id="bloco"
-                            name="bloco"
-                            value={formulario.bloco}
-                            onChange={alterarCampo}
-                            aria-invalid={Boolean(erros.bloco)}
-                            aria-describedby="erro-bloco"
-                            required
-                        >
-                            <option value="" disabled>Selecione um bloco</option>
-                            {blocos.map((b) => (
-                                <option key={b.id} value={b.id}>
-                                    {b.nome}
-                                </option>
-                            ))}
-                        </select>
+                        <SelectRemoto id="bloco" url="/api/blocos/" ativo={aberto}
+                            filtros={{ page_size: 100 }} mostrarBusca={false} required
+                            ariaLabel="Bloco" valor={formulario.bloco}
+                            aoAlterar={(valor) => alterarCampo({ target: { name: 'bloco', value: valor } })} />
                         {mensagemErro('bloco')}
                     </div>
                 </div>

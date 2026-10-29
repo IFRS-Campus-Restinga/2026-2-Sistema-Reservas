@@ -1,3 +1,4 @@
+from .view_helpers import listar
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_date
@@ -80,7 +81,6 @@ class ReservaAreaListCreateView(APIView):
         reservas.sort(key=lambda r: (r.data, r.horario_inicio), reverse=True)
 
         serializer = ReservaAreaSerializer(reservas, many=True)
-
         return Response(serializer.data)
 
     def post(self, request):
@@ -126,9 +126,7 @@ class MinhasReservasAreaListView(APIView):
             usuario=request.user
         ).select_related("area__bloco", "recorrencia").order_by("-data", "-horario_inicio")
 
-        serializer = ReservaAreaSerializer(reservas, many=True)
-
-        return Response(serializer.data)
+        return listar(request, reservas, ReservaAreaSerializer)
 
 
 class ReservaAreaDetailView(APIView):

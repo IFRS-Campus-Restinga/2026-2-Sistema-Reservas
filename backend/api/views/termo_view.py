@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import NotFound, ValidationError
@@ -19,12 +19,17 @@ from api.services.termo_service import (
     ABERTAS, analisar_termo, enviar_termo, modelo_da_reserva, reserva_concreta,
     reserva_exige_termo, resumo_termo, validar_termo_operacional, montar_solicitacao_termo
 )
+from api.services.situacao_reserva_service import (
+    AGUARDANDO_ENVIO_TERMO_RETIRADA, filtro_situacao, situacao_reserva,
+)
 
 
 def reservas_com_recurso():
     return Reserva.objects.select_related(
-        'usuario', 'reservaveiculo__veiculo', 'reservarecursogeral__recurso_geral',
-    ).prefetch_related('termos')
+        'usuario', 'reservaarea__area__bloco', 'reservaveiculo__veiculo', 'reservarecursogeral__recurso_geral',
+    ).prefetch_related(Prefetch(
+        'termos', queryset=TermoResponsabilidade.objects.filter(atual=True), to_attr='termos_atuais',
+    ))
 
 
 def resposta_arquivo(campo, nome, content_type):
@@ -182,12 +187,17 @@ class SolicitacoesTermoView(APIView):
         queryset = reservas_com_recurso().filter(
             Q(reservaveiculo__isnull=False)
             | Q(reservarecursogeral__recurso_geral__tem_termo_de_responsabilidade=True)
+            | Q(status=StatusReserva.PENDENTE)
         )
+        reserva_id = request.query_params.get('reserva')
+        if reserva_id:
+            try:
+                queryset = queryset.filter(pk=int(reserva_id))
+            except ValueError:
+                raise ValidationError({'reserva': 'Identificador inválido.'})
         modalidade = request.query_params.get('tipo', 'todos')
-        status = request.query_params.get('status', 'abertas')
-        documento_parametro = request.query_params.get(
-            'documento', 
-            'todos')
+        situacao = request.query_params.get('situacao', request.query_params.get('status', 'abertas')).upper()
+        documento_parametro = request.query_params.get('documento', 'todos')
         documentos = {
             'todos': None,
             'responsabilidade': TipoTermo.RESPONSABILIDADE,
@@ -197,45 +207,69 @@ class SolicitacoesTermoView(APIView):
         documento = documentos.get(documento_parametro)
         if documento_parametro not in documentos:
             raise ValidationError({'documento': 'Tipo de documento inválido.'})
-        if modalidade not in ('todos', 'veiculo', 'recurso_geral'):
+        if modalidade not in ('todos', 'area', 'veiculo', 'recurso_geral'):
             raise ValidationError({'tipo': 'Tipo de solicitação inválido.'})
         if modalidade != 'todos':
-            if modalidade == 'veiculo':
+            if modalidade == 'area':
+                relacao = 'reservaarea'
+            elif modalidade == 'veiculo':
                 relacao = 'reservaveiculo'
             else:
                 relacao = 'reservarecursogeral'
             queryset = queryset.filter(**{f'{relacao}__isnull': False})
-        solicitacao_reserva_veiculo = Q(
-            reservaveiculo__isnull=False,
-            status=StatusReserva.PENDENTE,
-        )
         aguardando_termo = (
             Q(reservarecursogeral__isnull=False, status__in=ABERTAS)
             | Q(reservaveiculo__isnull=False, status=StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO)
         )
+        aguardando_confirmacao = Q(
+            status=StatusReserva.PENDENTE,
+        )
+        aguardando_retirada = filtro_situacao(AGUARDANDO_ENVIO_TERMO_RETIRADA)
         if documento == TipoTermo.RESPONSABILIDADE:
-            queryset = queryset.filter(reservarecursogeral__isnull=False)
-        elif documento is not None:
-            queryset = queryset.filter(termos__tipo=documento, termos__atual=True)
-        else:
-            queryset = queryset.filter(solicitacao_reserva_veiculo | aguardando_termo | Q(termos__atual=True)).distinct()
-        if status == 'abertas':
+            queryset = queryset.filter(reservarecursogeral__recurso_geral__tem_termo_de_responsabilidade=True)
+        elif documento == TipoTermo.RETIRADA_VEICULO:
+            queryset = queryset.filter(
+                aguardando_retirada
+                | Q(termos__tipo=documento, termos__atual=True)
+            ).distinct()
+        elif documento == TipoTermo.DEVOLUCAO_VEICULO:
+            queryset = queryset.filter(
+                Q(status=StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO)
+                | Q(termos__tipo=documento, termos__atual=True)
+            ).distinct()
+        if situacao == 'TODOS':
+            queryset = queryset.exclude(status=StatusReserva.CANCELADA)
+        elif situacao == 'ABERTAS':
             if documento == TipoTermo.RESPONSABILIDADE:
                 queryset = queryset.filter(status__in=ABERTAS)
             elif documento is None:
                 queryset = queryset.filter(
-                    solicitacao_reserva_veiculo
-                    | aguardando_termo
+                    aguardando_confirmacao | aguardando_retirada | aguardando_termo
                     | Q(termos__atual=True, termos__status=StatusTermo.PENDENTE)
+                ).distinct()
+            elif documento == TipoTermo.RETIRADA_VEICULO:
+                queryset = queryset.filter(
+                    aguardando_retirada
+                    | Q(termos__tipo=documento, termos__atual=True, termos__status=StatusTermo.PENDENTE)
+                ).distinct()
+            elif documento == TipoTermo.DEVOLUCAO_VEICULO:
+                queryset = queryset.filter(
+                    Q(status=StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO)
+                    | Q(termos__tipo=documento, termos__atual=True, termos__status=StatusTermo.PENDENTE)
                 ).distinct()
             else:
                 queryset = queryset.filter(termos__status=StatusTermo.PENDENTE)
-        elif status == 'todos':
-            queryset = queryset.exclude(status=StatusReserva.CANCELADA)
-        elif status in StatusReserva.values:
-            queryset = queryset.filter(status=status)
+        elif situacao == 'TERMO_EM_ANALISE' and documento is not None:
+            queryset = queryset.filter(
+                termos__tipo=documento,
+                termos__atual=True,
+                termos__status=StatusTermo.PENDENTE,
+            ).distinct()
         else:
-            raise ValidationError({'status': 'Status de solicitação inválido.'})
+            filtro = filtro_situacao(situacao)
+            if filtro is None:
+                raise ValidationError({'situacao': 'Situação da solicitação inválida.'})
+            queryset = queryset.filter(filtro).distinct()
         paginacao = PaginacaoPadrao()
         pagina = paginacao.paginate_queryset(queryset.order_by('-data', '-pk'), request)
         resultados = []

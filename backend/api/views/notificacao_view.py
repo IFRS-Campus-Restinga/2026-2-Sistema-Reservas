@@ -1,3 +1,4 @@
+from .view_helpers import listar
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.response import Response
@@ -44,10 +45,10 @@ class MinhasNotificacoesListView(APIView):
             .order_by("-criada_em")
         )
 
-        return Response({
-            "nao_lidas": notificacoes.filter(lida=False).count(),
-            "notificacoes": NotificacaoSerializer(notificacoes, many=True).data,
-        })
+        resposta = listar(request, notificacoes, NotificacaoSerializer)
+        resposta.data['nao_lidas'] = notificacoes.filter(lida=False).count()
+        return resposta
+
 
 
 class MarcarNotificacaoLidaView(APIView):

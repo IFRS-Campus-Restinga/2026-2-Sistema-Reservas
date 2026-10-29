@@ -37,12 +37,14 @@
   background: white;
 }
 
-.cartao[data-status="AGUARDANDO_TERMO"],
+.cartao[data-status="AGUARDANDO_ENVIO_TERMO"],
+.cartao[data-status="AGUARDANDO_ENVIO_TERMO_RETIRADA"],
 .cartao[data-status="AGUARDANDO_TERMO_DEVOLUCAO"] {
   border-color: #fed7aa;
 }
 
-.cartao[data-status="PENDENTE"] {
+.cartao[data-status="AGUARDANDO_CONFIRMACAO"],
+.cartao[data-status="TERMO_EM_ANALISE"] {
   border-color: #fef08a;
 }
 
@@ -96,13 +98,16 @@
   background: #ffedd5;
 }
 
+.situacao[data-status="AGUARDANDO_ENVIO_TERMO"],
+.situacao[data-status="AGUARDANDO_ENVIO_TERMO_RETIRADA"],
 .situacao[data-status="AGUARDANDO_TERMO"],
 .situacao[data-status="AGUARDANDO_TERMO_DEVOLUCAO"] {
   color: #ea580c;
   background: #ffedd5;
 }
 
-.situacao[data-status="PENDENTE"] {
+.situacao[data-status="AGUARDANDO_CONFIRMACAO"],
+.situacao[data-status="TERMO_EM_ANALISE"] {
   color: #a16207;
   background: #fef9c3;
 }

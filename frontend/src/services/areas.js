@@ -1,21 +1,8 @@
+import { consultarTodasPaginas } from './paginacao';
 import axios from 'axios';
 const AREAS_URL = '/api/areas/';
 
-export const buscarAreas = async () => {
-    try {
-        const response = await axios.get(
-            AREAS_URL,
-            {
-                withCredentials: true,
-            }
-        );
-
-        return response.data;
-    } catch (erro) {
-        console.error('Erro ao buscar áreas:', erro.response?.data);
-        throw erro;
-    }
-};
+export const buscarAreas = (parametros, signal) => consultarTodasPaginas('/api/areas/', parametros, signal);
 
 export const buscarArea = async (id) => {
     if (!id) return null;

@@ -1,3 +1,5 @@
+from .view_helpers import listar
+from api.permissions.regras_comuns import SomenteAdmin
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework.exceptions import ValidationError
@@ -25,6 +27,24 @@ def _entidade_reserva(reserva):
     if getattr(reserva, "reservarecursogeral", None) is not None:
         return EntidadeAuditoria.RESERVA_RECURSO_GERAL
     return None
+
+class ReservasPendentesListView(APIView):
+    permission_classes = [SomenteAdmin]
+
+    def get(self, request):
+        reservas = (
+            Reserva.objects
+            .filter(status=StatusReserva.PENDENTE)
+            .select_related(
+                "usuario",
+                "reservaarea__area__bloco",
+                "reservaveiculo__veiculo",
+                "reservarecursogeral__recurso_geral__tipo_recurso",
+            )
+            .order_by("data", "horario_inicio")
+        )
+
+        return listar(request, reservas, ReservaSerializer)
 
 class ConfirmarReservaView(APIView):
     permission_classes = [PodeConfirmarReserva]

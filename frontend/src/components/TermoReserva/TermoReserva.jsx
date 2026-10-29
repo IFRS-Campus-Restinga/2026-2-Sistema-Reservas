@@ -239,7 +239,7 @@ export default function TermoReserva({
           <strong>{tituloDocumento}</strong>
           {dados.pode_enviar && (
             <a className={styles.link} href={dados.url_modelo}><Download size={13} />Baixar termo em branco</a>
-          )} 
+          )}
           {documento}
           {dados.pode_enviar && <>
             <p>Baixe o Word, preencha os dados e assine. Depois, envie o documento em PDF.</p>

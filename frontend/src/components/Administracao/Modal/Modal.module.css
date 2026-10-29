@@ -85,6 +85,10 @@
     max-width: 720px;
 }
 
+.relatorio .modal {
+    max-width: 900px;
+}
+
 .termo .modal {
     max-width: 384px;
 }

@@ -1,3 +1,4 @@
+from .view_helpers import listar
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -19,8 +20,7 @@ class BlocoListCreateView(APIView):
 
     def get(self, request):
         blocos = Bloco.objects.all()
-        serializer = BlocoSerializer(blocos, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return listar(request, blocos, BlocoSerializer)
 
     def post(self, request):
         serializer = BlocoSerializer(data=request.data)

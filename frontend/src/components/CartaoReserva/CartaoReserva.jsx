@@ -3,7 +3,7 @@ import { ChevronDown, FileText, Repeat } from 'lucide-react';
 import styles from './CartaoReserva.module.css';
 import { formatarDataCurta } from '../../utils/data';
 import {
-  STATUS_RESERVA_LABEL,
+  SITUACAO_RESERVA_LABEL,
   TIPO_RESERVA_LABEL,
   statusReservaApresentado,
   termoRetiradaDisponivel,
@@ -48,6 +48,7 @@ function CartaoReserva({
           tabIndex: 0,
           onClick: aoClicar,
           onKeyDown: (evento) => {
+            if (evento.target !== evento.currentTarget) return;
             if (evento.key === 'Enter' || evento.key === ' ') {
               evento.preventDefault();
               aoClicar();
@@ -97,7 +98,7 @@ function CartaoReserva({
       <span className={styles.acoesDireita}>
         {mostrarStatus && (
           <span className={styles.badgeStatus} data-status={status}>
-            {STATUS_RESERVA_LABEL[status] || reserva.status}
+            {SITUACAO_RESERVA_LABEL[status] || reserva.status}
           </span>
         )}
         {aoAlternarExpansao && (

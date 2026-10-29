@@ -6,13 +6,6 @@ import ReservaAreaModal from '../../ReservaArea/ReservaAreaModal';
 import ReservaVeiculoModal from '../../ReservaVeiculo/ReservaVeiculoModal';
 import ReservaRecursoGeralModal from '../../ReservaRecursoGeral/ReservaRecursoGeralModal';
 import {
-  buscarAreas,
-  buscarBlocos,
-  buscarVeiculos,
-  listarRecursosGerais,
-  listarTiposRecurso,
-} from '../../../services';
-import {
   podeReservarArea,
   podeReservarRecursoGeral,
   podeReservarVeiculo,
@@ -54,13 +47,10 @@ const OPCOES = [
   },
 ];
 
-const recursoReservavel = (recurso) =>
-  recurso.status === 'ATIVO' && Number(recurso.quantidade_total) > 0;
-
 function NovaReserva({ usuario }) {
   const navigate = useNavigate();
   const [modal, setModal] = useState(null);
-  const [carregando, setCarregando] = useState(false);
+  const carregando = false;
   const [menuAberto, setMenuAberto] = useState(false);
 
   const opcoes = OPCOES.filter((opcao) => opcao.permissao(usuario));
@@ -69,45 +59,7 @@ function NovaReserva({ usuario }) {
 
 
   async function abrir(opcao) {
-    try {
-      setCarregando(true);
-
-      if (opcao.tipo === TIPO_RECURSO_RESERVAVEL.AREA) {
-        const [areas, blocos] = await Promise.all([buscarAreas(), buscarBlocos()]);
-        setModal({ tipo: opcao.tipo, areas, blocos });
-        return;
-      }
-
-      if (opcao.tipo === TIPO_RECURSO_RESERVAVEL.VEICULO) {
-        const veiculos = await buscarVeiculos();
-        const veiculoInicial = veiculos.find((veiculo) => veiculo.status === 'ATIVO');
-
-        if (!veiculoInicial) {
-          console.error('Nenhum veículo ativo disponível para reserva.');
-          return;
-        }
-
-        setModal({ tipo: opcao.tipo, veiculos, veiculoInicial });
-        return;
-      }
-
-      const [recursos, tipos] = await Promise.all([
-        listarRecursosGerais(),
-        listarTiposRecurso(),
-      ]);
-      const recursoInicial = recursos.find(recursoReservavel);
-
-      if (!recursoInicial) {
-        console.error('Nenhum recurso disponível para reserva.');
-        return;
-      }
-
-      setModal({ tipo: opcao.tipo, recursos, tipos, recursoInicial });
-    } catch (falha) {
-      console.error(falha);
-    } finally {
-      setCarregando(false);
-    }
+    setModal({ tipo: opcao.tipo });
   }
 
   function concluir(estado) {
@@ -198,11 +150,9 @@ function NovaReserva({ usuario }) {
       {modal?.tipo === TIPO_RECURSO_RESERVAVEL.RECURSO_GERAL && (
         <ReservaRecursoGeralModal
           aberto
-          tipos={modal.tipos}
-          recursos={modal.recursos}
-          recursoInicial={modal.recursoInicial}
+          recursoInicial={null}
           aoFechar={() => setModal(null)}
-          aoReservar={() => concluir({ criada: true })}
+          aoReservar={() => concluir({ criada: true, tipo: 'recurso_geral' })}
         />
       )}
     </>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { listarTiposRecurso } from '../../../services';
+import { listarTodosTiposRecurso } from '../../../services';
 import { TIPO_RECURSO_RESERVAVEL, TIPO_RECURSO_RESERVAVEL_LABEL } from '../../../utils/tipoRecursoReservavel';
 import Modal from '../../Administracao/Modal/Modal';
 import styles from './GrupoModal.module.css';
@@ -57,7 +57,7 @@ function GrupoModal({
     const [recursosGeraisAbertos, setRecursosGeraisAbertos] = useState(false);
 
     useEffect(() => {
-        listarTiposRecurso()
+        listarTodosTiposRecurso()
             .then(setTiposRecurso)
             .catch(() => {
                 setTiposRecurso([]);

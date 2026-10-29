@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import useListaPaginada from '../../../hooks/useListaPaginada';
+import { useState } from 'react';
 import { UserPlus, X } from 'lucide-react';
-import { buscarMembros, adicionarMembros, atualizarMembro, removerMembro } from '../../../services';
+import { adicionarMembros, atualizarMembro, removerMembro } from '../../../services';
 import Modal from '../../Administracao/Modal/Modal';
 import ModalConfirmacao from '../../Administracao/ModalConfirmacao/ModalConfirmacao';
 import CampoBusca from '../../Administracao/CampoBusca/CampoBusca';
@@ -14,10 +15,7 @@ import styles from './ModalMembros.module.css';
 const TAMANHO_PAGINA = 10;
 
 function ModalMembros({ grupo, aoFechar }) {
-    const [membros, setMembros] = useState(null);
-    const [erroLista, setErroLista] = useState('');
     const [busca, setBusca] = useState('');
-    const [pagina, setPagina] = useState(1);
     const [selecionados, setSelecionados] = useState([]);
     const [validoAte, setValidoAte] = useState('');
     const [adicionando, setAdicionando] = useState(false);
@@ -27,35 +25,20 @@ function ModalMembros({ grupo, aoFechar }) {
     const [processandoId, setProcessandoId] = useState(null);
     const [erroMembro, setErroMembro] = useState('');
 
-    useEffect(() => {
-        buscarMembros(grupo.id)
-            .then(setMembros)
-            .catch(() => setErroLista('Não foi possível carregar os membros deste grupo.'));
-    }, [grupo.id]);
-
-    const termo = busca.trim().toLowerCase();
-    const filtrados = (membros ?? []).filter((membro) =>
-        `${membro.usuario_nome} ${membro.usuario_email}`.toLowerCase().includes(termo)
-    );
-    const totalPaginas = Math.ceil(filtrados.length / TAMANHO_PAGINA);
-    const paginaAtual = Math.min(pagina, Math.max(1, totalPaginas));
-    const membrosDaPagina = filtrados.slice((paginaAtual - 1) * TAMANHO_PAGINA, paginaAtual * TAMANHO_PAGINA);
-
-    function alterarBusca(valor) {
-        setBusca(valor);
-        setPagina(1);
-    }
+    const { itens: membros, total, erro: erroLista, carregando, recarregar, paginacao } = useListaPaginada(`/api/grupos/${grupo.id}/membros/`, { busca, page_size: TAMANHO_PAGINA });
+    const membrosDaPagina = membros;
+    const alterarBusca = setBusca;
 
     async function handleAdicionar() {
         setConfirmandoAdicao(false);
         try {
             setAdicionando(true);
             setErroAdicionar('');
-            const novos = await adicionarMembros(
+            await adicionarMembros(
                 grupo.id,
                 selecionados.map(({ id }) => ({ usuario: id, data_fim_validade: validoAte || null }))
             );
-            setMembros((anteriores) => [...anteriores, ...novos]);
+            recarregar();
             setSelecionados([]);
             setValidoAte('');
         } catch (erro) {
@@ -89,7 +72,7 @@ function ModalMembros({ grupo, aoFechar }) {
         setMembroRemovendo(null);
         return alterarMembro(membro, async () => {
             await removerMembro(grupo.id, membro.id);
-            setMembros((anteriores) => anteriores.filter((item) => item.id !== membro.id));
+            recarregar();
         }, 'Não foi possível remover o membro.');
     }
 
@@ -98,8 +81,8 @@ function ModalMembros({ grupo, aoFechar }) {
             return;
         }
         return alterarMembro(membro, async () => {
-            const atualizado = await atualizarMembro(grupo.id, membro.id, { data_fim_validade: evento.target.value || null });
-            setMembros((anteriores) => anteriores.map((item) => (item.id === atualizado.id ? atualizado : item)));
+            await atualizarMembro(grupo.id, membro.id, { data_fim_validade: evento.target.value || null });
+            recarregar();
         }, 'Não foi possível atualizar a validade do membro.');
     }
 
@@ -217,29 +200,25 @@ function ModalMembros({ grupo, aoFechar }) {
 
                     <section className={styles.secao}>
                         <div className={styles.cabecalhoSecao}>
-                            <h3 className={styles.tituloSecao}>Membros do grupo{membros?.length ? ` (${membros.length})` : ''}</h3>
+                            <h3 className={styles.tituloSecao}>Membros do grupo{total ? ` (${total})` : ''}</h3>
                             <CampoBusca valor={busca} aoAlterar={alterarBusca} />
                         </div>
 
                         {erroMembro && <p className={styles.erro} role="alert">{erroMembro}</p>}
                         {erroLista && <p className={styles.erro} role="alert">{erroLista}</p>}
 
-                        {membros === null && !erroLista ? (
+                        {carregando && !erroLista ? (
                             <p className={styles.mensagem} role="status">Carregando membros...</p>
                         ) : (
                             <>
                                 <TabelaAdministracao
                                     colunas={colunasMembros}
                                     dados={membrosDaPagina}
-                                    mensagemVazia={termo
+                                    mensagemVazia={busca.trim()
                                         ? 'Nenhum membro encontrado para esta busca.'
                                         : 'Nenhum membro neste grupo ainda.'}
                                 />
-                                <Paginacao
-                                    paginaAtual={paginaAtual}
-                                    totalPaginas={totalPaginas}
-                                    aoMudarPagina={setPagina}
-                                />
+                                <Paginacao {...paginacao} />
                             </>
                         )}
                     </section>

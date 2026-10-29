@@ -1,3 +1,4 @@
+import { consultarPagina } from './paginacao';
 
 const URL = '/api/reservas/recursos-gerais/';
 
@@ -17,13 +18,7 @@ async function tratarResposta(resposta) {
   return dados;
 }
 
-export async function listarReservasRecursosGerais() {
-  const resposta = await fetch(URL, {
-    credentials: 'include',
-  });
-
-  return tratarResposta(resposta);
-}
+export const listarReservasRecursosGerais = (parametros, signal) => consultarPagina('/api/reservas/recursos-gerais/', parametros, signal);
 
 export async function criarReservaRecursoGeral(dados) {
   const resposta = await fetch(URL, {

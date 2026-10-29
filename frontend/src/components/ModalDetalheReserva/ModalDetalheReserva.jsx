@@ -3,7 +3,7 @@ import { CalendarCheck, Clock, Globe, Info, MapPin, Pencil, Repeat, Trash2, User
 import useFocoModal from '../../hooks/useFocoModal';
 import TermoReserva from '../TermoReserva/TermoReserva';
 import { TIPO_RECORRENCIA_LABEL } from '../../utils/recorrencia';
-import { STATUS_RESERVA_LABEL, statusReservaApresentado } from '../../utils/reserva';
+import { SITUACAO_RESERVA_LABEL, statusReservaApresentado } from '../../utils/reserva';
 import styles from './ModalDetalheReserva.module.css';
 import ModalConfirmacao from '../Administracao/ModalConfirmacao/ModalConfirmacao';
 
@@ -94,7 +94,7 @@ function ModalDetalheReserva({
             <span className={styles.sobretitulo}>{modalidade}</span>
             <h2 id="titulo-detalhe-reserva">{reserva.nome}</h2>
             <div className={styles.etiquetas}>
-              <span className={styles.status}>{STATUS_RESERVA_LABEL[status] || reserva.status}</span>
+              <span className={styles.status}>{SITUACAO_RESERVA_LABEL[status] || reserva.status}</span>
               {tipo === 'externa' && <span className={styles.status}><Globe size={10} />Externo</span>}
             </div>
           </div>

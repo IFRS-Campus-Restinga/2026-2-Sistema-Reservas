@@ -1,3 +1,4 @@
+from .view_helpers import listar
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -19,8 +20,7 @@ class AreaListCreateView(APIView):
 
     def get(self, request):
         areas = Area.objects.all().select_related('bloco')
-        serializer = AreaSerializer(areas, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return listar(request, areas, AreaSerializer)
 
     def post(self, request):
         serializer = AreaSerializer(data=request.data)

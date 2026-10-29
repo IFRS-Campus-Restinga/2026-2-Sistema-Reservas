@@ -216,25 +216,20 @@ class ReservasTimetableService:
         projetadas = []
 
         for reserva in reservas_base:
-            celula = reserva.celula_timetable
-            periodo = celula.periodo_letivo if celula else None
-            if not periodo:
-                continue
-
-            ini = max(periodo.data_inicio, data_inicio) if data_inicio else periodo.data_inicio
-            fim = min(periodo.data_fim, data_fim) if data_fim else periodo.data_fim
-
-            if ini > fim:
-                continue
-
-            weekday_alvo = MAPA_DIAS_SEMANA.get(celula.dia_semana, reserva.data.weekday())
-            dias_ate = (weekday_alvo - ini.weekday()) % 7
-            data_ocorrencia = ini + timedelta(days=dias_ate)
-
-            while data_ocorrencia <= fim:
-                ocorrencia = copy.copy(reserva)
-                ocorrencia.data = data_ocorrencia
-                projetadas.append(ocorrencia)
-                data_ocorrencia += timedelta(days=7)
+            projetadas.extend(cls.projetar_reserva(reserva, data_inicio, data_fim))
 
         return projetadas
+
+    @staticmethod
+    def projetar_reserva(reserva, data_inicio, data_fim):
+        """Projeta uma reserva base sem alterar o registro persistido."""
+        periodo = reserva.celula_timetable.periodo_letivo
+        ini = max(periodo.data_inicio, data_inicio) if data_inicio else periodo.data_inicio
+        fim = min(periodo.data_fim, data_fim) if data_fim else periodo.data_fim
+        weekday = MAPA_DIAS_SEMANA.get(reserva.celula_timetable.dia_semana, reserva.data.weekday())
+        dia = ini + timedelta(days=(weekday - ini.weekday()) % 7)
+        while dia <= fim:
+            ocorrencia = copy.copy(reserva)
+            ocorrencia.data = dia
+            yield ocorrencia
+            dia += timedelta(days=7)

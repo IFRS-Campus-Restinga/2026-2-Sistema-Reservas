@@ -13,6 +13,7 @@ from api.enumerations import StatusReserva, TipoTermo
 from api.enumerations.status_termo import StatusTermo
 from api.models import Reserva, TermoResponsabilidade
 from api.permissions.regras_comuns import usuario_e_admin
+from api.services.situacao_reserva_service import situacao_reserva
 from api.services.notificacao_service import criar_notificacao_termo_aprovado, criar_notificacao_termo_enviado, criar_notificacao_termo_rejeitado
 
 
@@ -298,23 +299,33 @@ def analisar_termo(reserva, termo_id, usuario, decisao, motivo, tipo=TipoTermo.R
 def montar_solicitacao_termo(reserva, documento_parametro):
     concreta, modalidade = reserva_concreta(reserva)
 
-    if modalidade == 'veiculo':
+    if modalidade == 'area':
+        nome_item = concreta.area.nome
+    elif modalidade == 'veiculo':
         item = concreta.veiculo
         nome_item = f'{item.nome} · {item.placa}'
     else:
         item = concreta.recurso_geral
         nome_item = item.nome
 
+    termos_atuais = getattr(reserva, 'termos_atuais', None)
+    if termos_atuais is None:
+        termos_atuais = list(reserva.termos.filter(atual=True))
+    tipo_filtrado = {
+        'responsabilidade': TipoTermo.RESPONSABILIDADE,
+        'retirada': TipoTermo.RETIRADA_VEICULO,
+        'devolucao': TipoTermo.DEVOLUCAO_VEICULO,
+    }.get(documento_parametro)
     termos_atuais = [
         termo
-        for termo in reserva.termos.all()
-        if termo.atual
+        for termo in termos_atuais
+        if tipo_filtrado is None or termo.tipo == tipo_filtrado
     ]
 
     solicitacao_reserva = (
-        modalidade == 'veiculo'
-        and reserva.status == StatusReserva.PENDENTE
+        reserva.status == StatusReserva.PENDENTE
         and not termos_atuais
+        and (modalidade != 'recurso_geral' or not concreta.recurso_geral.tem_termo_de_responsabilidade)
     )
 
     termo_atual = next(
@@ -342,7 +353,10 @@ def montar_solicitacao_termo(reserva, documento_parametro):
     tipo_resultado = documento_parametro
 
     if tipo_resultado == 'todos':
-        tipo_resultado = 'responsabilidade'
+        tipo_resultado = (
+            'devolucao' if reserva.status == StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO
+            else 'retirada' if modalidade == 'veiculo' else 'responsabilidade'
+        )
 
     status_termo = None
 
@@ -360,6 +374,7 @@ def montar_solicitacao_termo(reserva, documento_parametro):
         'nome': reserva.nome,
         'descricao': reserva.descricao,
         'status': reserva.status,
+        'situacao': situacao_reserva(reserva),
         'modalidade': modalidade,
         'tipo_reserva': reserva.tipo_reserva,
         'origem_solicitacao': ('RESERVA' if solicitacao_reserva else 'TERMO'),

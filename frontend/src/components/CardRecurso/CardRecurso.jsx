@@ -19,15 +19,14 @@ import styles from "./CardRecurso.module.css";
  * - aoClicar: função chamada ao clicar no card. Não é chamada quando não há nenhum recurso disponível.
  */
 
-function CardRecurso({ categoria, titulo, recursos, aoClicar }) {
+function CardRecurso({ categoria, titulo, recursos = [], resumo, aoClicar }) {
   const IconeCategoria = CATEGORIA_RECURSO_ICONE[categoria] ?? ICONE_CATEGORIA_PADRAO;
   const rotuloCategoria = CATEGORIA_RECURSO_LABEL[categoria] ?? categoria;
 
-  const ativos = recursos.filter((recurso) => recurso.status === 'ATIVO');
   const totalDisponivel = recursos.reduce((soma, recurso) => soma + Math.max(0, recurso.quantidade_total - recurso.quantidade_reservada), 0);
   const totalGeral = recursos.reduce((soma, recurso) => soma + recurso.quantidade_total, 0);
-  const anyTermo = recursos.some((recurso) => recurso.tem_termo_de_responsabilidade);
-  const desabilitado = totalDisponivel === 0;
+  const anyTermo = resumo ? resumo.total_termos > 0 : recursos.some((recurso) => recurso.tem_termo_de_responsabilidade);
+  const desabilitado = resumo ? resumo.total_unidades === 0 : totalDisponivel === 0;
 
   const prazos = [...new Set(recursos.map((recurso) => recurso.tipo_prazo))]
     .map((prazo) => TIPO_PRAZO_LABEL[prazo] ?? prazo)
@@ -60,9 +59,9 @@ function CardRecurso({ categoria, titulo, recursos, aoClicar }) {
         <div
           className={`d-flex align-items-center justify-content-between mt-3 pt-3 border-top border-light ${styles.rodape}`}
         >
-          <span>{recursos.length} item(ns) cadastrado(s)</span>
+          <span>{resumo?.total_itens ?? recursos.length} item(ns) cadastrado(s)</span>
           <span className={`fw-semibold ${totalDisponivel > 0 ? styles.disponivelPositivo : styles.disponivelZero}`}>
-            {totalDisponivel}/{totalGeral} disponíveis
+            {resumo ? `${resumo.total_unidades} unidade(s)` : `${totalDisponivel}/${totalGeral} disponíveis`}
           </span>
         </div>
       </Card.Body>

@@ -22,11 +22,15 @@
   background: var(--cor-marca, #009a44);
 }
 
-.barraStatus[data-status="pendente"] {
+.barraStatus[data-status="pendente"],
+.barraStatus[data-status="aguardando_confirmacao"],
+.barraStatus[data-status="termo_em_analise"] {
   background: #fb923c;
 }
 
 .barraStatus[data-status="aguardando_termo"],
+.barraStatus[data-status="aguardando_envio_termo"],
+.barraStatus[data-status="aguardando_envio_termo_retirada"],
 .barraStatus[data-status="aguardando_termo_devolucao"] {
   background: #eab308;
 }
@@ -175,13 +179,17 @@
   color: #15803d;
 }
 
-.badgeStatus[data-status="pendente"] {
+.badgeStatus[data-status="pendente"],
+.badgeStatus[data-status="aguardando_confirmacao"],
+.badgeStatus[data-status="termo_em_analise"] {
   border-color: #fed7aa;
   background: #ffedd5;
   color: #ea580c;
 }
 
 .badgeStatus[data-status="aguardando_termo"],
+.badgeStatus[data-status="aguardando_envio_termo"],
+.badgeStatus[data-status="aguardando_envio_termo_retirada"],
 .badgeStatus[data-status="aguardando_termo_devolucao"] {
   border-color: #fde68a;
   background: #fef9c3;

@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+import useListaPaginada from '../../hooks/useListaPaginada';
+import Paginacao from '../../components/Administracao/Paginacao/Paginacao';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Col, Row } from 'react-bootstrap';
 import { Search } from 'lucide-react';
@@ -6,7 +8,6 @@ import { Search } from 'lucide-react';
 import CampoBusca from '../../components/Administracao/CampoBusca/CampoBusca';
 import CardVeiculo from '../../components/CardVeiculo/CardVeiculo';
 import Select from '../../components/Select/Select';
-import { buscarVeiculos } from '../../services';
 import styles from './Veiculos.module.css';
 
 const OPCOES_STATUS = [
@@ -17,27 +18,10 @@ const OPCOES_STATUS = [
 
 function Veiculos() {
   const navigate = useNavigate();
-  const [veiculos, setVeiculos] = useState([]);
   const [busca, setBusca] = useState('');
   const [status, setStatus] = useState('todos');
-  const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState('');
 
-  useEffect(() => {
-    buscarVeiculos()
-      .then((dados) => {
-        setVeiculos(dados);
-        setErro('');
-      })
-      .catch(() => setErro('Não foi possível carregar os veículos.'))
-      .finally(() => setCarregando(false));
-  }, []);
-
-  const termo = busca.trim().toLowerCase();
-  const filtrados = veiculos.filter((veiculo) => {
-    const texto = `${veiculo.nome} ${veiculo.marca} ${veiculo.modelo} ${veiculo.placa}`.toLowerCase();
-    return texto.includes(termo) && (status === 'todos' || veiculo.status === status);
-  });
+  const { itens: filtrados, carregando, erro, paginacao } = useListaPaginada('/api/veiculos/', { busca, status });
 
   return (
     <div className="d-flex flex-column gap-4 p-3 p-md-4">
@@ -64,6 +48,7 @@ function Veiculos() {
           ))}
         </Row>
       )}
+      <Paginacao {...paginacao} />
     </div>
   );
 }

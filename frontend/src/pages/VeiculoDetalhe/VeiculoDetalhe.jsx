@@ -4,7 +4,7 @@ import { useUsuario } from '../../hooks/useUsuario';
 import { ArrowLeft, Car, CheckCircle, Clock, Fuel, Gauge, Users } from 'lucide-react';
 
 import ReservaVeiculoModal from '../../components/ReservaVeiculo/ReservaVeiculoModal';
-import { buscarVeiculo, buscarVeiculos } from '../../services';
+import { buscarVeiculo } from '../../services';
 import { buscarAgendaVeiculo } from '../../services/reservasVeiculos';
 import { STATUS_RECURSO_LABEL } from '../../utils/statusRecurso';
 import { podeReservarVeiculo } from '../../utils/permissoes';
@@ -35,10 +35,10 @@ function VeiculoDetalhe() {
   const [erro, setErro] = useState('');
 
   useEffect(() => {
-    Promise.all([buscarVeiculo(id), buscarVeiculos(), buscarAgendaVeiculo(id)])
-      .then(([dadosVeiculo, listaVeiculos, dadosAgenda]) => {
+    Promise.all([buscarVeiculo(id), buscarAgendaVeiculo(id)])
+      .then(([dadosVeiculo, dadosAgenda]) => {
         setVeiculo(dadosVeiculo);
-        setVeiculos(listaVeiculos);
+        setVeiculos([dadosVeiculo]);
         setAgenda(dadosAgenda);
         setErro('');
       })

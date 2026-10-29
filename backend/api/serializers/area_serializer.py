@@ -5,6 +5,8 @@ from api.models import Area
 
 
 class AreaSerializer(serializers.ModelSerializer):
+    bloco_nome = serializers.CharField(source='bloco.nome', read_only=True)
+
     """
     Serializer responsável pela validação e serialização da entidade Area.
     """

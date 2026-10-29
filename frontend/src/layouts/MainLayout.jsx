@@ -50,7 +50,7 @@ function MainLayout() {
 
   return (
     <UsuarioContext value={usuario}>
-      <NotificacoesProvider usuario={usuario}>
+      <NotificacoesProvider key={usuario?.id || 'anonimo'} usuario={usuario}>
         <div className={styles.app}>
           <Sidebar
             menuRecolhido={menuRecolhido}

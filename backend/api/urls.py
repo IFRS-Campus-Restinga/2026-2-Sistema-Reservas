@@ -1,4 +1,5 @@
 from django.urls import path
+from api.views.minhas_reservas_view import MinhasReservasListView, ResumoReservasView
 from api.views.recurso_geral_view import RecursoGeralListCreateView, RecursoGeralDetailView
 from api.views.tipo_recurso_view import TipoRecursoCreateView
 from api.views.bloco_view import BlocoListCreateView, BlocoDetailView
@@ -21,7 +22,9 @@ from api.views.reserva_veiculo_view import (
 )
 from api.views.recorrencia_view import RecorrenciaReservaAreaDetailView
 from api.views.agenda_reserva_view import AgendaReservasView
-from api.views.reserva_pendente_view import ConfirmarReservaView, CancelarReservaAdminView
+from api.views.opcoes_disponibilidade_view import OpcoesDisponibilidadeView
+from api.views.relatorio_uso_view import RelatorioUsoView
+from api.views.reserva_pendente_view import ReservasPendentesListView, ConfirmarReservaView, CancelarReservaAdminView
 from api.views.reserva_admin_view import ReservasAdminListView
 from api.views.notificacao_view import MinhasNotificacoesListView, MarcarNotificacaoLidaView, MarcarTodasNotificacoesLidasView
 from api.views.data_atual_view import DataAtualView
@@ -33,6 +36,9 @@ from api.views.termo_view import (
 
 
 urlpatterns = [
+    path("reservas/pendentes/", ReservasPendentesListView.as_view(), name="reservas-pendentes"),
+    path('reservas/resumo/', ResumoReservasView.as_view(), name='resumo-reservas'),
+    path('reservas/minhas/', MinhasReservasListView.as_view(), name='minhas-reservas'),
     path("reservas/admin/", ReservasAdminListView.as_view(), name="reservas-admin"),
     path('reservas/<int:pk>/termo/', TermoReservaView.as_view(), name='termo-reserva'),
     path('reservas/<int:pk>/termo/modelo/', ModeloTermoView.as_view(), name='termo-modelo'),
@@ -76,5 +82,7 @@ urlpatterns = [
     path("reservas/<int:pk>/cancelar/", CancelarReservaAdminView.as_view(), name="reserva-admin-cancelar"),   
     path("data-atual/", DataAtualView.as_view(), name="data-atual"),
     path("reservas/agenda/", AgendaReservasView.as_view(), name="agenda-reservas"),
+    path("reservas/disponibilidade/opcoes/", OpcoesDisponibilidadeView.as_view(), name="opcoes-disponibilidade"),
+    path("relatorios/uso/", RelatorioUsoView.as_view(), name="relatorio-uso"),
     path("reservas/veiculos/<int:pk>/", ReservaVeiculoDetailView.as_view(), name="reserva-veiculo-detail"),
 ]

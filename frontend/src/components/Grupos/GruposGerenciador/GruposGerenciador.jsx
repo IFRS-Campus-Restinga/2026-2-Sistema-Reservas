@@ -1,23 +1,19 @@
-import { useEffect, useState } from 'react';
+import useListaPaginada from '../../../hooks/useListaPaginada';
+import Paginacao from '../../Administracao/Paginacao/Paginacao';
+import SelectRemoto from '../../SelectRemoto/SelectRemoto';
+import { useState } from 'react';
 import { useUsuario } from '../../../hooks/useUsuario';
 import { Plus } from 'lucide-react';
-import {
-    buscarGrupos,
-    criarGrupo,
-    atualizarGrupo,
-    excluirGrupo,
-    listarTiposRecurso,
-} from '../../../services';
+import { criarGrupo, atualizarGrupo, excluirGrupo } from '../../../services';
 
 import { ehAdministrador, podeGerenciarGrupos } from '../../../utils/permissoes';
 import Botao from '../../Botao/Botao';
 import CampoBusca from '../../Administracao/CampoBusca/CampoBusca';
 import Select from '../../Select/Select';
-import SelectBusca from '../../SelectBusca/SelectBusca';
 import ModalConfirmacao from '../../Administracao/ModalConfirmacao/ModalConfirmacao';
 import CardGrupo from '../CardGrupo/CardGrupo';
 import GrupoModal from '../ModalGrupo/GrupoModal';
-import { FILTRO_TODOS, correspondeAoFiltroRecurso } from '../gruposUtils';
+import { FILTRO_TODOS } from '../gruposUtils';
 import { TIPO_RECURSO_RESERVAVEL, TIPO_RECURSO_RESERVAVEL_LABEL } from '../../../utils/tipoRecursoReservavel';
 import styles from './GruposGerenciador.module.css';
 
@@ -29,52 +25,18 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
     const ehAdmin = ehAdministrador(usuario);
     const podeCriarGrupo = podeGerenciarGrupos(usuario);
 
-    const [grupos, setGrupos] = useState([]);
-    const [carregando, setCarregando] = useState(true);
-    const [erro, setErro] = useState('');
 
     const [tipoAtivo, setTipoAtivo] = useState(ehAdmin ? 'servidor' : 'aluno');
     const [busca, setBusca] = useState('');
     const [filtroRecurso, setFiltroRecurso] = useState(FILTRO_TODOS);
     const [filtroTipoRecurso, setFiltroTipoRecurso] = useState(FILTRO_TODOS);
-    const [tiposRecurso, setTiposRecurso] = useState(null);
 
     const [modalAberto, setModalAberto] = useState(false);
     const [grupoEditando, setGrupoEditando] = useState(null);
     const [grupoExcluindo, setGrupoExcluindo] = useState(null);
 
-    useEffect(() => {
-        carregarGrupos();
-    }, []);
-
+    const { itens: gruposDaTela, carregando, erro, setErro, recarregar: carregarGrupos, paginacao } = useListaPaginada('/api/grupos/', { busca, tipo_membro: tipoAtivo, recurso: filtroRecurso, tipo_recurso: filtroTipoRecurso, meus: apenasMeusGrupos });
     const filtrandoRecursoGeral = filtroRecurso === TIPO_RECURSO_RESERVAVEL.RECURSO_GERAL;
-
-    useEffect(() => {
-        if (!filtrandoRecursoGeral || tiposRecurso) return;
-        listarTiposRecurso()
-            .then(setTiposRecurso)
-            .catch((erro) => {
-                console.error(erro);
-                setTiposRecurso([]);
-                setErro('Não foi possível carregar os tipos de recurso.');
-            });
-    }, [filtrandoRecursoGeral, tiposRecurso]);
-
-    async function carregarGrupos() {
-        try {
-            setCarregando(true);
-            setErro('');
-
-            const dados = await buscarGrupos({ apenasMeus: apenasMeusGrupos });
-
-            setGrupos(dados);
-        } catch (erro) {
-            console.error(erro);
-            setErro('Não foi possível carregar os grupos.');
-        } finally {
-            setCarregando(false);
-        }
-    }
 
     function selecionarFiltroRecurso(recurso) {
         setFiltroRecurso(recurso);
@@ -131,14 +93,7 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
         }
     }
 
-    const termoBusca = busca.trim().toLowerCase();
-    const gruposServidor = grupos.filter((grupo) => grupo.tipo_membro_permitido === 'servidor');
-    const gruposAluno = grupos.filter((grupo) => grupo.tipo_membro_permitido === 'aluno');
-    const filtrando = Boolean(termoBusca) || filtroRecurso !== FILTRO_TODOS;
-    const gruposDaTela = grupos
-        .filter((grupo) => grupo.tipo_membro_permitido === tipoAtivo)
-        .filter((grupo) => correspondeAoFiltroRecurso(grupo, filtroRecurso, filtroTipoRecurso))
-        .filter((grupo) => grupo.nome.toLowerCase().includes(termoBusca));
+    const filtrando = Boolean(busca.trim()) || filtroRecurso !== FILTRO_TODOS;
 
     return (
         <div className={styles.gerenciador}>
@@ -150,7 +105,7 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
                         data-ativo={tipoAtivo === 'servidor'}
                         onClick={() => setTipoAtivo('servidor')}
                     >
-                        Servidores ({gruposServidor.length})
+                        Servidores
                     </button>
                     <button
                         type="button"
@@ -158,7 +113,7 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
                         data-ativo={tipoAtivo === 'aluno'}
                         onClick={() => setTipoAtivo('aluno')}
                     >
-                        Alunos ({gruposAluno.length})
+                        Alunos
                     </button>
                 </div>
             ) : (
@@ -181,10 +136,9 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
                         ariaLabel="Filtrar por recurso"
                     />
                     {filtrandoRecursoGeral && (
-                        <SelectBusca
+                        <SelectRemoto url="/api/tipos-recurso/"
                             valor={filtroTipoRecurso}
                             aoAlterar={setFiltroTipoRecurso}
-                            opcoes={(tiposRecurso ?? []).map((tipo) => ({ valor: tipo.id, rotulo: tipo.descricao }))}
                             valorTodos={FILTRO_TODOS}
                             rotuloTodos="Todos os tipos"
                             ariaLabel="Filtrar por tipo de recurso geral"
@@ -229,6 +183,7 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
                 </div>
             )}
 
+            <Paginacao {...paginacao} />
             {modalAberto && (
                 <GrupoModal
                     grupo={grupoEditando}

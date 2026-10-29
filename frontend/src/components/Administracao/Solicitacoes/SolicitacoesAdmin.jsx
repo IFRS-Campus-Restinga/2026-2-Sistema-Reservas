@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle, Eye, FileText, FileWarning, Info, LoaderCircle, MapPin, Package, UserRound, XCircle } from 'lucide-react';
 import { listarSolicitacoes } from '../../../services/termos';
-import { STATUS_RESERVA_LABEL, statusReservaApresentado } from '../../../utils/reserva';
+import { SITUACAO_RESERVA_LABEL, statusReservaApresentado } from '../../../utils/reserva';
 import Select from '../../Select/Select';
 import ModalDetalheReserva from '../../ModalDetalheReserva/ModalDetalheReserva';
 import ModalTermo from '../../TermoReserva/ModalTermo';
@@ -16,7 +16,17 @@ const DOCUMENTOS = [
   { valor: 'retirada', rotulo: 'Retirada de veículo' },
   { valor: 'devolucao', rotulo: 'Devolução de veículo' },
 ];
-const STATUS = Object.entries(STATUS_RESERVA_LABEL).map(([valor, rotulo]) => ({ valor: valor.toUpperCase(), rotulo }));
+const SITUACOES_SOLICITACAO = [
+  'aguardando_confirmacao',
+  'aguardando_envio_termo',
+  'termo_em_analise',
+  'aguardando_envio_termo_retirada',
+  'aguardando_termo_devolucao',
+];
+const SITUACOES = SITUACOES_SOLICITACAO.map((valor) => ({
+  valor,
+  rotulo: SITUACAO_RESERVA_LABEL[valor],
+}));
 const TAMANHO_PAGINA = 20;
 const data = (valor) => new Date(`${valor}T12:00:00`).toLocaleDateString('pt-BR');
 
@@ -40,28 +50,21 @@ function modalidade(reserva) {
   return 'Recurso';
 }
 
-function AcoesSolicitacao({ reserva, aoVerTermo, aoVerDetalhes }) {
-  if (reserva.origem_solicitacao === 'RESERVA') {
-    return (
-      <div className={styles.acoes}>
-        <button type="button" onClick={aoVerDetalhes}>
-          <Eye size={13} />
-          Analisar reserva
-        </button>
-      </div>
-    );
-  }
-
-  const aberta = reserva.termo_tipo === 'responsabilidade'
-    ? ['PENDENTE', 'AGUARDANDO_TERMO'].includes(reserva.status)
-    : reserva.termo_status === 'PENDENTE';
+function AcoesSolicitacao({ reserva, aoVerTermo, aoVerDetalhes, aoConfirmar, confirmando }) {
+  const confirmacao = reserva.situacao === 'AGUARDANDO_CONFIRMACAO';
+  const aberta = reserva.situacao === 'TERMO_EM_ANALISE';
   return (
     <div className={styles.acoes}>
       {aoVerDetalhes && <button type="button" onClick={aoVerDetalhes}><Eye size={13} />Detalhes</button>}
-      <button type="button" className={styles.verTermo} onClick={() => aoVerTermo(false)}><FileText size={13} />Ver termo</button>
+      {confirmacao ? (
+        <button type="button" className={styles.aprovar} disabled={confirmando}
+          onClick={() => aoConfirmar(reserva)}><CheckCircle size={13} />{confirmando ? 'Confirmando…' : 'Confirmar reserva'}</button>
+      ) : <>
+        <button type="button" className={styles.verTermo} onClick={() => aoVerTermo(false)}><FileText size={13} />Ver termo</button>
       {aberta && <>
         <button type="button" className={styles.recusar} onClick={() => aoVerTermo(true)}><XCircle size={13} />Recusar</button>
         <button type="button" className={styles.aprovar} onClick={() => aoVerTermo(false)}><CheckCircle size={13} />Validar termo</button>
+      </>}
       </>}
     </div>
   );
@@ -70,7 +73,7 @@ function AcoesSolicitacao({ reserva, aoVerTermo, aoVerDetalhes }) {
 export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
   const [tipo, setTipo] = useState('todos');
   const [documento, setDocumento] = useState('todos');
-  const [status, setStatus] = useState('todos');
+  const [situacao, setSituacao] = useState('todos');
   const [pagina, setPagina] = useState(1);
   const [lista, setLista] = useState({ results: [], count: 0 });
   const [carregando, setCarregando] = useState(true);
@@ -80,14 +83,16 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
   useEffect(() => {
     if (!solicitacaoInicial?.id) return;
 
-    setSelecionada({
-      id: solicitacaoInicial.id,
-      modalidade: solicitacaoInicial.modalidade,
-      termo_tipo:
-        solicitacaoInicial.termo_tipo || "responsabilidade",
-      mostrarTermo: true,
-      rejeitar: false,
-    });
+    const controle = new AbortController();
+    listarSolicitacoes({ reserva: solicitacaoInicial.id, situacao: 'todos', documento: 'todos' }, controle.signal)
+      .then((dados) => {
+        if (controle.signal.aborted) return;
+        const reserva = dados.results[0];
+        if (reserva) setSelecionada({ ...reserva, mostrarTermo: true, rejeitar: false });
+        else setErro('Solicita??o n?o encontrada ou indispon?vel.');
+      })
+      .catch((falha) => { if (!controle.signal.aborted) setErro(falha.message); });
+    return () => controle.abort();
   }, [solicitacaoInicial]);
   const [confirmandoId, setConfirmandoId] = useState(null);
   const [cancelandoId, setCancelandoId] = useState(null);
@@ -95,7 +100,7 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
 
   useEffect(() => {
     const controle = new AbortController();
-    listarSolicitacoes({ tipo, documento, status, page: pagina, page_size: TAMANHO_PAGINA }, controle.signal)
+    listarSolicitacoes({ tipo, documento, situacao, page: pagina, page_size: TAMANHO_PAGINA }, controle.signal)
       .then((resultado) => {
         if (!controle.signal.aborted) setLista(resultado);
       })
@@ -106,7 +111,21 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
         if (!controle.signal.aborted) setCarregando(false);
       });
     return () => controle.abort();
-  }, [tipo, documento, status, pagina, revisao]);
+  }, [tipo, documento, situacao, pagina, revisao]);
+
+  async function confirmar(reserva) {
+    try {
+      setConfirmandoId(reserva.id);
+      setErro('');
+      await confirmarReservaPendente(reserva.id);
+      setSelecionada(null);
+      recarregar();
+    } catch (falha) {
+      setErro(falha.message || 'Não foi possível confirmar a reserva.');
+    } finally {
+      setConfirmandoId(null);
+    }
+  }
 
   function recarregar() {
     setErro('');
@@ -196,8 +215,7 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
       <div className={styles.lista}>
         {lista.results.map((reserva) => {
           const statusApresentado = statusReservaApresentado(reserva).toUpperCase();
-          let situacao = STATUS_RESERVA_LABEL[statusApresentado.toLowerCase()] || reserva.status;
-          if (reserva.status === 'AGUARDANDO_TERMO') situacao = 'Termo pendente';
+          const rotuloSituacao = SITUACAO_RESERVA_LABEL[statusApresentado.toLowerCase()] || reserva.status;
           return (
             <article className={styles.cartao} data-status={statusApresentado} key={reserva.id} aria-label={reserva.nome}>
               <div className={styles.informacoes}>
@@ -209,7 +227,7 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
                   </span>
                   {reserva.tipo_reserva === 'EXTERNA' && <span className={styles.externo}>Externo</span>}
                   <span className={styles.situacao} data-status={statusApresentado}>
-                    {(reserva.status === 'AGUARDANDO_TERMO' || statusApresentado === 'AGUARDANDO_TERMO_DEVOLUCAO') && <FileWarning size={10} />}{situacao}
+                    {['AGUARDANDO_ENVIO_TERMO', 'AGUARDANDO_ENVIO_TERMO_RETIRADA', 'TERMO_EM_ANALISE', 'AGUARDANDO_TERMO_DEVOLUCAO'].includes(statusApresentado) && <FileWarning size={10} />}{rotuloSituacao}
                   </span>
                 </header>
                 <p className={styles.descricao}>{reserva.finalidade || reserva.descricao || reserva.item}</p>
@@ -221,7 +239,8 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
               </div>
               <AcoesSolicitacao reserva={reserva}
                 aoVerDetalhes={() => setSelecionada({ ...reserva, mostrarTermo: false })}
-                aoVerTermo={(rejeitar) => abrirTermo(reserva, rejeitar)} />
+                aoVerTermo={(rejeitar) => abrirTermo(reserva, rejeitar)}
+                aoConfirmar={confirmar} confirmando={confirmandoId === reserva.id} />
             </article>
           );
         })}
@@ -266,7 +285,8 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
           { rotulo: 'Quantidade', valor: selecionada.quantidade, icone: Package },
         ]}
         acoesAdministrativas={<div className={styles.acoesDetalhes}>
-          <AcoesSolicitacao reserva={selecionada} aoVerTermo={(rejeitar) => abrirTermo(selecionada, rejeitar)} />
+          <AcoesSolicitacao reserva={selecionada} aoVerTermo={(rejeitar) => abrirTermo(selecionada, rejeitar)}
+            aoConfirmar={confirmar} confirmando={confirmandoId === selecionada.id} />
         </div>} />;
     }
   }
@@ -278,8 +298,8 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
           valorTodos="todos" rotuloTodos="Termos e reservas" ariaLabel="Tipo de documento" />
         <Select valor={tipo} aoAlterar={(valor) => filtrar(setTipo, valor)} opcoes={TIPOS}
           valorTodos="todos" rotuloTodos="Todos os tipos" ariaLabel="Tipo de solicitação" />
-        <Select valor={status} aoAlterar={(valor) => filtrar(setStatus, valor)} opcoes={STATUS}
-          valorTodos="todos" rotuloTodos="Todos os status" ariaLabel="Status da solicitação" />
+        <Select valor={situacao} aoAlterar={(valor) => filtrar(setSituacao, valor)} opcoes={SITUACOES}
+          valorTodos="todos" rotuloTodos="Todas as situações" ariaLabel="Situação da reserva" />
       </div>
       {conteudoLista}
       {modal}

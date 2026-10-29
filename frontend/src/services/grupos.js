@@ -1,27 +1,8 @@
+import { consultarPagina } from './paginacao';
 import axios from 'axios';
 const GRUPOS_URL = '/api/grupos/';
 
-async function buscarTodasPaginas(url) {
-    let proximaUrl = url;
-    let resultados = [];
-
-    while (proximaUrl) {
-        const response = await axios.get(proximaUrl, { withCredentials: true });
-        resultados = resultados.concat(response.data.results);
-        proximaUrl = response.data.next;
-    }
-
-    return resultados;
-}
-
-export const buscarGrupos = async ({ apenasMeus = false } = {}) => {
-    try {
-        return await buscarTodasPaginas(apenasMeus ? `${GRUPOS_URL}?meus=true` : GRUPOS_URL);
-    } catch (erro) {
-        console.error('Erro ao buscar grupos:', erro.response?.data);
-        throw erro;
-    }
-};
+export const buscarGrupos = (parametros, signal) => consultarPagina(GRUPOS_URL, parametros, signal);
 
 export const criarGrupo = async (dados) => {
     try {
@@ -69,14 +50,7 @@ export const excluirGrupo = async (id) => {
     }
 };
 
-export const buscarMembros = async (grupoId) => {
-    try {
-        return await buscarTodasPaginas(`${GRUPOS_URL}${grupoId}/membros/?page_size=100`);
-    } catch (erro) {
-        console.error('Erro ao buscar membros:', erro.response?.data);
-        throw erro;
-    }
-};
+export const buscarMembros = (grupoId, parametros, signal) => consultarPagina(`${GRUPOS_URL}${grupoId}/membros/`, parametros, signal);
 
 export const buscarCandidatos = async (grupoId, { limite = 10, busca = '', excluir = [] } = {}) => {
     try {

@@ -1,13 +1,10 @@
-import { useEffect, useState } from 'react';
+import useListaPaginada from '../../../hooks/useListaPaginada';
+import Paginacao from '../Paginacao/Paginacao';
+import { useState } from 'react';
 import { Pencil, Plus, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 import styles from './VeiculosAdmin.module.css';
 
-import {
-    buscarVeiculos,
-    criarVeiculo,
-    atualizarVeiculo,
-    excluirVeiculo,
-} from '../../../services';
+import { criarVeiculo, atualizarVeiculo, excluirVeiculo } from '../../../services';
 
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import VeiculoModal from './ModalVeiculo/VeiculoModal';
@@ -16,34 +13,14 @@ import CampoBusca from '../CampoBusca/CampoBusca';
 
 
 function VeiculosAdministracao() {
-    const [veiculos, setVeiculos] = useState([]);
     const [busca, setBusca] = useState('');
-    const [carregando, setCarregando] = useState(true);
-    const [erro, setErro] = useState('');
 
     const [modalVeiculoAberto, setModalVeiculoAberto] =  useState(false);
     const [veiculoEditando, setVeiculoEditando] =useState(null);
     const [veiculoExcluindo, setVeiculoExcluindo] = useState(null);
 
-    useEffect(() => {
-        carregarVeiculos();
-    }, []);
 
-    async function carregarVeiculos() {
-        try {
-            setCarregando(true);
-            setErro('');
-
-            const dados = await buscarVeiculos();
-
-            setVeiculos(dados);
-        } catch (erro) {
-            console.error(erro);
-            setErro('Não foi possível carregar os veículos.');
-        } finally {
-            setCarregando(false);
-        }
-    }
+    const { itens: veiculos, carregando, erro, setErro, recarregar: carregarVeiculos, paginacao } = useListaPaginada('/api/veiculos/', { busca });
 
     function abrirCadastro() {
         setVeiculoEditando(null);
@@ -112,10 +89,7 @@ function VeiculosAdministracao() {
 
 
     const termoBusca = busca.trim().toLowerCase();
-    const veiculosFiltrados = veiculos.filter((veiculo) =>
-        veiculo.nome.toLowerCase().includes(termoBusca) ||
-        veiculo.placa.toLowerCase().includes(termoBusca)
-    );
+    const veiculosFiltrados = veiculos;
 
     const colunas = [
         {
@@ -213,6 +187,8 @@ function VeiculosAdministracao() {
                         : 'Nenhum veículo cadastrado.'}
                 />
             )}
+
+            <Paginacao {...paginacao} />
 
             <VeiculoModal
                 aberto={modalVeiculoAberto}

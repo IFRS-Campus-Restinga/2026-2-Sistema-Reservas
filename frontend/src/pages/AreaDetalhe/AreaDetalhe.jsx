@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useUsuario } from "../../hooks/useUsuario";
 import { ArrowLeft, CheckCircle, Users } from "lucide-react";
-import { buscarAgendaArea, buscarArea, buscarAreas, buscarBlocos } from "../../services";
+import { buscarAgendaArea, buscarArea, buscarBloco } from "../../services";
 import ReservaAreaModal from "../../components/ReservaArea/ReservaAreaModal";
 import { ICONE_AREA_PADRAO, TIPO_AREA_ICONE, TIPO_AREA_LABEL } from "../../utils/tipoArea";
 import { EQUIPAMENTO_LABELS } from "../../utils/equipamentoArea";
@@ -32,16 +32,11 @@ function AreaDetalhe() {
         setCarregando(true);
         setErro("");
 
-        const [dadosArea, dadosAreas, dadosBlocos, dadosAgenda] = await Promise.all([
-          buscarArea(id),
-          buscarAreas(),
-          buscarBlocos(),
-          buscarAgendaArea(id),
-        ]);
-
+        const [dadosArea, dadosAgenda] = await Promise.all([buscarArea(id), buscarAgendaArea(id)]);
+        const dadosBloco = await buscarBloco(dadosArea.bloco);
         setArea(dadosArea);
-        setAreas(dadosAreas);
-        setBlocos(dadosBlocos);
+        setAreas([dadosArea]);
+        setBlocos([dadosBloco]);
         setAgenda(dadosAgenda);
       } catch (erro) {
         console.error(erro);

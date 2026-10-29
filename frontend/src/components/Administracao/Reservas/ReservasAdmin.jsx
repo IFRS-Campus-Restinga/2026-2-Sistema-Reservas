@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 import Paginacao from '../Paginacao/Paginacao';
 import styles from './ReservasAdmin.module.css';
+import RelatorioUso from '../RelatorioUso/RelatorioUso';
 
 import {
   buscarAreas,
@@ -183,38 +184,18 @@ function ReservasAdmin() {
 
   const [cancelando, setCancelando] = useState(false);
 
-  async function carregarDadosAuxiliares() {
-    try {
-      const [
-        listaAreas,
-        listaBlocos,
-        listaVeiculos,
-        listaRecursos,
-        listaTipos,
-      ] = await Promise.all([
-        buscarAreas(),
-        buscarBlocos(),
-        buscarVeiculos(),
-        listarRecursosGerais(),
-        listarTiposRecurso(),
-      ]);
+  useEffect(() => {
+    let ativo = true;
+    Promise.all([buscarAreas(), buscarBlocos(), buscarVeiculos(), listarRecursosGerais(), listarTiposRecurso()])
+      .then(([areas, blocos, veiculos, recursos, tipos]) => {
+        if (!ativo) return;
+        setAreas(areas || []); setBlocos(blocos || []); setVeiculos(veiculos || []);
+        setRecursos(recursos || []); setTiposRecurso(tipos || []);
+      }).catch((falha) => { if (ativo) setErro(falha.message); });
+    return () => { ativo = false; };
+  }, []);
 
-      setAreas(listaAreas || []);
-      setBlocos(listaBlocos || []);
-      setVeiculos(listaVeiculos || []);
-      setRecursos(listaRecursos || []);
-      setTiposRecurso(listaTipos || []);
-    } catch (falha) {
-      console.error(falha);
-
-      setErro(
-        falha.message ||
-        'Não foi possível carregar as reservas.'
-      );
-    }
-  }
-
-  async function carregarReservas(signal) {
+  const carregarReservas = useCallback(async (signal) => {
     try {
       setCarregando(true);
       setErro('');
@@ -257,11 +238,7 @@ function ReservasAdmin() {
         setCarregando(false);
       }
     }
-  }
-
-  useEffect(() => {
-    carregarDadosAuxiliares();
-  }, []);
+  }, [busca, modalidade, pagina]);
 
   useEffect(() => {
     const controle = new AbortController();
@@ -274,7 +251,7 @@ function ReservasAdmin() {
       clearTimeout(atraso);
       controle.abort();
     };
-  }, [busca, modalidade, pagina]);
+  }, [carregarReservas]);
 
   function podeGerenciar(reserva) {
     if (!STATUS_GERENCIAVEIS.has(reserva.status)) {
@@ -553,6 +530,7 @@ function ReservasAdmin() {
           </p>
         </div>
 
+        <RelatorioUso />
         <span className={styles.contador}>
           {total}{' '}
           {total === 1

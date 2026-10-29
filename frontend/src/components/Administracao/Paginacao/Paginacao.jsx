@@ -2,8 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import styles from './Paginacao.module.css';
 
 /**
- * Paginação simples de exibição (client-side), pra usar sobre uma lista
- * que já está toda carregada em memória (ex.: resultado de um filtro).
+ * Navegação compartilhada: o consumidor consulta a página solicitada na API.
  *
  * Props:
  * - paginaAtual: número da página atual (1-based)
