@@ -1,4 +1,4 @@
-import { consultarPagina } from './paginacao';
+import { consultarPagina, consultarTodasPaginas } from './paginacao';
 async function tratarResposta(resposta) {
   if (resposta.status === 204) {
     return null
@@ -56,3 +56,4 @@ export async function excluirRecursoGeral(id) {
 }
 
 export const listarTiposRecurso = (parametros, signal) => consultarPagina('/api/tipos-recurso/', parametros, signal);
+export const listarTodosTiposRecurso = (parametros, signal) => consultarTodasPaginas('/api/tipos-recurso/', parametros, signal);

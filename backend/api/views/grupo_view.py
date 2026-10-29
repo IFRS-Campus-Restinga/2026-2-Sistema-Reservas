@@ -10,8 +10,9 @@ class GrupoListCreateView(APIView):
     permission_classes = [PodeCriarGrupo]
 
     def get(self, request):
-        queryset = Grupo.objects.select_related('criador', 'tipo_recurso').order_by('id')
-        if not usuario_e_admin(request.user):
+        queryset = Grupo.objects.select_related('criador').prefetch_related('autorizacoes__tipo_recurso').order_by('id')
+        apenas_meus = request.query_params.get('meus') == 'true'
+        if apenas_meus or not usuario_e_admin(request.user):
             queryset = queryset.filter(criador=request.user)
         return listar(request, queryset, GrupoSerializer)
 
@@ -21,7 +22,7 @@ class GrupoListCreateView(APIView):
 
 class GrupoDetailView(BuscarObjetoComPermissaoMixin, APIView):
     permission_classes = [PodeGerenciarGrupo]
-    queryset = Grupo.objects.select_related('criador', 'tipo_recurso')
+    queryset = Grupo.objects.select_related('criador').prefetch_related('autorizacoes__tipo_recurso')
 
     def get(self, request, pk):
         return detalhar(self.get_object(pk), GrupoSerializer)

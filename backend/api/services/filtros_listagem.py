@@ -22,8 +22,9 @@ FILTROS = {
     'veiculo': {'status': 'status'},
     'recursogeral': {'tipo_recurso': 'tipo_recurso_id', 'status': 'status'},
     'tiporecurso': {'categoria': 'categoria'},
-    'grupo': {'tipo_membro': 'tipo_membro_permitido', 'recurso': 'tipo_recurso_autorizado',
-              'tipo_recurso': 'tipo_recurso_id'},
+    'grupo': {'tipo_membro': 'tipo_membro_permitido',
+              'recurso': 'autorizacoes__tipo_recurso_autorizado',
+              'tipo_recurso': 'autorizacoes__tipo_recurso_id'},
     'reserva': {'status': 'status'},
 }
 MODALIDADES = {'area': 'reservaarea', 'veiculo': 'reservaveiculo',
@@ -58,6 +59,8 @@ def filtrar_listagem(request, queryset):
             queryset = queryset.filter(**{campo: valor})
     if modelo == 'grupo' and parametros.get('meus') == 'true':
         queryset = queryset.filter(criador=request.user)
+    if modelo == 'grupo' and (parametros.get('recurso') or parametros.get('tipo_recurso')):
+        queryset = queryset.distinct()
     if modelo == 'reserva':
         modalidade = parametros.get('modalidade')
         if modalidade in MODALIDADES:

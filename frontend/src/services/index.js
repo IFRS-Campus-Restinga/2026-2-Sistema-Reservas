@@ -5,6 +5,7 @@ export {
   atualizarRecursoGeral,
   excluirRecursoGeral,
   listarTiposRecurso,
+  listarTodosTiposRecurso,
 } from './recursos'
 
 export { 
