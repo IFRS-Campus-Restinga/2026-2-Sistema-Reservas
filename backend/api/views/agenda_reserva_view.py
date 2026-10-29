@@ -10,6 +10,7 @@ from api.models.reserva_veiculo_model import ReservaVeiculo
 from api.models.veiculo_model import Veiculo
 from api.permissions.regras_comuns import UsuarioAutenticado
 from api.services.reserva_veiculo_service import STATUS_RESERVAS_FINAIS
+from api.services.timetable.reservas_timetable_service import ReservasTimetableService
 
 
 class AgendaReservasView(APIView):
@@ -49,12 +50,19 @@ class AgendaReservasView(APIView):
             ]
         elif tipo == "AREA":
             recurso = get_object_or_404(Area, pk=recurso_id)
-            reservas = (
+            reservas_normais = list(
                 ReservaArea.objects
-                .filter(area=recurso, data=data)
+                .filter(area=recurso, data=data, celula_timetable__isnull=True)
                 .exclude(status__in=STATUS_RESERVAS_FINAIS)
                 .select_related("usuario")
             )
+            reservas_timetable = ReservasTimetableService.projetar_reservas_no_intervalo(
+                data_inicio=data,
+                data_fim=data,
+                area=recurso,
+            )
+            reservas = reservas_normais + reservas_timetable
+            reservas.sort(key=lambda r: r.horario_inicio)
             response = [
                 {
                     "id": reserva.pk,
@@ -64,7 +72,7 @@ class AgendaReservasView(APIView):
                     "horario_fim": reserva.horario_fim,
                     "usuario_nome": reserva.usuario.nome,
                 }
-                for reserva in reservas.order_by("horario_inicio")
+                for reserva in reservas
             ]
         else:
             raise ValidationError({

@@ -54,3 +54,27 @@ def validar_disponibilidade_area(dados, excluir_reserva=None):
             raise ValidationError(
                 {"horario_inicio": "Já existe uma reserva nesse período para essa área."}
             )
+
+    # Verifica também as reservas semanais da Timetable projetadas para o dia solicitado
+    reservas_timetable = ReservaArea.objects.filter(
+        area=area,
+        status__in=status_ativos,
+        celula_timetable__isnull=False,
+        celula_timetable__periodo_letivo__data_inicio__lte=dados["data"],
+        celula_timetable__periodo_letivo__data_fim__gte=dados["data"],
+    )
+
+    if excluir_reserva is not None:
+        reservas_timetable = reservas_timetable.exclude(pk=excluir_reserva)
+
+    for reserva_tt in reservas_timetable:
+        if reserva_tt.data.weekday() != dados["data"].weekday():
+            continue
+
+        inicio_tt = datetime.combine(dados["data"], reserva_tt.horario_inicio)
+        fim_tt = datetime.combine(dados["data"], reserva_tt.horario_fim)
+
+        if inicio < fim_tt and fim > inicio_tt:
+            raise ValidationError(
+                {"horario_inicio": "Já existe uma reserva nesse período para essa área."}
+            )

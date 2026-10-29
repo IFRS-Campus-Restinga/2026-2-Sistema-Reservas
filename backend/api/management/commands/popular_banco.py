@@ -717,6 +717,11 @@ class Command(BaseCommand):
         if removidos_legado > 0:
             self.stdout.write(self.style.WARNING(f'Migração: {removidos_legado} blocos/áreas/reservas do formato antigo foram limpos automaticamente.'))
 
+        # Limpeza automática de reservas duplicadas da lógica antiga da timetable (~9.500 -> 360)
+        from api.services.timetable.reservas_timetable_service import ReservasTimetableService
+        if ReservasTimetableService.garantir_apenas_reservas_base():
+            self.stdout.write(self.style.WARNING('Migração Timetable: cadastros antigos expandidos foram limpos e substituídos pelas reservas base recorrentes (1 semana).'))
+
 
         if options['limpar_tipos_antigos']:
             removidos, mantidos = limpar_tipos_antigos()
