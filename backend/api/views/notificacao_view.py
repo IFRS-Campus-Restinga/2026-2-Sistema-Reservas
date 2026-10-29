@@ -83,4 +83,3 @@ class MarcarTodasNotificacoesLidasView(APIView):
             "detail": "Todas as notificações foram marcadas como lidas.",
             "nao_lidas": 0,
         })
-    

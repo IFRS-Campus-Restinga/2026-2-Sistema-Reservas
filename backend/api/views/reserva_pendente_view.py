@@ -10,7 +10,6 @@ from api.enumerations.status_reserva import StatusReserva
 from api.enumerations.status_termo import StatusTermo
 from api.enumerations import TipoTermo
 from api.models.reserva_model import Reserva
-from api.permissions.regras_comuns import SomenteAdmin
 from api.permissions.reserva_permissions import PodeCancelarReserva,PodeConfirmarReserva
 from api.serializers.reserva_serializer import ReservaSerializer
 from api.services.auditoria import foto, registrar_auditoria
@@ -26,26 +25,6 @@ def _entidade_reserva(reserva):
     if getattr(reserva, "reservarecursogeral", None) is not None:
         return EntidadeAuditoria.RESERVA_RECURSO_GERAL
     return None
-
-class ReservasPendentesListView(APIView):
-    permission_classes = [SomenteAdmin]
-
-    def get(self, request):
-        reservas = (
-            Reserva.objects
-            .filter(status=StatusReserva.PENDENTE)
-            .exclude(reservaveiculo__isnull=False)
-            .exclude(reservarecursogeral__recurso_geral__tem_termo_de_responsabilidade=True)
-            .select_related(
-                "usuario",
-                "reservaarea__area__bloco",
-                "reservaveiculo__veiculo",
-                "reservarecursogeral__recurso_geral__tipo_recurso",
-            )
-            .order_by("data", "horario_inicio")
-        )
-
-        return Response(ReservaSerializer(reservas, many=True).data)
 
 class ConfirmarReservaView(APIView):
     permission_classes = [PodeConfirmarReserva]

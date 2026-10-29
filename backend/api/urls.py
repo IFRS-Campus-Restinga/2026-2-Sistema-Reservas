@@ -21,7 +21,7 @@ from api.views.reserva_veiculo_view import (
 )
 from api.views.recorrencia_view import RecorrenciaReservaAreaDetailView
 from api.views.agenda_reserva_view import AgendaReservasView
-from api.views.reserva_pendente_view import ReservasPendentesListView, ConfirmarReservaView, CancelarReservaAdminView
+from api.views.reserva_pendente_view import ConfirmarReservaView, CancelarReservaAdminView
 from api.views.reserva_admin_view import ReservasAdminListView
 from api.views.notificacao_view import MinhasNotificacoesListView, MarcarNotificacaoLidaView, MarcarTodasNotificacoesLidasView
 from api.views.data_atual_view import DataAtualView
@@ -69,7 +69,6 @@ urlpatterns = [
     path("reservas/areas/<int:pk>/", ReservaAreaDetailView.as_view(), name="reserva-area-detail"),
     path("reservas/veiculos/", ReservaVeiculoListCreateView.as_view(), name="reserva-veiculo-list-create"),
     path("reservas/veiculos/disponibilidade/", DisponibilidadeReservaVeiculoView.as_view(), name="disponibilidade-reserva-veiculo"),
-    path("reservas/pendentes/", ReservasPendentesListView.as_view(), name="reservas-pendentes"),
     path("reservas/pendentes/<int:pk>/confirmar/", ConfirmarReservaView.as_view(), name="reserva-pendente-confirmar"),
     path("notificacoes/", MinhasNotificacoesListView.as_view(), name="minhas-notificacoes"),
     path("notificacoes/<int:pk>/lida/", MarcarNotificacaoLidaView.as_view(), name="notificacao-marcar-lida"), 

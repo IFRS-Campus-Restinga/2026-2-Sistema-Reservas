@@ -73,7 +73,7 @@ def criar_notificacao_termo_enviado(termo, reenviado=False):
     Usuario = get_user_model()
 
     administradores = Usuario.objects.filter(
-        filtro_usuario_admin,
+        filtro_usuario_admin(),
         is_active=True,
     ).distinct()
 

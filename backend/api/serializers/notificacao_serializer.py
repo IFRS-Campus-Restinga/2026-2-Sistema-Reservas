@@ -60,4 +60,3 @@ class NotificacaoSerializer(serializers.ModelSerializer):
             return None
 
         return termo[0].motivo_rejeicao
-    

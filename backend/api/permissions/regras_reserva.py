@@ -85,4 +85,3 @@ def _tem_cobertura_grupo(usuario, tipo_recurso_autorizado, tipo_recurso_id, inic
             return True
         proximo_dia = limite + timedelta(days=1)
     return False
-

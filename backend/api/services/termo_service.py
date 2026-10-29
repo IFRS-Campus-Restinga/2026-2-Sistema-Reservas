@@ -317,6 +317,9 @@ def montar_solicitacao_termo(reserva, documento_parametro):
             None,
         )
 
+    if termo_atual is None and termos_atuais:
+        termo_atual = termos_atuais[0]
+
     tipo_resultado = documento_parametro
 
     if tipo_resultado == 'todos':
