@@ -4,6 +4,7 @@ from datetime import datetime, time, timedelta
 from django.db.models import Prefetch, Q, Sum
 from rest_framework.exceptions import ValidationError
 
+from api.enumerations import StatusRecurso
 from api.models.area_model import Area
 from api.models.recurso_geral_model import RecursoGeral
 from api.models.reserva_model import Reserva
@@ -55,19 +56,19 @@ def _horas_operacionais(reserva, periodo_inicio, periodo_fim):
 def _capacidade(modalidade, parametros, dias):
     total = 0
     if modalidade in ('todas', 'area'):
-        areas = Area.objects.all()
+        areas = Area.objects.filter(status=StatusRecurso.ATIVO, disponibilidade=True).exclude(caracteristica__iexact='EAD')
         if parametros.get('bloco'):
             areas = areas.filter(bloco_id=parametros['bloco'])
         if parametros.get('recurso') and modalidade == 'area':
             areas = areas.filter(pk=parametros['recurso'])
         total += areas.count() * dias * HORAS_OPERACAO_DIA
     if modalidade in ('todas', 'veiculo'):
-        veiculos = Veiculo.objects.all()
+        veiculos = Veiculo.objects.filter(status=StatusRecurso.ATIVO)
         if parametros.get('recurso') and modalidade == 'veiculo':
             veiculos = veiculos.filter(pk=parametros['recurso'])
         total += veiculos.count() * dias * HORAS_OPERACAO_DIA
     if modalidade in ('todas', 'recurso_geral'):
-        recursos = RecursoGeral.objects.all()
+        recursos = RecursoGeral.objects.filter(status=StatusRecurso.ATIVO)
         if parametros.get('tipo_recurso'):
             recursos = recursos.filter(tipo_recurso_id=parametros['tipo_recurso'])
         if parametros.get('recurso') and modalidade == 'recurso_geral':
