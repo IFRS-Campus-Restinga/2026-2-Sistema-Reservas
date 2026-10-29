@@ -70,7 +70,10 @@ def reservas_alteraveis(recorrencia):
     return (
         ReservaArea.objects.filter(
             recorrencia=recorrencia,
-            status=StatusReserva.CONFIRMADA,
+            status__in=[
+                StatusReserva.PENDENTE,
+                StatusReserva.CONFIRMADA,
+            ],
         )
         .filter(filtro_reservas_futuras())
         .order_by("data", "horario_inicio")
@@ -156,7 +159,7 @@ def editar_recorrencia(recorrencia, dados_edicao):
 
     if not reservas:
         raise ValidationError({
-            "detail": "Não há reservas futuras confirmadas nesta recorrência."
+            "detail": "Não há reservas futuras alteráveis nesta recorrência."
         })
 
     serializers = []
@@ -216,7 +219,7 @@ def cancelar_recorrencia(recorrencia):
 
     if not reservas:
         raise ValidationError({
-            "detail": "Não há reservas futuras confirmadas nesta recorrência."
+            "detail": "Não há reservas futuras alteráveis nesta recorrência."
         })
 
     canceladas = []

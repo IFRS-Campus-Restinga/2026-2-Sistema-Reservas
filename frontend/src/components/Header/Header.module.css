@@ -155,6 +155,7 @@
   height: 7px;
   flex-shrink: 0;
   margin-top: 6px;
+  margin-left: auto;
   border-radius: 50%;
   background: transparent;
 }
@@ -212,4 +213,65 @@
     left: 10px;
     width: auto;
   }
+}
+
+.marcarTodasLidas {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #009a44;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.marcarTodasLidas:hover {
+  text-decoration: underline;
+}
+
+.iconeNotificacao {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.iconeSucesso {
+  background: #ecfdf3;
+  color: #009a44;
+}
+
+.iconeErro {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.iconeTermo {
+  background: #fff7ed;
+  color: #d97706;
+}
+
+.iconeInfo {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.verTodasNotificacoes {
+  width: 100%;
+  padding: 11px 14px;
+  border: 0;
+  border-top: 1px solid #eef0f3;
+  background: #ffffff;
+  color: #009a44;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+
+.verTodasNotificacoes:hover {
+  background: #f8fafc;
 }

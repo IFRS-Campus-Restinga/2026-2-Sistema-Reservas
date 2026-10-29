@@ -35,3 +35,18 @@ export async function marcarNotificacaoComoLida(id) {
     'Não foi possível marcar a notificação como lida.'
   );
 }
+
+export async function marcarTodasNotificacoesComoLidas() {
+  const resposta = await fetch(`${URL}lidas/`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  return tratarResposta(
+    resposta,
+    'Não foi possível marcar todas as notificações como lidas.'
+  );
+}

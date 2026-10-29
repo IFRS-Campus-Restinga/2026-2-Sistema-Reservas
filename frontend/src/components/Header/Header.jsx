@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "react-bootstrap";
 import { Bell, LogIn } from "lucide-react";
 
@@ -11,12 +12,14 @@ import Botao from "../Botao/Botao";
 import { PAPEL_USUARIO_LABEL } from "../../utils/usuario";
 import { HUB_URL } from "../../config/hub";
 
-import {
-  listarNotificacoes,
-  marcarNotificacaoComoLida,
-} from "../../services";
-
 import ModalNotificacao from "../Notificacoes/ModalNotificacao";
+
+import { useNotificacoes } from "../../hooks/useNotificacoes";
+
+import {
+  configuracaoNotificacao,
+  notificacaoAbreSolicitacao,
+} from "../../utils/notificacoes";
 
 
 function iniciaisDoNome(nome) {
@@ -43,66 +46,22 @@ function formatarDataHora(dataHora) {
 
 function Header({ titulo, usuario }) {
   const [notificacoesAbertas, setNotificacoesAbertas] = useState(false);
-  const [notificacoes, setNotificacoes] = useState([]);
-  const [naoLidas, setNaoLidas] = useState(0);
-
-  const [carregandoNotificacoes, setCarregandoNotificacoes] =
-    useState(false);
-
-  const [erroNotificacoes, setErroNotificacoes] = useState("");
 
   const [notificacaoSelecionada, setNotificacaoSelecionada] =
     useState(null);
 
   const containerNotificacoesRef = useRef(null);
 
+  const navigate = useNavigate();
 
-  const carregarNotificacoes = useCallback(async () => {
-    if (!usuario) return;
-
-    try {
-      setCarregandoNotificacoes(true);
-      setErroNotificacoes("");
-
-      const dados = await listarNotificacoes();
-
-      setNotificacoes(dados.notificacoes || []);
-      setNaoLidas(dados.nao_lidas || 0);
-    } catch (erro) {
-      setErroNotificacoes(
-        erro.message || "Não foi possível carregar as notificações."
-      );
-    } finally {
-      setCarregandoNotificacoes(false);
-    }
-  }, [usuario]);
-
-
-  useEffect(() => {
-    if (!usuario) return undefined;
-
-    let ativo = true;
-
-    listarNotificacoes()
-      .then((dados) => {
-        if (!ativo) return;
-
-        setNotificacoes(dados.notificacoes || []);
-        setNaoLidas(dados.nao_lidas || 0);
-      })
-      .catch((erro) => {
-        if (!ativo) return;
-
-        setErroNotificacoes(
-          erro.message || "Não foi possível carregar as notificações."
-        );
-      });
-
-    return () => {
-      ativo = false;
-    };
-  }, [usuario]);
-
+  const {
+    notificacoes,
+    naoLidas,
+    carregando: carregandoNotificacoes,
+    erro: erroNotificacoes,
+    marcarComoLida,
+    marcarTodasComoLidas,
+  } = useNotificacoes();
 
   useEffect(() => {
     function fecharAoClicarFora(evento) {
@@ -132,39 +91,59 @@ function Header({ titulo, usuario }) {
   }, []);
 
 
-  async function alternarNotificacoes() {
-    const vaiAbrir = !notificacoesAbertas;
-
-    setNotificacoesAbertas(vaiAbrir);
-
-    if (vaiAbrir) {
-      await carregarNotificacoes();
-    }
+  function alternarNotificacoes() {
+    setNotificacoesAbertas(
+      (abertas) => !abertas
+    );
   }
 
 
   async function abrirNotificacao(notificacao) {
-    setNotificacaoSelecionada(notificacao);
     setNotificacoesAbertas(false);
 
-    if (notificacao.lida) return;
+    let atualizada = notificacao;
+
+    if (!notificacao.lida) {
+      try {
+        atualizada = await marcarComoLida(
+          notificacao.id
+        );
+      } catch (erro) {
+        console.error(erro);
+      }
+    }
+
+    if (
+      notificacaoAbreSolicitacao(
+        atualizada,
+        usuario
+      )
+    ) {
+      navigate("/admin", {
+        state: {
+          aba: "solicitacoes",
+          solicitacaoInicial: {
+            id: atualizada.reserva.id,
+            modalidade:
+              atualizada.reserva.modalidade,
+            termo_tipo:
+              atualizada.reserva.termo_tipo ||
+              "responsabilidade",
+          },
+        },
+      });
+
+      return;
+    }
+
+    setNotificacaoSelecionada(atualizada);
+  }
+
+  async function marcarTodas() {
+    if (naoLidas === 0) return;
 
     try {
-      const atualizada = await marcarNotificacaoComoLida(
-        notificacao.id
-      );
-
-      setNotificacaoSelecionada(atualizada);
-
-      setNotificacoes((atuais) =>
-        atuais.map((item) =>
-          item.id === atualizada.id ? atualizada : item
-        )
-      );
-
-      setNaoLidas((quantidade) =>
-        Math.max(0, quantidade - 1)
-      );
+      await marcarTodasComoLidas();
     } catch (erro) {
       console.error(erro);
     }
@@ -276,10 +255,13 @@ function Header({ titulo, usuario }) {
                     <strong>Notificações</strong>
 
                     {naoLidas > 0 && (
-                      <span>
-                        {naoLidas} não lida
-                        {naoLidas === 1 ? "" : "s"}
-                      </span>
+                      <button
+                        type="button"
+                        className={styles.marcarTodasLidas}
+                        onClick={marcarTodas}
+                      >
+                        Marcar todas como lidas
+                      </button>
                     )}
                   </div>
 
@@ -310,56 +292,76 @@ function Header({ titulo, usuario }) {
                         Nenhuma notificação por enquanto.
                       </p>
                     ) : (
-                      notificacoes.map((notificacao) => (
-                        <button
-                          type="button"
-                          role="menuitem"
-                          key={notificacao.id}
-                          className={`${
-                            styles.itemNotificacao
-                          } ${
-                            notificacao.lida
-                              ? ""
-                              : styles.naoLida
-                          }`}
-                          onClick={() =>
-                            abrirNotificacao(notificacao)
-                          }
-                        >
-                          <span
-                            className={
-                              styles.indicadorLeitura
-                            }
-                          />
+                      notificacoes.map((notificacao) => {
+                        const { Icone, classe } =
+                          configuracaoNotificacao(
+                            notificacao.tipo
+                          );
 
-                          <span
-                            className={
-                              styles.conteudoNotificacao
+                        return (
+                          <button
+                            type="button"
+                            role="menuitem"
+                            key={notificacao.id}
+                            className={`${styles.itemNotificacao} ${
+                              notificacao.lida
+                                ? ""
+                                : styles.naoLida
+                            }`}
+                            onClick={() =>
+                              abrirNotificacao(notificacao)
                             }
                           >
-                            <strong>
-                              {notificacao.titulo}
-                            </strong>
-
-                            <span>
-                              {notificacao.mensagem}
+                            <span
+                              className={`${styles.iconeNotificacao} ${styles[classe]}`}
+                            >
+                              <Icone size={16} />
                             </span>
 
-                            <small>
-                              {formatarDataHora(
-                                notificacao.criada_em
-                              )}
-                            </small>
-                          </span>
-                        </button>
-                      ))
-                    )}
+                            <span
+                              className={styles.conteudoNotificacao}
+                            >
+                              <strong>
+                                {notificacao.titulo}
+                              </strong>
+
+                              <span>
+                                {notificacao.mensagem}
+                              </span>
+
+                              <small>
+                                {formatarDataHora(
+                                  notificacao.criada_em
+                                )}
+                              </small>
+                            </span>
+
+                            {!notificacao.lida && (
+                              <span
+                                className={styles.indicadorLeitura}
+                              />
+                            )}
+                          </button>
+                        );
+                      }))
+                    }
                   </div>
+                  {notificacoes.length > 0 && (
+                    <button
+                      type="button"
+                      className={styles.verTodasNotificacoes}
+                      onClick={() => {
+                        setNotificacoesAbertas(false);
+                        navigate("/notificacoes");
+                      }}
+                    >
+                      Ver todas as notificações →
+                    </button>
+                  )}
                 </div>
               )}
             </div>
           )}
-
 
           {/* Perfil */}
           {usuario && (

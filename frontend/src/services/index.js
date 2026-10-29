@@ -64,16 +64,19 @@ export {
   buscarAgendaVeiculo,
 } from './reservasVeiculos';
 export { 
-  listarReservasPendentes,
   confirmarReservaPendente, 
   cancelarReservaAdmin,
 } from './reservasPendentes';
 export {
   listarNotificacoes,
   marcarNotificacaoComoLida,
+  marcarTodasNotificacoesComoLidas,
 } from './notificacoes';
 export { buscarDataAtual } from './dataAtual';
 export {
   buscarLogsAuditoria,
   buscarLogAuditoria,
 } from './auditoria';
+export {
+  listarReservasAdmin,
+} from './reservasAdmin';

@@ -14,16 +14,17 @@ from api.pagination import PaginacaoPadrao
 from api.permissions.reserva_permissions import PodeGerenciarReserva
 from api.permissions.regras_comuns import SomenteAdministrador
 from api.serializers.termo_serializer import AnaliseTermoSerializer
+from api.serializers.reserva_serializer import ReservaSerializer
 from api.services.termo_service import (
     ABERTAS, analisar_termo, enviar_termo, modelo_da_reserva, reserva_concreta,
-    reserva_exige_termo, resumo_termo, validar_termo_operacional,
+    reserva_exige_termo, resumo_termo, validar_termo_operacional, montar_solicitacao_termo
 )
 
 
 def reservas_com_recurso():
     return Reserva.objects.select_related(
         'usuario', 'reservaveiculo__veiculo', 'reservarecursogeral__recurso_geral',
-    )
+    ).prefetch_related('termos')
 
 
 def resposta_arquivo(campo, nome, content_type):
@@ -52,8 +53,18 @@ class TermoReservaView(APIView):
         return reserva
 
     def validar_modalidade(self, reserva):
+        _, modalidade = reserva_concreta(reserva)
+
+        if modalidade == 'veiculo':
+            raise ValidationError(
+                'Reservas de veículo utilizam apenas '
+                'termos de retirada e devolução.'
+            )
+
         if not reserva_exige_termo(reserva):
-            raise ValidationError('Esta reserva não exige termo de responsabilidade.')
+            raise ValidationError(
+                'Esta reserva não exige termo de responsabilidade.'
+            )
 
     def get(self, request, pk):
         return Response(resumo_termo(self.obter_reserva(request, pk), request.user))
@@ -174,7 +185,9 @@ class SolicitacoesTermoView(APIView):
         )
         modalidade = request.query_params.get('tipo', 'todos')
         status = request.query_params.get('status', 'abertas')
-        documento_parametro = request.query_params.get('documento', 'responsabilidade')
+        documento_parametro = request.query_params.get(
+            'documento', 
+            'todos')
         documentos = {
             'todos': None,
             'responsabilidade': TipoTermo.RESPONSABILIDADE,
@@ -192,6 +205,10 @@ class SolicitacoesTermoView(APIView):
             else:
                 relacao = 'reservarecursogeral'
             queryset = queryset.filter(**{f'{relacao}__isnull': False})
+        solicitacao_reserva_veiculo = Q(
+            reservaveiculo__isnull=False,
+            status=StatusReserva.PENDENTE,
+        )
         aguardando_termo = (
             Q(reservarecursogeral__isnull=False, status__in=ABERTAS)
             | Q(reservaveiculo__isnull=False, status=StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO)
@@ -201,13 +218,14 @@ class SolicitacoesTermoView(APIView):
         elif documento is not None:
             queryset = queryset.filter(termos__tipo=documento, termos__atual=True)
         else:
-            queryset = queryset.filter(aguardando_termo | Q(termos__atual=True)).distinct()
+            queryset = queryset.filter(solicitacao_reserva_veiculo | aguardando_termo | Q(termos__atual=True)).distinct()
         if status == 'abertas':
             if documento == TipoTermo.RESPONSABILIDADE:
                 queryset = queryset.filter(status__in=ABERTAS)
             elif documento is None:
                 queryset = queryset.filter(
-                    aguardando_termo
+                    solicitacao_reserva_veiculo
+                    | aguardando_termo
                     | Q(termos__atual=True, termos__status=StatusTermo.PENDENTE)
                 ).distinct()
             else:
@@ -221,42 +239,19 @@ class SolicitacoesTermoView(APIView):
         paginacao = PaginacaoPadrao()
         pagina = paginacao.paginate_queryset(queryset.order_by('-data', '-pk'), request)
         resultados = []
+
         for reserva in pagina:
-            concreta, tipo = reserva_concreta(reserva)
-            if tipo == 'veiculo':
-                item = concreta.veiculo
-                nome_item = f'{item.nome} · {item.placa}'
+            resultado = montar_solicitacao_termo(
+                reserva,
+                documento_parametro,
+            )
+
+            if resultado['origem_solicitacao'] == 'RESERVA':
+                resultado['reserva_pendente'] = (
+                    ReservaSerializer(reserva).data
+                )
             else:
-                item = concreta.recurso_geral
-                nome_item = item.nome
-            termos_atuais = list(reserva.termos.filter(atual=True))
-            termo_atual = next((termo for termo in termos_atuais if termo.status == StatusTermo.PENDENTE), None)
-            if termo_atual is None:
-                termo_atual = next((termo for termo in termos_atuais if termo.tipo == TipoTermo.RESPONSABILIDADE), None)
-            if termo_atual is None and termos_atuais:
-                termo_atual = termos_atuais[0]
-            tipo_resultado = documento_parametro
-            if tipo_resultado == 'todos':
-                tipo_resultado = 'responsabilidade'
-            status_termo = None
-            if termo_atual is not None:
-                tipo_resultado = {
-                    TipoTermo.RESPONSABILIDADE: 'responsabilidade',
-                    TipoTermo.RETIRADA_VEICULO: 'retirada',
-                    TipoTermo.DEVOLUCAO_VEICULO: 'devolucao',
-                }[termo_atual.tipo]
-                status_termo = termo_atual.status
-            resultados.append({
-                'id': reserva.pk, 'nome': reserva.nome, 'descricao': reserva.descricao,
-                'status': reserva.status, 'modalidade': tipo, 'tipo_reserva': reserva.tipo_reserva,
-                'data': reserva.data, 'horario_inicio': reserva.horario_inicio,
-                'horario_fim': reserva.horario_fim, 'data_devolucao_prevista': concreta.data_devolucao_prevista,
-                'responsavel': reserva.usuario.nome or reserva.usuario.email,
-                'item': nome_item,
-                'destino': getattr(concreta, 'destino', ''), 'finalidade': getattr(concreta, 'finalidade', ''),
-                'quantidade': getattr(concreta, 'quantidades', None),
-                'ocupantes': getattr(concreta, 'quantidade_passageiros', None),
-                'termo_tipo': tipo_resultado,
-                'termo_status': status_termo,
-            })
+                resultado['reserva_pendente'] = None
+
+            resultados.append(resultado)
         return paginacao.get_paginated_response(resultados)

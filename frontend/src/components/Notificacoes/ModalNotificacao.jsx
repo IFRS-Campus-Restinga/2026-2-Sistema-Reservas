@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Bell, CalendarClock, CheckCircle2, Clock3, X, UserRound, XCircle } from "lucide-react";
+import { Bell, CalendarClock, CheckCircle2, Clock3, X, UserRound, XCircle, FileText } from "lucide-react";
 import { STATUS_RESERVA_LABEL } from "../../utils/reserva";
 import styles from "./ModalNotificacao.module.css";
 
@@ -37,7 +37,13 @@ function ModalNotificacao({ notificacao, aoFechar }) {
   const reserva = notificacao.reserva;
   const status = String(reserva?.status || "").toLowerCase();
   const cancelamento = notificacao.tipo === "CANCELAMENTO_RESERVA";
-  const IconeStatus = cancelamento ? XCircle : CheckCircle2;
+  const termoRejeitado = notificacao.tipo === "TERMO_REJEITADO";
+  const termoEnviado = notificacao.tipo === "TERMO_ENVIADO" || notificacao.tipo === "TERMO_REENVIADO";
+  const IconeStatus = cancelamento || termoRejeitado
+    ? XCircle
+    : termoEnviado
+    ? FileText
+    : CheckCircle2;
 
   return (
     <div className={styles.fundo} onMouseDown={aoFechar}>
@@ -76,6 +82,17 @@ function ModalNotificacao({ notificacao, aoFechar }) {
 
               <strong>
                 {reserva?.motivo_cancelamento || "Não informado"}
+              </strong>
+            </div>
+          )}
+
+          {termoRejeitado && (
+            <div className={styles.motivoCancelamento}>
+              <span>Motivo da recusa</span>
+
+              <strong>
+                {notificacao.motivo_rejeicao_termo ||
+                  "Não informado"}
               </strong>
             </div>
           )}
