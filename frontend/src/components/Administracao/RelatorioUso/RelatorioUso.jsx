@@ -8,8 +8,17 @@ import SelectRemoto from '../../SelectRemoto/SelectRemoto';
 import styles from './RelatorioUso.module.css';
 
 const ROTULOS = { area: 'Áreas', veiculo: 'Veículos', recurso_geral: 'Recursos Gerais', todas: 'Todos os Recursos' };
-const STATUS = ['PENDENTE', 'AGUARDANDO_TERMO', 'CONFIRMADA', 'AGUARDANDO_TERMO_DEVOLUCAO', 'CONCLUIDA', 'CANCELADA', 'REJEITADA'];
-const STATUS_LABEL = { PENDENTE: 'Pendente', AGUARDANDO_TERMO: 'Aguardando termo', CONFIRMADA: 'Confirmada', AGUARDANDO_TERMO_DEVOLUCAO: 'Aguardando termo de devolução', CONCLUIDA: 'Concluída', CANCELADA: 'Cancelada', REJEITADA: 'Rejeitada' };
+const SITUACOES = {
+  AGUARDANDO_CONFIRMACAO: 'Aguardando confirmação',
+  AGUARDANDO_ENVIO_TERMO: 'Aguardando envio do termo',
+  TERMO_EM_ANALISE: 'Termo em análise',
+  AGUARDANDO_ENVIO_TERMO_RETIRADA: 'Aguardando envio do termo de retirada',
+  CONFIRMADA: 'Confirmada',
+  AGUARDANDO_TERMO_DEVOLUCAO: 'Aguardando envio do termo de devolução',
+  CONCLUIDA: 'Concluída',
+  CANCELADA: 'Cancelada',
+  REJEITADA: 'Rejeitada',
+};
 
 function hoje() { const data = new Date(); return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`; }
 function daquiUmMes() {
@@ -56,7 +65,7 @@ export default function RelatorioUso() {
   const [modalidadeInicial, setModalidadeInicial] = useState('todas');
   const [filtros, setFiltros] = useState({
     modalidade: 'todas', data_inicio: hoje(), data_fim: daquiUmMes(),
-    bloco: '', tipo_recurso: '', recurso: '', responsavel: '', status: '',
+    bloco: '', tipo_recurso: '', recurso: '', responsavel: '', situacao: '',
     incluir_canceladas: false,
   });
   const [relatorio, setRelatorio] = useState(null);
@@ -113,7 +122,7 @@ export default function RelatorioUso() {
               valor={filtros.recurso} aoAlterar={(v) => alterar('recurso', v)} rotuloTodos="Todos" />
           </label>}
           <label>Responsável (opcional)<input value={filtros.responsavel} onChange={(e) => alterar('responsavel', e.target.value)} placeholder="Nome ou e-mail" /></label>
-          <label>Status (opcional)<select value={filtros.status} onChange={(e) => alterar('status', e.target.value)}><option value="">Todos</option>{STATUS.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}</select></label>
+          <label>Situação da reserva (opcional)<select value={filtros.situacao} onChange={(e) => alterar('situacao', e.target.value)}><option value="">Todas</option>{Object.entries(SITUACOES).map(([valor, rotulo]) => <option key={valor} value={valor}>{rotulo}</option>)}</select></label>
           <label className={styles.checkbox}><input type="checkbox" checked={filtros.incluir_canceladas} onChange={(e) => alterar('incluir_canceladas', e.target.checked)} />Incluir canceladas e rejeitadas</label>
           <button type="submit" disabled={carregando}>{carregando ? 'Gerando...' : 'Gerar relatório'}</button>
         </form>

@@ -5,7 +5,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from api.permissions.regras_comuns import SomenteAdministrador
-from api.enumerations.status_reserva import StatusReserva
 from api.services.relatorio_uso_service import gerar_relatorio
 
 
@@ -28,9 +27,6 @@ class RelatorioUsoView(APIView):
                         raise ValueError
                 except ValueError:
                     raise ValidationError({campo: 'Informe um identificador válido.'})
-        status = request.query_params.get('status')
-        if status and status not in StatusReserva.values:
-            raise ValidationError({'status': 'Status de reserva inválido.'})
         dados = gerar_relatorio(request.query_params, inicio, fim)
         dados['filtros'] = dict(request.query_params.items())
         dados['gerado_em'] = timezone.localtime()

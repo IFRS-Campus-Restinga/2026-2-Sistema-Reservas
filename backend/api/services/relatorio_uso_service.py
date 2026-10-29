@@ -1,13 +1,15 @@
 from collections import defaultdict
 from datetime import datetime, time, timedelta
 
-from django.db.models import Q, Sum
+from django.db.models import Prefetch, Q, Sum
 from rest_framework.exceptions import ValidationError
 
 from api.models.area_model import Area
 from api.models.recurso_geral_model import RecursoGeral
 from api.models.reserva_model import Reserva
 from api.models.veiculo_model import Veiculo
+from api.models.termo_responsabilidade_model import TermoResponsabilidade
+from api.services.situacao_reserva_service import filtro_situacao, situacao_reserva
 
 
 INICIO_OPERACAO = time(7)
@@ -86,7 +88,9 @@ def gerar_relatorio(parametros, periodo_inicio, periodo_fim):
     reservas = Reserva.objects.filter(sobreposicao).select_related(
         'usuario', 'reservaarea__area__bloco', 'reservaveiculo__veiculo',
         'reservarecursogeral__recurso_geral__tipo_recurso',
-    )
+    ).prefetch_related(Prefetch(
+        'termos', queryset=TermoResponsabilidade.objects.filter(atual=True), to_attr='termos_atuais',
+    ))
     if modalidade == 'area':
         reservas = reservas.filter(reservaarea__isnull=False)
     elif modalidade == 'veiculo':
@@ -105,8 +109,11 @@ def gerar_relatorio(parametros, periodo_inicio, periodo_fim):
     responsavel = parametros.get('responsavel', '').strip()
     if responsavel:
         reservas = reservas.filter(Q(usuario__nome__icontains=responsavel) | Q(usuario__email__icontains=responsavel))
-    if parametros.get('status'):
-        reservas = reservas.filter(status=parametros['status'])
+    if parametros.get('situacao'):
+        filtro = filtro_situacao(parametros['situacao'])
+        if filtro is None:
+            raise ValidationError({'situacao': 'Situação da reserva inválida.'})
+        reservas = reservas.filter(filtro).distinct()
     if parametros.get('incluir_canceladas') != 'true':
         reservas = reservas.exclude(status__in=STATUS_DESCARTADOS)
 
@@ -128,6 +135,7 @@ def gerar_relatorio(parametros, periodo_inicio, periodo_fim):
             'data_fim': _fim_reserva(reserva), 'horario_inicio': reserva.horario_inicio,
             'horario_fim': reserva.horario_fim, 'quantidade': quantidade,
             'horas_ocupadas': round(horas, 2), 'status': reserva.status,
+            'situacao': situacao_reserva(reserva),
         })
     dias = (periodo_fim - periodo_inicio).days + 1
     capacidade = _capacidade(modalidade, parametros, dias)

@@ -14,7 +14,7 @@ import TermoReserva from '../../components/TermoReserva/TermoReserva';
 import Select from '../../components/Select/Select';
 import { cancelarReservaArea, cancelarReservaVeiculo } from '../../services';
 import { cancelarReservaRecursoGeral } from '../../services/reservasRecursosGerais';
-import { STATUS_RESERVA_LABEL } from '../../utils/reserva';
+import { SITUACAO_RESERVA_LABEL } from '../../utils/reserva';
 import { ehAdministrador } from '../../utils/permissoes';
 import styles from './MinhasReservas.module.css';
 
@@ -38,7 +38,7 @@ const OPCOES_TIPO = [
   { valor: 'recurso_geral', rotulo: 'Recursos' },
 ];
 
-const OPCOES_STATUS = Object.entries(STATUS_RESERVA_LABEL).map(([valor, rotulo]) => ({
+const OPCOES_STATUS = Object.entries(SITUACAO_RESERVA_LABEL).map(([valor, rotulo]) => ({
   valor,
   rotulo,
 }));
@@ -291,8 +291,8 @@ function MinhasReservas() {
           aoAlterar={setFiltroStatus}
           opcoes={OPCOES_STATUS}
           valorTodos="todos"
-          rotuloTodos="Todas"
-          ariaLabel="Filtrar por status"
+          rotuloTodos="Todas as situações"
+          ariaLabel="Filtrar por situação da reserva"
         />
       </div>
 

@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.views import APIView
@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from datetime import timedelta
 
 from api.models.reserva_model import Reserva
+from api.models.termo_responsabilidade_model import TermoResponsabilidade
 from api.permissions.regras_comuns import UsuarioAutenticado
 from api.serializers.reserva_area_serializer import ReservaAreaSerializer
 from api.serializers.reserva_veiculo_serializer import ReservaVeiculoSerializer
@@ -14,6 +15,7 @@ from api.serializers.recurso_geral_serializer import RecursoGeralSerializer
 from api.serializers.veiculo_serializer import VeiculoSerializer
 from api.serializers.tipo_recurso_serializer import TipoRecursoSerializer
 from .view_helpers import listar
+from api.services.situacao_reserva_service import filtro_situacao, situacao_reserva
 
 
 class MinhaReservaSerializer(serializers.BaseSerializer):
@@ -28,6 +30,7 @@ class MinhaReservaSerializer(serializers.BaseSerializer):
                 continue
             dados = dict(serializer(especifica).data)
             dados['modalidade'] = modalidade
+            dados['situacao'] = situacao_reserva(reserva)
             if modalidade == 'veiculo':
                 dados['veiculo_detalhe'] = VeiculoSerializer(especifica.veiculo).data
             elif modalidade == 'recurso_geral':
@@ -43,19 +46,22 @@ class MinhasReservasListView(APIView):
         reservas = Reserva.objects.filter(usuario=request.user).select_related(
             'reservaarea__area__bloco', 'reservaarea__recorrencia', 'usuario',
             'reservaveiculo__veiculo', 'reservarecursogeral__recurso_geral__tipo_recurso',
-        ).order_by('-data', '-horario_inicio')
+        ).prefetch_related(Prefetch(
+            'termos', queryset=TermoResponsabilidade.objects.filter(atual=True), to_attr='termos_atuais',
+        )).order_by('-data', '-horario_inicio')
         # O status apresentado muda quando chega o horário de retirada.
         agora = timezone.localtime()
         futura = Q(data__gt=agora.date()) | Q(data=agora.date(), horario_inicio__gt=agora.time())
-        status = request.query_params.get('situacao', 'todos').upper()
-        if status == 'TODOS':
+        situacao = request.query_params.get('situacao', 'todos').upper()
+        if situacao == 'TODOS':
             reservas = reservas.exclude(status='CANCELADA')
-        elif status == 'CONFIRMADA':
-            reservas = reservas.filter(Q(status=status) | (Q(status='AGUARDANDO_TERMO_DEVOLUCAO') & futura))
-        elif status == 'AGUARDANDO_TERMO_DEVOLUCAO':
-            reservas = reservas.filter(status=status).exclude(futura)
+        elif situacao == 'CONFIRMADA':
+            reservas = reservas.filter(Q(status=situacao) | (Q(status='AGUARDANDO_TERMO_DEVOLUCAO') & futura))
+        elif situacao == 'AGUARDANDO_TERMO_DEVOLUCAO':
+            reservas = reservas.filter(status=situacao).exclude(futura)
         else:
-            reservas = reservas.filter(status=status)
+            filtro = filtro_situacao(situacao)
+            reservas = reservas.filter(filtro).distinct() if filtro is not None else reservas.none()
         return listar(request, reservas, MinhaReservaSerializer)
 
 

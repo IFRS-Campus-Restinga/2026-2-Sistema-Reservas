@@ -3,7 +3,7 @@ import { FileText } from 'lucide-react';
 import styles from './CartaoReserva.module.css';
 import { formatarDataCurta } from '../../utils/data';
 import {
-  STATUS_RESERVA_LABEL,
+  SITUACAO_RESERVA_LABEL,
   TIPO_RESERVA_LABEL,
   statusReservaApresentado,
   termoRetiradaDisponivel,
@@ -63,7 +63,7 @@ function CartaoReserva({ reserva, modalidade, periodo, mostrarStatus = true, mos
 
       {mostrarStatus && (
         <span className={styles.badgeStatus} data-status={status}>
-          {STATUS_RESERVA_LABEL[status] || reserva.status}
+          {SITUACAO_RESERVA_LABEL[status] || reserva.status}
         </span>
       )}
     </Componente>
