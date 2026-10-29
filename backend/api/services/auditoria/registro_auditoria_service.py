@@ -1,3 +1,4 @@
+from accounts.enumerations import Papel
 from api.enumerations.auditoria_enumerations import EntidadeAuditoria
 from api.models.area_model import Area
 from api.models.bloco_model import Bloco
@@ -28,6 +29,8 @@ ENTIDADE_POR_MODEL = {
     Veiculo: EntidadeAuditoria.VEICULO,
 }
 
+MODELS_AUDITADOS_PARA_SERVIDOR = (Grupo, MembroGrupo)
+
 
 def _dono(objeto):
     if isinstance(objeto, (Reserva, Recorrencia)):
@@ -45,14 +48,23 @@ def _usuario_afetado(objeto):
     return _dono(objeto)
 
 
+def _perfil_auditado(ator, objeto):
+    if usuario_e_admin(ator):
+        if isinstance(objeto, (Reserva, Recorrencia)) and objeto.usuario_id == ator.pk:
+            return None
+        return Papel.ADMIN
+    if getattr(ator, 'papel', None) == Papel.SERVIDOR and isinstance(objeto, MODELS_AUDITADOS_PARA_SERVIDOR):
+        return Papel.SERVIDOR
+    return None
+
+
 def registrar_auditoria(ator, acao, objeto=None, *, antes=None, depois=None, entidade=None, descricao=None):
-    if not usuario_e_admin(ator):
-        return None
-    dono = _dono(objeto)
-    if dono is not None and dono.pk == ator.pk:
+    perfil = _perfil_auditado(ator, objeto)
+    if perfil is None:
         return None
     return LogAuditoria.objects.create(
-        admin=ator,
+        responsavel=ator,
+        perfil_responsavel=perfil,
         acao=acao,
         entidade=entidade or ENTIDADE_POR_MODEL[type(objeto)],
         objeto_id=getattr(objeto, 'pk', None),

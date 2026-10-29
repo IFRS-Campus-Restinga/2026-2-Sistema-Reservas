@@ -6,11 +6,14 @@ from api.models.log_auditoria_model import LogAuditoria
 
 
 def filtrar_logs_auditoria(parametros):
-    logs = LogAuditoria.objects.select_related('admin', 'usuario_afetado').order_by('-data', '-id')
+    logs = LogAuditoria.objects.select_related('responsavel', 'usuario_afetado').order_by('-data', '-id')
 
-    admin = parametros.get('admin', '').strip()
-    if admin:
-        logs = logs.filter(Q(admin__nome__icontains=admin) | Q(admin__email__icontains=admin))
+    responsavel = parametros.get('responsavel', '').strip()
+    if responsavel:
+        logs = logs.filter(Q(responsavel__nome__icontains=responsavel) | Q(responsavel__email__icontains=responsavel))
+
+    if parametros.get('perfil_responsavel'):
+        logs = logs.filter(perfil_responsavel=parametros['perfil_responsavel'])
 
     usuario_afetado = parametros.get('usuario_afetado', '').strip()
     if usuario_afetado:

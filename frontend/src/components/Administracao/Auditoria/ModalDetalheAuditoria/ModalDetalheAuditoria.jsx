@@ -5,6 +5,7 @@ import { buscarLogAuditoria } from '../../../../services';
 import {
     ITENS_VISIVEIS_LISTA_AUDITORIA,
     LIMITE_LISTA_AUDITORIA,
+    PERFIL_RESPONSAVEL_LABEL,
     camposAuditoria,
     formatarDataHoraAuditoria,
     rotuloAcaoAuditoria,
@@ -78,8 +79,12 @@ function ModalDetalheAuditoria({ log, aoFechar }) {
 
                 <dl className={styles.informacoes}>
                     <div>
-                        <dt>Admin</dt>
-                        <dd>{pessoa(log.admin_nome, log.admin_email)}</dd>
+                        <dt>Responsável</dt>
+                        <dd>
+                            {pessoa(log.responsavel_nome, log.responsavel_email)}
+                            {' '}
+                            ({PERFIL_RESPONSAVEL_LABEL[log.perfil_responsavel] || log.perfil_responsavel_descricao})
+                        </dd>
                     </div>
                     <div>
                         <dt>Data e hora</dt>
