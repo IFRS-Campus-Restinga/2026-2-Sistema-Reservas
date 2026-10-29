@@ -86,13 +86,16 @@ class ReservasTimetableService:
         Para cada CelulaTimetable informada, gera APENAS 1 instância base de ReservaArea
         (referente à primeira semana do período letivo) vinculada a uma Recorrência Semanal
         que dura até o fim do semestre.
-        Remove previamente quaisquer registros antigos para evitar duplicatas.
+        Remove previamente quaisquer registros antigos dos períodos correspondentes para evitar duplicatas.
         """
-        # Limpa todas as reservas anteriores da timetable (inclusive os ~9.500 cadastros do modelo antigo)
-        cls.limpar_reservas_timetable()
-
         if not celulas:
             return 0
+
+        periodos_ids = {
+            c.periodo_letivo_id for c in celulas if c.periodo_letivo_id is not None
+        }
+        if periodos_ids:
+            cls.limpar_reservas_timetable(periodos_ids)
 
         usuario_responsavel = cls.obter_usuario_responsavel(usuario)
         recorrencias_por_periodo = {}
@@ -184,20 +187,21 @@ class ReservasTimetableService:
         return False
 
     @classmethod
-    def projetar_reservas_no_intervalo(cls, data_inicio=None, data_fim=None):
+    def projetar_reservas_no_intervalo(cls, data_inicio=None, data_fim=None, area=None):
         """
         Retorna as reservas da Timetable projetadas virtualmente para o intervalo
         [data_inicio, data_fim].
         Se nenhum intervalo for informado, retorna apenas os registros base (1 semana).
         """
-        cls.garantir_apenas_reservas_base()
+        qs = ReservaArea.objects.filter(
+            status=StatusReserva.CONFIRMADA,
+            celula_timetable__isnull=False,
+        )
+        if area is not None:
+            qs = qs.filter(area=area)
 
         reservas_base = list(
-            ReservaArea.objects.filter(
-                status=StatusReserva.CONFIRMADA,
-                celula_timetable__isnull=False,
-            )
-            .select_related(
+            qs.select_related(
                 "area__bloco",
                 "usuario",
                 "recorrencia",

@@ -96,8 +96,6 @@ function ReservaAreaModal({
     setErro('');
   }, [aberto, areaInicial, reservaEdicao, dataInicial, horarioInicial]);
 
-  const areaSelecionada = areas.find((area) => String(area.id) === areaId);
-
   // A recorrência só é definida na criação, a edição altera apenas a reserva aberta
   const recorrenciaAtiva = recorrente && !reservaEdicao;
   const quantidadeReservas =
