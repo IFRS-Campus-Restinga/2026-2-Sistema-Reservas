@@ -1,9 +1,12 @@
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from api.permissions.regras_comuns import UsuarioAutenticado
+from api.permissions.regras_comuns import usuario_e_admin
+from api.models.reserva_model import Reserva
 from api.services.opcoes_disponibilidade_service import (
     opcoes_area, opcoes_recurso_geral, opcoes_veiculo,
 )
@@ -32,6 +35,23 @@ class OpcoesDisponibilidadeView(APIView):
         }
         if tipo not in consultas:
             raise ValidationError({'tipo': 'Informe AREA, VEICULO ou RECURSO_GERAL.'})
+        if excluir:
+            reserva = Reserva.objects.select_related(
+                'reservaarea', 'reservaveiculo', 'reservarecursogeral',
+            ).filter(pk=excluir).first()
+            if reserva is None:
+                raise ValidationError({'excluir_reserva': 'Reserva não encontrada.'})
+            if reserva.usuario_id != request.user.pk and not usuario_e_admin(request.user):
+                raise PermissionDenied('Você não pode excluir esta reserva da consulta de disponibilidade.')
+            recursos = {
+                'AREA': getattr(getattr(reserva, 'reservaarea', None), 'area_id', None),
+                'VEICULO': getattr(getattr(reserva, 'reservaveiculo', None), 'veiculo_id', None),
+                'RECURSO_GERAL': getattr(getattr(reserva, 'reservarecursogeral', None), 'recurso_geral_id', None),
+            }
+            if recursos[tipo] != recurso:
+                raise ValidationError({
+                    'excluir_reserva': 'A reserva não pertence ao recurso informado.',
+                })
         try:
             horarios = consultas[tipo]()
         except ObjectDoesNotExist:

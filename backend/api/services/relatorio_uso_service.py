@@ -17,6 +17,7 @@ FIM_OPERACAO = time(23)
 HORAS_OPERACAO_DIA = 16
 STATUS_DESCARTADOS = ('CANCELADA', 'REJEITADA')
 MODALIDADES = ('area', 'veiculo', 'recurso_geral')
+LIMITE_REGISTROS = 5000
 
 
 def _modalidade_e_item(reserva):
@@ -116,11 +117,18 @@ def gerar_relatorio(parametros, periodo_inicio, periodo_fim):
         reservas = reservas.filter(filtro).distinct()
     if parametros.get('incluir_canceladas') != 'true':
         reservas = reservas.exclude(status__in=STATUS_DESCARTADOS)
+    if reservas.count() > LIMITE_REGISTROS:
+        raise ValidationError({
+            'detail': (
+                f'O relatório ultrapassa {LIMITE_REGISTROS} registros. '
+                'Reduza o período ou aplique mais filtros.'
+            ),
+        })
 
     resultados = []
     grupos = defaultdict(lambda: {'total_reservas': 0, 'total_horas': 0})
     total_horas = 0
-    for reserva in reservas.order_by('data', 'horario_inicio', 'pk')[:5000]:
+    for reserva in reservas.order_by('data', 'horario_inicio', 'pk'):
         tipo, item, nome_item, quantidade = _modalidade_e_item(reserva)
         horas = _horas_operacionais(reserva, periodo_inicio, periodo_fim) * quantidade
         total_horas += horas
