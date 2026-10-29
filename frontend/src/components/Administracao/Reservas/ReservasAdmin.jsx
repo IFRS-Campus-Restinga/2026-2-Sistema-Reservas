@@ -9,6 +9,7 @@ import CampoBusca from '../CampoBusca/CampoBusca';
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import Select from '../../Select/Select';
 import ModalReservaPendente from './ModalReservaPendente/ModalReservaPendente';
+import RelatorioUso from '../RelatorioUso/RelatorioUso';
 
 const MODALIDADE_LABEL = {
   area: 'Área',
@@ -36,7 +37,7 @@ function ReservasAdmin() {
   const [confirmandoId, setConfirmandoId] = useState(null);
   const [cancelandoId, setCancelandoId] = useState(null);
 
-  const { itens: reservasFiltradas, total, carregando, erro, recarregar, paginacao } = useListaPaginada('/api/reservas/pendentes/', { busca, modalidade });
+  const { itens: reservasFiltradas, carregando, erro, recarregar, paginacao } = useListaPaginada('/api/reservas/pendentes/', { busca, modalidade });
 
   async function confirmarReserva(reserva) {
     if (!reserva || confirmandoId) return;
@@ -176,9 +177,7 @@ function ReservasAdmin() {
           <p>Solicitações que ainda aguardam análise do administrador.</p>
         </div>
 
-        <span className={styles.contador}>
-          {total} {total === 1 ? 'reserva' : 'reservas'}
-        </span>
+        <RelatorioUso />
       </div>
 
       <div className={styles.filtros}>
