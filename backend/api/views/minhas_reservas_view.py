@@ -15,6 +15,8 @@ from api.serializers.recurso_geral_serializer import RecursoGeralSerializer
 from api.serializers.veiculo_serializer import VeiculoSerializer
 from api.serializers.tipo_recurso_serializer import TipoRecursoSerializer
 from .view_helpers import listar
+from api.pagination import PaginacaoPadrao
+from api.services.filtros_listagem import filtrar_listagem
 from api.services.situacao_reserva_service import filtro_situacao, situacao_reserva
 
 
@@ -62,7 +64,28 @@ class MinhasReservasListView(APIView):
         else:
             filtro = filtro_situacao(situacao)
             reservas = reservas.filter(filtro).distinct() if filtro is not None else reservas.none()
-        return listar(request, reservas, MinhaReservaSerializer)
+        if request.query_params.get('agrupar_recorrencias') != 'true':
+            return listar(request, reservas, MinhaReservaSerializer)
+        grupos = {}
+        for reserva in filtrar_listagem(request, reservas):
+            area = getattr(reserva, 'reservaarea', None)
+            chave = ('serie', area.recorrencia_id) if area and area.recorrencia_id else ('reserva', reserva.pk)
+            grupos.setdefault(chave, []).append(reserva)
+        paginator = PaginacaoPadrao()
+        pagina = paginator.paginate_queryset(list(grupos.values()), request)
+        resultados = []
+        for grupo in pagina:
+            grupo.sort(key=lambda r: (r.data, r.horario_inicio, r.pk))
+            futuras = [r for r in grupo if r.status not in ('CANCELADA', 'REJEITADA') and
+                       (r.data, r.horario_fim) >= (agora.date(), agora.time().replace(tzinfo=None))]
+            principal = (futuras or grupo)[0]
+            dados = MinhaReservaSerializer(principal).data
+            if dados.get('recorrencia') and dados['modalidade'] == 'area':
+                dados.update(primeira_data=grupo[0].data, ultima_data=grupo[-1].data,
+                             total_ocorrencias=len(grupo),
+                             ocorrencias=MinhaReservaSerializer(grupo, many=True).data)
+            resultados.append(dados)
+        return paginator.get_paginated_response(resultados)
 
 
 class ResumoReservasView(APIView):

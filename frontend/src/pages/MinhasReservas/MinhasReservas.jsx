@@ -1,10 +1,12 @@
+import { TIPO_RECORRENCIA_LABEL } from '../../utils/recorrencia';
 import useListaPaginada from '../../hooks/useListaPaginada';
 import Paginacao from '../../components/Administracao/Paginacao/Paginacao';
 
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useUsuario } from '../../hooks/useUsuario';
-import { ClipboardList, Info, Package, UserRound } from 'lucide-react';
+import { CalendarCheck, ClipboardList, Info, Package, Repeat, UserRound } from 'lucide-react';
+
 import CartaoReserva from '../../components/CartaoReserva/CartaoReserva';
 import ModalDetalheReserva from '../../components/ModalDetalheReserva/ModalDetalheReserva';
 import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/ReservaRecursoGeralModal';
@@ -14,7 +16,7 @@ import TermoReserva from '../../components/TermoReserva/TermoReserva';
 import Select from '../../components/Select/Select';
 import { cancelarReservaArea, cancelarReservaVeiculo } from '../../services';
 import { cancelarReservaRecursoGeral } from '../../services/reservasRecursosGerais';
-import { SITUACAO_RESERVA_LABEL } from '../../utils/reserva';
+import { statusReservaApresentado, SITUACAO_RESERVA_LABEL } from '../../utils/reserva';
 import { ehAdministrador } from '../../utils/permissoes';
 import styles from './MinhasReservas.module.css';
 
@@ -57,6 +59,7 @@ function MinhasReservas() {
   const [editandoArea, setEditandoArea] = useState(null);
   const [editandoVeiculo, setEditandoVeiculo] = useState(null);
   const [selecionada, setSelecionada] = useState(null);
+  const [recorrenciasExpandidas, setRecorrenciasExpandidas] = useState({});
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [aviso, setAviso] = useState(
@@ -67,7 +70,7 @@ function MinhasReservas() {
       : ''
   );
 
-  const { itens: reservas, erro, setErro, carregando, recarregar, paginacao } = useListaPaginada('/api/reservas/minhas/', { modalidade: filtroTipo, situacao: filtroStatus });
+  const { itens: reservas, erro, setErro, carregando, recarregar, paginacao } = useListaPaginada('/api/reservas/minhas/', { modalidade: filtroTipo, situacao: filtroStatus, agrupar_recorrencias: true });
   const recursos = reservas.map((item) => item.recurso_detalhe).filter(Boolean);
   const tipos = reservas.map((item) => item.tipo_detalhe).filter(Boolean);
   const veiculos = reservas.map((item) => item.veiculo_detalhe).filter(Boolean);
@@ -112,17 +115,40 @@ function MinhasReservas() {
     }
 
     if (reserva.modalidade === 'area') {
-      return [
+      const detalhes = [
         {
           rotulo: 'Finalidade',
           valor: reserva.aula ? 'Aula regular' : 'Atividade Acadêmica',
           icone: ClipboardList,
         },
-        {
-          rotulo: 'Observações',
-          valor: reserva.descricao || 'Nenhuma',
-        },
       ];
+
+      if (reserva.recorrencia && !reserva.ehOcorrenciaIndividual) {
+        const tipoLabel = TIPO_RECORRENCIA_LABEL[reserva.recorrencia.tipo] || reserva.recorrencia.tipo || 'Recorrente';
+        const inicio = formatarData(reserva.primeira_data || reserva.data);
+        const fim = formatarData(reserva.ultima_data || reserva.recorrencia.data_fim || reserva.data);
+
+        detalhes.push({
+          rotulo: 'Recorrência',
+          valor: `${tipoLabel} (${inicio} a ${fim})`,
+          icone: Repeat,
+        });
+
+        if (reserva.total_ocorrencias > 1) {
+          detalhes.push({
+            rotulo: 'Total de repetições',
+            valor: `${reserva.total_ocorrencias} datas agendadas`,
+            icone: CalendarCheck,
+          });
+        }
+      }
+
+      detalhes.push({
+        rotulo: 'Observações',
+        valor: reserva.descricao || 'Nenhuma',
+      });
+
+      return detalhes;
     }
 
     if (reserva.modalidade === 'veiculo') {
@@ -244,9 +270,27 @@ function MinhasReservas() {
     setAviso('Reserva atualizada.');
   }
 
-  function periodoVeiculo(reserva) {
-    if (reserva?.modalidade !== 'veiculo') return undefined;
-    return `${formatarData(reserva.data)} · ${String(reserva.horario_inicio).slice(0, 5)} até ${formatarData(reserva.data_devolucao_prevista)} · ${String(reserva.horario_fim).slice(0, 5)}`;
+  function formatarPeriodoCartao(reserva) {
+    if (reserva?.modalidade === 'veiculo') {
+      return `${formatarData(reserva.data)} · ${String(reserva.horario_inicio).slice(0, 5)} até ${formatarData(reserva.data_devolucao_prevista)} · ${String(reserva.horario_fim).slice(0, 5)}`;
+    }
+
+    if (reserva?.recorrencia) {
+      const inicio = formatarData(reserva.primeira_data || reserva.data);
+      const fim = formatarData(reserva.ultima_data || reserva.recorrencia.data_fim || reserva.data);
+      const horario = `${String(reserva.horario_inicio).slice(0, 5)}–${String(reserva.horario_fim).slice(0, 5)}`;
+      return `${inicio} até ${fim} · ${horario}`;
+    }
+
+    return undefined;
+  }
+
+
+  function alternarSanfona(idRecorrencia) {
+    setRecorrenciasExpandidas((atuais) => ({
+      ...atuais,
+      [idRecorrencia]: !atuais[idRecorrencia],
+    }));
   }
 
   const ordenadas = reservas;
@@ -303,20 +347,75 @@ function MinhasReservas() {
           </p>
         )}
 
-        {ordenadas.map((reserva) => (
-          <CartaoReserva
-            key={`${reserva.modalidade}-${reserva.id}`}
-            reserva={{
-              ...reserva,
-              descricao: nomeItem(reserva),
-            }}
-            modalidade={MODALIDADES[reserva.modalidade] || 'Reserva'}
-            periodo={periodoVeiculo(reserva)}
-            mostrarStatus={true}
-            mostrarDisponibilidadeRetirada={reserva.modalidade === 'veiculo'}
-            aoClicar={() => setSelecionada(reserva)}
-          />
-        ))}
+        {ordenadas.map((reserva) => {
+          const idRecorrencia = reserva.recorrencia?.id;
+          const temSanfona = Boolean(idRecorrencia && reserva.ocorrencias?.length);
+          const expandida = Boolean(temSanfona && recorrenciasExpandidas[idRecorrencia]);
+
+          return (
+            <div key={`${reserva.modalidade}-${reserva.id}`} className={styles.grupoReserva}>
+              <CartaoReserva
+                reserva={{
+                  ...reserva,
+                  descricao: nomeItem(reserva),
+                }}
+                modalidade={MODALIDADES[reserva.modalidade] || 'Reserva'}
+                periodo={formatarPeriodoCartao(reserva)}
+                mostrarStatus={true}
+                mostrarDisponibilidadeRetirada={reserva.modalidade === 'veiculo'}
+                aoClicar={() => setSelecionada(reserva)}
+                expandido={expandida}
+                aoAlternarExpansao={temSanfona ? () => alternarSanfona(idRecorrencia) : undefined}
+              />
+
+              {expandida && (
+                <div className={styles.listaOcorrencias}>
+                  {reserva.ocorrencias.map((ocorrencia) => {
+                    const statusOcorrencia = statusReservaApresentado(ocorrencia);
+                    const tipoOcorrencia = String(ocorrencia.tipo_reserva || '').toLowerCase();
+                    const horarioCurto = `${String(ocorrencia.horario_inicio).slice(0, 5)}–${String(ocorrencia.horario_fim).slice(0, 5)}`;
+
+                    return (
+                      <button
+                        key={ocorrencia.id}
+                        type="button"
+                        className={styles.linhaOcorrencia}
+                        data-tipo={tipoOcorrencia}
+                        onClick={() => setSelecionada({ ...ocorrencia, ehOcorrenciaIndividual: true })}
+                      >
+                        <span
+                          className={styles.barraStatusLinha}
+                          data-status={statusOcorrencia}
+                          data-tipo={tipoOcorrencia}
+                          aria-hidden="true"
+                        />
+                        <span className={styles.conteudoLinhaOcorrencia}>
+                          <span className={styles.dataLinhaOcorrencia}>
+                            {formatarData(ocorrencia.data)}
+                          </span>
+                          <span className={styles.separadorLinha}>·</span>
+                          <span className={styles.horarioLinhaOcorrencia}>
+                            {horarioCurto}
+                          </span>
+                          <span className={styles.separadorLinha}>·</span>
+                          <span className={styles.nomeLinhaOcorrencia}>
+                            {ocorrencia.nome}
+                          </span>
+                          <span className={styles.areaLinhaOcorrencia}>
+                            {nomeItem(ocorrencia)}
+                          </span>
+                        </span>
+                        <span className={styles.badgeStatusLinha} data-status={statusOcorrencia}>
+                          {SITUACAO_RESERVA_LABEL[statusOcorrencia] || ocorrencia.status}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </section>
 
       <Paginacao {...paginacao} />
@@ -327,7 +426,7 @@ function MinhasReservas() {
           modalidade={MODALIDADES[selecionada.modalidade] || 'Reserva'}
           item={nomeItem(selecionada)}
           responsavel={nomeResponsavel(selecionada)}
-          periodo={periodoVeiculo(selecionada)}
+          periodo={formatarPeriodoCartao(selecionada)}
           exigeTermo={selecionada.modalidade === 'recurso_geral' && Boolean(recursoDaReserva(selecionada)?.tem_termo_de_responsabilidade)}
           aoAtualizarTermo={atualizarSituacaoTermo}
           conteudoExtra={selecionada.modalidade === 'veiculo' ? (

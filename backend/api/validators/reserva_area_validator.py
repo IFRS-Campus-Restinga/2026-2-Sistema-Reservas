@@ -50,9 +50,17 @@ def validar_disponibilidade_area(dados, excluir_reserva=None):
 def reservas_ativas_area(area, datas, excluir_reserva=None):
     """Consulta compartilhada pelo calendário e pela validação de reservas."""
     reservas = ReservaArea.objects.filter(
-        area=area, data__in=datas,
+        area=area, data__in=datas, celula_timetable__isnull=True,
         status__in=[StatusReserva.PENDENTE, StatusReserva.CONFIRMADA],
     )
     if excluir_reserva is not None:
         reservas = reservas.exclude(pk=excluir_reserva)
-    return reservas
+    from api.services.timetable.reservas_timetable_service import ReservasTimetableService
+
+    datas = set(datas)
+    if not datas:
+        return []
+    projetadas = ReservasTimetableService.projetar_reservas_no_intervalo(
+        min(datas), max(datas), area=area,
+    )
+    return list(reservas) + [r for r in projetadas if r.data in datas and r.pk != excluir_reserva]
