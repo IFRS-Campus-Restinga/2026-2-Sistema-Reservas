@@ -9,15 +9,18 @@ import { criarBloco, atualizarBloco, excluirBloco } from '../../../services';
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import BlocoModal from './ModalBloco/BlocoModal';
 import ModalConfirmacao from '../ModalConfirmacao/ModalConfirmacao';
+import CampoBusca from '../CampoBusca/CampoBusca';
+import BarraFiltros from '../../BarraFiltros/BarraFiltros';
+import { ACESSIBILIDADE_LABELS } from '../../../utils/acessibilidadeBloco';
 
 function BlocosAdministracao() {
 
     const [modalBlocoAberto, setModalBlocoAberto] = useState(false);
     const [blocoEditando, setBlocoEditando] = useState(null);
     const [blocoExcluindo, setBlocoExcluindo] = useState(null);
+    const [busca, setBusca] = useState('');
 
-
-    const { itens: blocos, carregando, erro, setErro, recarregar: carregarBlocos, paginacao } = useListaPaginada('/api/blocos/', {});
+    const { itens: blocos, carregando, erro, setErro, recarregar: carregarBlocos, paginacao } = useListaPaginada('/api/blocos/', { busca });
 
     function abrirCadastro() {
         setBlocoEditando(null);
@@ -99,13 +102,9 @@ function BlocosAdministracao() {
                 if (!bloco.acessibilidade || bloco.acessibilidade.length === 0) {
                     return 'Nenhuma';
                 }
-                const itens = bloco.acessibilidade.map(item => {
-                    if (item === 'PISO_TATIL') return 'Piso Tátil';
-                    if (item === 'BANHEIRO') return 'Banheiro Adaptado';
-                    if (item === 'BEBEDOURO') return 'Bebedouro Adaptado';
-                    return item;
-                });
-                return itens.join(', ');
+                return bloco.acessibilidade
+                    .map((item) => ACESSIBILIDADE_LABELS[item] || item)
+                    .join(', ');
             }
         },
         {
@@ -139,16 +138,24 @@ function BlocosAdministracao() {
 
     return (
         <div className={styles.blocos}>
-            <div className={styles.barraAcoes}>
-                <button
-                    type="button"
-                    className={styles.adicionar}
-                    onClick={abrirCadastro}
-                >
-                    <Plus size={16} />
-                    Adicionar
-                </button>
-            </div>
+            <BarraFiltros
+                acoes={(
+                    <button
+                        type="button"
+                        className={styles.adicionar}
+                        onClick={abrirCadastro}
+                    >
+                        <Plus size={16} />
+                        Adicionar
+                    </button>
+                )}
+            >
+                <CampoBusca
+                    valor={busca}
+                    aoAlterar={setBusca}
+                    placeholder="Buscar bloco por nome ou número..."
+                />
+            </BarraFiltros>
 
             {erro && (
                 <p className={styles.erro} role="alert">{erro}</p>
@@ -160,7 +167,9 @@ function BlocosAdministracao() {
                 <TabelaAdministracao
                     colunas={colunas}
                     dados={blocos}
-                    mensagemVazia="Nenhum bloco cadastrado."
+                    mensagemVazia={busca.trim()
+                        ? 'Nenhum bloco encontrado para esta busca.'
+                        : 'Nenhum bloco cadastrado.'}
                 />
             )}
 

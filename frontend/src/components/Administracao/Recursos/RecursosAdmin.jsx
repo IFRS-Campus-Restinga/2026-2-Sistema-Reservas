@@ -7,19 +7,30 @@ import styles from './RecursosAdmin.module.css';
 import { atualizarRecursoGeral, criarRecursoGeral, excluirRecursoGeral } from '../../../services';
 
 import CampoBusca from '../CampoBusca/CampoBusca';
+import BarraFiltros from '../../BarraFiltros/BarraFiltros';
 import ModalConfirmacao from '../ModalConfirmacao/ModalConfirmacao';
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import RecursoModal from './ModalRecurso/RecursoModal';
+import Select from '../../Select/Select';
+import SelectRemoto from '../../SelectRemoto/SelectRemoto';
+import { OPCOES_STATUS_RECURSO, STATUS_RECURSO_LABEL } from '../../../utils/statusRecurso';
 
 function RecursosAdmin() {
     const [busca, setBusca] = useState('');
+    const [filtroTiposRecurso, setFiltroTiposRecurso] = useState([]);
+    const [filtroStatus, setFiltroStatus] = useState('todos');
 
     const [modalRecursoAberto, setModalRecursoAberto] = useState(false);
     const [recursoEditando, setRecursoEditando] = useState(null);
     const [recursoExcluindo, setRecursoExcluindo] = useState(null);
 
 
-    const { itens: recursos, carregando, erro, setErro, recarregar: carregarDados, paginacao } = useListaPaginada('/api/recursos-gerais/', { busca });
+    const { itens: recursos, carregando, erro, setErro, recarregar: carregarDados, paginacao } = useListaPaginada('/api/recursos-gerais/', {
+        busca,
+        tipo_recurso: filtroTiposRecurso.join(','),
+        status: filtroStatus,
+    });
+    const filtrando = Boolean(busca.trim()) || filtroTiposRecurso.length > 0 || filtroStatus !== 'todos';
 
     function abrirCadastro() {
         setRecursoEditando(null);
@@ -72,23 +83,6 @@ function RecursosAdmin() {
         }
     }
 
-    function mostrarStatus(status) {
-        switch (status) {
-            case 'ATIVO':
-                return 'Ativo';
-            case 'MANUTENCAO':
-                return 'Manutenção';
-            case 'INATIVO':
-                return 'Inativo';
-            default:
-                return status;
-        }
-    }
-
-
-    const termoBusca = busca.trim().toLowerCase();
-    const recursosFiltrados = recursos;
-
     const colunas = [
         {
             chave: 'nome',
@@ -120,7 +114,7 @@ function RecursosAdmin() {
                     {recurso.status === 'ATIVO'
                         ? <ToggleRight size={13} aria-hidden="true" />
                         : <ToggleLeft size={13} aria-hidden="true" />}
-                    {mostrarStatus(recurso.status)}
+                    {STATUS_RECURSO_LABEL[recurso.status] || recurso.status}
                 </span>
             ),
         },
@@ -155,22 +149,41 @@ function RecursosAdmin() {
 
     return (
         <div className={styles.recursos}>
-            <div className={styles.barraAcoes}>
+            <BarraFiltros
+                acoes={(
+                    <button
+                        type="button"
+                        className={styles.adicionar}
+                        onClick={abrirCadastro}
+                    >
+                        <Plus size={16} />
+                        Adicionar
+                    </button>
+                )}
+            >
                 <CampoBusca
                     valor={busca}
                     aoAlterar={setBusca}
                     placeholder="Buscar por nome, tipo de recurso ou código..."
                 />
-
-                <button
-                    type="button"
-                    className={styles.adicionar}
-                    onClick={abrirCadastro}
-                >
-                    <Plus size={16} />
-                    Adicionar
-                </button>
-            </div>
+                <SelectRemoto
+                    url="/api/tipos-recurso/"
+                    valor={filtroTiposRecurso}
+                    aoAlterar={setFiltroTiposRecurso}
+                    rotuloTodos="Todos os tipos de recurso"
+                    ariaLabel="Filtrar recursos por tipo de recurso"
+                    placeholderBusca="Buscar tipo..."
+                    multiplo
+                />
+                <Select
+                    valor={filtroStatus}
+                    aoAlterar={setFiltroStatus}
+                    opcoes={OPCOES_STATUS_RECURSO}
+                    valorTodos="todos"
+                    rotuloTodos="Todos os status"
+                    ariaLabel="Filtrar recursos por status"
+                />
+            </BarraFiltros>
 
             {erro && (
                 <p className={styles.erro} role="alert">{erro}</p>
@@ -181,9 +194,9 @@ function RecursosAdmin() {
             ) : (
                 <TabelaAdministracao
                     colunas={colunas}
-                    dados={recursosFiltrados}
-                    mensagemVazia={termoBusca
-                        ? 'Nenhum recurso encontrado para esta busca.'
+                    dados={recursos}
+                    mensagemVazia={filtrando
+                        ? 'Nenhum recurso encontrado para os filtros aplicados.'
                         : 'Nenhum recurso cadastrado.'}
                 />
             )}

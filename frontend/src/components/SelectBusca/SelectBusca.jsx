@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { ChevronDown, Search } from 'lucide-react';
+import { Check, ChevronDown, Search } from 'lucide-react';
 import { normalizar } from '../../utils/texto';
 import styles from './SelectBusca.module.css';
 
@@ -12,21 +12,56 @@ function SelectBusca({
   ariaLabel,
   placeholderBusca = 'Buscar...',
   mensagemVazia = 'Nenhuma opção encontrada.',
+  id,
+  disabled = false,
+  multiplo = false,
+  busca: buscaExterna,
+  aoBuscar,
+  carregando = false,
+  rotuloSelecionado,
+  rodape,
 }) {
   const [aberto, setAberto] = useState(false);
-  const [busca, setBusca] = useState('');
+  const [buscaInterna, setBuscaInterna] = useState('');
   const [indiceAtivo, setIndiceAtivo] = useState(0);
   const containerRef = useRef(null);
   const botaoRef = useRef(null);
   const listaRef = useRef(null);
   const idLista = useId();
 
-  const opcaoTodos = valorTodos !== undefined && rotuloTodos ? [{ valor: valorTodos, rotulo: rotuloTodos }] : [];
-  const todasOpcoes = [...opcaoTodos, ...opcoes];
+  const buscaRemota = Boolean(aoBuscar);
+  const busca = buscaRemota ? buscaExterna ?? '' : buscaInterna;
+  const alterarTextoBusca = buscaRemota ? aoBuscar : setBuscaInterna;
+
+  const opcaoTodos = valorTodos !== undefined && rotuloTodos ? { valor: valorTodos, rotulo: rotuloTodos } : null;
+  const todasOpcoes = opcaoTodos ? [opcaoTodos, ...opcoes] : opcoes;
   const termo = normalizar(busca.trim());
-  const opcoesEncontradas = opcoes.filter((opcao) => normalizar(opcao.rotulo).includes(termo));
-  const opcoesFiltradas = [...opcaoTodos, ...opcoesEncontradas];
-  const selecionada = todasOpcoes.find((opcao) => String(opcao.valor) === String(valor));
+  const opcoesEncontradas = buscaRemota
+    ? opcoes
+    : opcoes.filter((opcao) => normalizar(opcao.rotulo).includes(termo));
+  const opcoesFiltradas = opcaoTodos ? [opcaoTodos, ...opcoesEncontradas] : opcoesEncontradas;
+
+  const valoresSelecionados = multiplo ? (valor ?? []).map(String) : [];
+  const selecionada = multiplo ? null : todasOpcoes.find((opcao) => String(opcao.valor) === String(valor));
+
+  function estaSelecionada(opcao) {
+    if (!multiplo) return opcao === selecionada;
+    if (opcao === opcaoTodos) return valoresSelecionados.length === 0;
+    return valoresSelecionados.includes(String(opcao.valor));
+  }
+
+  function rotuloMultiplo() {
+    if (valoresSelecionados.length === 0) return rotuloTodos ?? '';
+    if (rotuloSelecionado) return rotuloSelecionado;
+    if (valoresSelecionados.length === 1) {
+      const unica = opcoes.find((opcao) => String(opcao.valor) === valoresSelecionados[0]);
+      if (unica) return unica.rotulo;
+    }
+    const quantidade = valoresSelecionados.length;
+    return `${quantidade} ${quantidade === 1 ? 'selecionado' : 'selecionados'}`;
+  }
+
+  const rotuloBotao = multiplo ? rotuloMultiplo() : selecionada?.rotulo ?? rotuloSelecionado ?? '';
 
   useEffect(() => {
     if (!aberto) return undefined;
@@ -47,8 +82,9 @@ function SelectBusca({
   }, [aberto, indiceAtivo]);
 
   function abrir() {
-    setBusca('');
-    setIndiceAtivo(Math.max(todasOpcoes.indexOf(selecionada), 0));
+    if (disabled) return;
+    alterarTextoBusca('');
+    setIndiceAtivo(multiplo ? 0 : Math.max(todasOpcoes.indexOf(selecionada), 0));
     setAberto(true);
   }
 
@@ -58,12 +94,23 @@ function SelectBusca({
   }
 
   function selecionar(opcao) {
-    aoAlterar(opcao.valor);
-    fechar();
+    if (!multiplo) {
+      aoAlterar(opcao.valor);
+      fechar();
+      return;
+    }
+    if (opcao === opcaoTodos) {
+      aoAlterar([]);
+      return;
+    }
+    const chave = String(opcao.valor);
+    aoAlterar(valoresSelecionados.includes(chave)
+      ? valoresSelecionados.filter((atual) => atual !== chave)
+      : [...valoresSelecionados, chave]);
   }
 
   function alterarBusca(texto) {
-    setBusca(texto);
+    alterarTextoBusca(texto);
     setIndiceAtivo(0);
   }
 
@@ -96,15 +143,17 @@ function SelectBusca({
     <div className={styles.selectBusca} ref={containerRef}>
       <button
         ref={botaoRef}
+        id={id}
         type="button"
         className={styles.botao}
         onClick={() => (aberto ? setAberto(false) : abrir())}
         onKeyDown={teclarNoBotao}
+        disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={aberto}
-        aria-label={ariaLabel}
+        aria-label={rotuloBotao ? `${ariaLabel}: ${rotuloBotao}` : ariaLabel}
       >
-        <span className={styles.rotulo}>{selecionada?.rotulo ?? ''}</span>
+        <span className={styles.rotulo}>{rotuloBotao}</span>
         <ChevronDown size={16} className={styles.seta} aria-hidden="true" />
       </button>
 
@@ -128,27 +177,49 @@ function SelectBusca({
             />
           </div>
 
-          <ul ref={listaRef} id={idLista} className={styles.lista} role="listbox" aria-label={ariaLabel}>
-            {opcoesFiltradas.map((opcao, indice) => (
-              <li
-                key={opcao.valor}
-                id={`${idLista}-${indice}`}
-                role="option"
-                aria-selected={opcao === selecionada}
-                className={styles.opcao}
-                data-ativa={indice === indiceAtivo}
-                data-selecionada={opcao === selecionada}
-                onMouseDown={(evento) => evento.preventDefault()}
-                onMouseEnter={() => setIndiceAtivo(indice)}
-                onClick={() => selecionar(opcao)}
-              >
-                {opcao.rotulo}
-              </li>
-            ))}
-            {termo && opcoesEncontradas.length === 0 && (
+          <ul
+            ref={listaRef}
+            id={idLista}
+            className={styles.lista}
+            role="listbox"
+            aria-label={ariaLabel}
+            aria-multiselectable={multiplo || undefined}
+            aria-busy={carregando}
+          >
+            {opcoesFiltradas.map((opcao, indice) => {
+              const marcada = estaSelecionada(opcao);
+
+              return (
+                <li
+                  key={opcao.valor}
+                  id={`${idLista}-${indice}`}
+                  role="option"
+                  aria-selected={marcada}
+                  className={styles.opcao}
+                  data-ativa={indice === indiceAtivo}
+                  data-selecionada={marcada}
+                  onMouseDown={(evento) => evento.preventDefault()}
+                  onMouseEnter={() => setIndiceAtivo(indice)}
+                  onClick={() => selecionar(opcao)}
+                >
+                  {multiplo && (
+                    <span className={styles.marcador} data-marcado={marcada} aria-hidden="true">
+                      {marcada && <Check size={12} />}
+                    </span>
+                  )}
+                  {opcao.rotulo}
+                </li>
+              );
+            })}
+            {carregando && (
+              <li className={styles.vazio} role="presentation">Carregando opções...</li>
+            )}
+            {!carregando && termo && opcoesEncontradas.length === 0 && (
               <li className={styles.vazio} role="presentation">{mensagemVazia}</li>
             )}
           </ul>
+
+          {rodape && <p className={styles.rodape}>{rodape}</p>}
         </div>
       )}
     </div>

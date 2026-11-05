@@ -38,16 +38,6 @@
   line-height: 18px;
 }
 
-.filtros {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.filtros > :first-child {
-  flex: 1;
-}
-
 .dadoPrincipal {
   display: flex;
   flex-direction: column;
@@ -153,18 +143,13 @@
 }
 
 @media (max-width: 639px) {
-  .cabecalhoSecao,
-  .filtros {
+  .cabecalhoSecao {
     flex-direction: column;
     align-items: stretch;
   }
 
   .contador {
     align-self: flex-start;
-  }
-
-  .filtros > :first-child {
-    max-width: none;
   }
 }
 

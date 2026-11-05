@@ -15,6 +15,7 @@ from api.permissions.reserva_permissions import PodeGerenciarReserva
 from api.permissions.regras_comuns import SomenteAdministrador
 from api.serializers.termo_serializer import AnaliseTermoSerializer
 from api.serializers.reserva_serializer import ReservaSerializer
+from api.services.filtros_listagem import ids_do_parametro
 from api.services.termo_service import (
     ABERTAS, analisar_termo, enviar_termo, modelo_da_reserva, reserva_concreta,
     reserva_exige_termo, resumo_termo, validar_termo_operacional, montar_solicitacao_termo
@@ -217,6 +218,9 @@ class SolicitacoesTermoView(APIView):
             else:
                 relacao = 'reservarecursogeral'
             queryset = queryset.filter(**{f'{relacao}__isnull': False})
+        tipos_recurso = ids_do_parametro(request.query_params, 'tipo_recurso')
+        if tipos_recurso:
+            queryset = queryset.filter(reservarecursogeral__recurso_geral__tipo_recurso_id__in=tipos_recurso)
         aguardando_termo = (
             Q(reservarecursogeral__isnull=False, status__in=ABERTAS)
             | Q(reservaveiculo__isnull=False, status=StatusReserva.AGUARDANDO_TERMO_DEVOLUCAO)

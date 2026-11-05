@@ -6,6 +6,7 @@ import { Col, Row } from 'react-bootstrap';
 import { Search } from 'lucide-react';
 
 import CampoBusca from '../../components/Administracao/CampoBusca/CampoBusca';
+import BarraFiltros from '../../components/BarraFiltros/BarraFiltros';
 import CardVeiculo from '../../components/CardVeiculo/CardVeiculo';
 import Select from '../../components/Select/Select';
 import styles from './Veiculos.module.css';
@@ -25,11 +26,11 @@ function Veiculos() {
 
   return (
     <div className="d-flex flex-column gap-4 p-3 p-md-4">
-      <div className="d-flex flex-wrap align-items-center justify-content-center gap-2">
+      <BarraFiltros>
         <CampoBusca valor={busca} aoAlterar={setBusca} placeholder="Buscar veículo" />
         <Select valor={status} aoAlterar={setStatus} opcoes={OPCOES_STATUS}
           valorTodos="todos" rotuloTodos="Todos os status" ariaLabel="Filtrar por status" />
-      </div>
+      </BarraFiltros>
 
       {erro && <p className="text-danger" role="alert">{erro}</p>}
       {carregando ? (

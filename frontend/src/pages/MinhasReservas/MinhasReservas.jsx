@@ -14,6 +14,8 @@ import ReservaAreaModal from '../../components/ReservaArea/ReservaAreaModal';
 import ReservaVeiculoModal from '../../components/ReservaVeiculo/ReservaVeiculoModal';
 import TermoReserva from '../../components/TermoReserva/TermoReserva';
 import Select from '../../components/Select/Select';
+import BarraFiltros from '../../components/BarraFiltros/BarraFiltros';
+import SelectRemoto from '../../components/SelectRemoto/SelectRemoto';
 import { cancelarReservaArea, cancelarReservaVeiculo } from '../../services';
 import { cancelarReservaRecursoGeral } from '../../services/reservasRecursosGerais';
 import { statusReservaApresentado, SITUACAO_RESERVA_LABEL } from '../../utils/reserva';
@@ -37,7 +39,7 @@ const MODALIDADES = {
 const OPCOES_TIPO = [
   { valor: 'area', rotulo: 'Áreas' },
   { valor: 'veiculo', rotulo: 'Veículos' },
-  { valor: 'recurso_geral', rotulo: 'Recursos' },
+  { valor: 'recurso_geral', rotulo: 'Recursos gerais' },
 ];
 
 const OPCOES_STATUS = Object.entries(SITUACAO_RESERVA_LABEL).map(([valor, rotulo]) => ({
@@ -61,6 +63,7 @@ function MinhasReservas() {
   const [selecionada, setSelecionada] = useState(null);
   const [recorrenciasExpandidas, setRecorrenciasExpandidas] = useState({});
   const [filtroTipo, setFiltroTipo] = useState('todos');
+  const [filtroTiposRecurso, setFiltroTiposRecurso] = useState([]);
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [aviso, setAviso] = useState(
     location.state?.criada
@@ -70,10 +73,20 @@ function MinhasReservas() {
       : ''
   );
 
-  const { itens: reservas, erro, setErro, carregando, recarregar, paginacao } = useListaPaginada('/api/reservas/minhas/', { modalidade: filtroTipo, situacao: filtroStatus, agrupar_recorrencias: true });
+  const { itens: reservas, erro, setErro, carregando, recarregar, paginacao } = useListaPaginada('/api/reservas/minhas/', {
+    modalidade: filtroTipo,
+    tipo_recurso: filtroTipo === 'recurso_geral' ? filtroTiposRecurso.join(',') : '',
+    situacao: filtroStatus,
+    agrupar_recorrencias: true,
+  });
   const recursos = reservas.map((item) => item.recurso_detalhe).filter(Boolean);
   const tipos = reservas.map((item) => item.tipo_detalhe).filter(Boolean);
   const veiculos = reservas.map((item) => item.veiculo_detalhe).filter(Boolean);
+
+  function selecionarFiltroTipo(tipo) {
+    setFiltroTipo(tipo);
+    setFiltroTiposRecurso([]);
+  }
 
   function recursoDaReserva(reserva) {
     return recursos.find(
@@ -320,15 +333,27 @@ function MinhasReservas() {
         </p>
       )}
 
-      <div className="d-flex flex-wrap gap-2">
+      <BarraFiltros>
         <Select
           valor={filtroTipo}
-          aoAlterar={setFiltroTipo}
+          aoAlterar={selecionarFiltroTipo}
           opcoes={OPCOES_TIPO}
           valorTodos="todos"
           rotuloTodos="Todos os tipos"
           ariaLabel="Filtrar por tipo"
         />
+
+        {filtroTipo === 'recurso_geral' && (
+          <SelectRemoto
+            url="/api/tipos-recurso/"
+            valor={filtroTiposRecurso}
+            aoAlterar={setFiltroTiposRecurso}
+            rotuloTodos="Todos os tipos de recurso"
+            ariaLabel="Filtrar por tipo de recurso geral"
+            placeholderBusca="Buscar tipo..."
+            multiplo
+          />
+        )}
 
         <Select
           valor={filtroStatus}
@@ -338,7 +363,7 @@ function MinhasReservas() {
           rotuloTodos="Todas as situações"
           ariaLabel="Filtrar por situação da reserva"
         />
-      </div>
+      </BarraFiltros>
 
       <section className={styles.lista} aria-label="Minhas reservas">
         {ordenadas.length === 0 && (

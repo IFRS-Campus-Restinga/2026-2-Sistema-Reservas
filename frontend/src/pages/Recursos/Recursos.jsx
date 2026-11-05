@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PackageSearch } from 'lucide-react';
 import CampoBusca from '../../components/Administracao/CampoBusca/CampoBusca';
+import BarraFiltros from '../../components/BarraFiltros/BarraFiltros';
 import CardRecurso from '../../components/CardRecurso/CardRecurso';
 import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/ReservaRecursoGeralModal';
 import Select from '../../components/Select/Select';
@@ -23,7 +24,7 @@ function Recursos() {
 
   return (
     <div className={styles.pagina}>
-      <div className="d-flex flex-wrap align-items-center justify-content-center gap-2">
+      <BarraFiltros>
         <CampoBusca
           valor={busca}
           aoAlterar={setBusca}
@@ -38,7 +39,7 @@ function Recursos() {
           rotuloTodos="Todas as categorias"
           ariaLabel="Filtrar por categoria"
         />
-      </div>
+      </BarraFiltros>
 
       {erro && <p role="alert">{erro}</p>}
       <section

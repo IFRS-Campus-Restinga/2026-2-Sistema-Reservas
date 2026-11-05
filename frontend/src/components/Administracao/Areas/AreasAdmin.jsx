@@ -9,15 +9,24 @@ import { criarArea, atualizarArea, excluirArea } from '../../../services';
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import AreaModal from './ModalArea/AreaModal';
 import ModalConfirmacao from '../ModalConfirmacao/ModalConfirmacao';
+import CampoBusca from '../CampoBusca/CampoBusca';
+import BarraFiltros from '../../BarraFiltros/BarraFiltros';
+import Select from '../../Select/Select';
+import SelectRemoto from '../../SelectRemoto/SelectRemoto';
+import { OPCOES_STATUS_RECURSO, STATUS_RECURSO_LABEL } from '../../../utils/statusRecurso';
+import { TIPO_AREA_LABEL } from '../../../utils/tipoArea';
 
 function AreasAdministracao() {
 
     const [modalAreaAberto, setModalAreaAberto] = useState(false);
     const [areaEditando, setAreaEditando] = useState(null);
     const [areaExcluindo, setAreaExcluindo] = useState(null);
+    const [busca, setBusca] = useState('');
+    const [filtroBloco, setFiltroBloco] = useState('todos');
+    const [filtroStatus, setFiltroStatus] = useState('todos');
 
-
-    const { itens: areas, carregando, erro, setErro, recarregar: carregarDados, paginacao } = useListaPaginada('/api/areas/', {});
+    const { itens: areas, carregando, erro, setErro, recarregar: carregarDados, paginacao } = useListaPaginada('/api/areas/', { busca, bloco: filtroBloco, status: filtroStatus });
+    const filtrando = Boolean(busca.trim()) || filtroBloco !== 'todos' || filtroStatus !== 'todos';
 
     function abrirCadastro() {
         setAreaEditando(null);
@@ -69,19 +78,6 @@ function AreasAdministracao() {
         }
     }
 
-    function mostrarStatus(status) {
-      switch (status) {
-        case 'ATIVO':
-          return 'Ativo';
-        case 'MANUTENCAO':
-          return 'Manutenção';
-        case 'INATIVO':
-          return 'Inativo';
-        default:
-          return status;
-      }
-    }
-
     const colunas = [
         {
             chave: 'nome',
@@ -101,7 +97,7 @@ function AreasAdministracao() {
         {
             chave: 'tipo',
             titulo: 'Tipo',
-            campo: 'tipo',
+            renderizar: (area) => TIPO_AREA_LABEL[area.tipo] || area.tipo,
         },
         {
             chave: 'disponibilidade',
@@ -123,7 +119,7 @@ function AreasAdministracao() {
                     {area.status === 'ATIVO'
                         ? <ToggleRight size={13} aria-hidden="true" />
                         : <ToggleLeft size={13} aria-hidden="true" />}
-                    {mostrarStatus(area.status)}
+                    {STATUS_RECURSO_LABEL[area.status] || area.status}
                 </span>
             ),
         },
@@ -158,16 +154,41 @@ function AreasAdministracao() {
 
     return (
         <div className={styles.areas}>
-            <div className={styles.barraAcoes}>
-                <button
-                    type="button"
-                    className={styles.adicionar}
-                    onClick={abrirCadastro}
-                >
-                    <Plus size={16} />
-                    Adicionar
-                </button>
-            </div>
+            <BarraFiltros
+                acoes={(
+                    <button
+                        type="button"
+                        className={styles.adicionar}
+                        onClick={abrirCadastro}
+                    >
+                        <Plus size={16} />
+                        Adicionar
+                    </button>
+                )}
+            >
+                <CampoBusca
+                    valor={busca}
+                    aoAlterar={setBusca}
+                    placeholder="Buscar área por nome..."
+                />
+                <SelectRemoto
+                    url="/api/blocos/"
+                    valor={filtroBloco}
+                    aoAlterar={setFiltroBloco}
+                    valorTodos="todos"
+                    rotuloTodos="Todos os blocos"
+                    ariaLabel="Filtrar áreas por bloco"
+                    placeholderBusca="Buscar bloco..."
+                />
+                <Select
+                    valor={filtroStatus}
+                    aoAlterar={setFiltroStatus}
+                    opcoes={OPCOES_STATUS_RECURSO}
+                    valorTodos="todos"
+                    rotuloTodos="Todos os status"
+                    ariaLabel="Filtrar áreas por status"
+                />
+            </BarraFiltros>
 
             {erro && (
                 <p className={styles.erro} role="alert">{erro}</p>
@@ -179,7 +200,9 @@ function AreasAdministracao() {
                 <TabelaAdministracao
                     colunas={colunas}
                     dados={areas}
-                    mensagemVazia="Nenhuma área cadastrada."
+                    mensagemVazia={filtrando
+                        ? 'Nenhuma área encontrada para os filtros aplicados.'
+                        : 'Nenhuma área cadastrada.'}
                 />
             )}
 

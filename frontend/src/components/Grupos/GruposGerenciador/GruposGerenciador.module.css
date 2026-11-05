@@ -44,21 +44,6 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
-.barraAcoes {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.filtros {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-
 .lista {
   display: flex;
   flex-direction: column;
@@ -82,12 +67,4 @@
   background-color: #ffffff;
   color: #9ca3af;
   text-align: center;
-}
-
-@media (max-width: 767px) {
-  .barraAcoes,
-  .filtros {
-    flex-direction: column;
-    align-items: stretch;
-  }
 }

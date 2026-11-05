@@ -21,12 +21,13 @@
   color: #333;
 }
 
-.filtros select {
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 1rem;
-  margin-left: 10px;
+.campoSala {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  font-size: var(--filtro-fonte);
+  font-weight: 500;
 }
 
 .gridContainer {

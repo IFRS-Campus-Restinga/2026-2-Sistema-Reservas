@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, Form } from "react-bootstrap";
+import { Alert } from "react-bootstrap";
 import { ClipboardList, Columns, LayoutGrid, Repeat } from "lucide-react";
 import { useUsuario } from "../../hooks/useUsuario";
 import {
@@ -246,10 +246,9 @@ function Calendario() {
   return (
     <div className={styles.pagina}>
       <div className="d-flex flex-wrap align-items-center gap-2 bg-white border-bottom px-3 px-md-4 py-3 flex-shrink-0">
-        <Form.Control
+        <input
           type="date"
-          size="sm"
-          className="w-auto"
+          className={styles.campoData}
           aria-label="Data"
           value={data}
           onChange={(evento) => evento.target.value && setData(evento.target.value)}
@@ -270,6 +269,7 @@ function Calendario() {
             aoAlterar={setBlocoId}
             opcoes={opcoesBloco}
             ariaLabel="Bloco"
+            filtro
           />
         ) : (
           <Select
@@ -277,6 +277,7 @@ function Calendario() {
             aoAlterar={setAreaId}
             grupos={gruposSelectArea}
             ariaLabel="Área"
+            filtro
           />
         )}
 

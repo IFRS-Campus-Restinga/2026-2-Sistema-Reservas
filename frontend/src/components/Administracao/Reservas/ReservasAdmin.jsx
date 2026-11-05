@@ -3,6 +3,7 @@ import { Pencil, Trash2 } from 'lucide-react';
 import Paginacao from '../Paginacao/Paginacao';
 import styles from './ReservasAdmin.module.css';
 import RelatorioUso from '../RelatorioUso/RelatorioUso';
+import SelectRemoto from '../../SelectRemoto/SelectRemoto';
 
 import {
   buscarAreas,
@@ -13,6 +14,7 @@ import {
 import { consultarTodasPaginas } from '../../../services/paginacao';
 
 import CampoBusca from '../CampoBusca/CampoBusca';
+import BarraFiltros from '../../BarraFiltros/BarraFiltros';
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import ModalConfirmacao from '../ModalConfirmacao/ModalConfirmacao';
 import Select from '../../Select/Select';
@@ -156,6 +158,7 @@ function ReservasAdmin() {
 
   const [busca, setBusca] = useState('');
   const [modalidade, setModalidade] = useState('todas');
+  const [filtroTiposRecurso, setFiltroTiposRecurso] = useState([]);
 
   const [pagina, setPagina] = useState(1);
   const [total, setTotal] = useState(0);
@@ -214,6 +217,7 @@ function ReservasAdmin() {
           {
             busca: busca.trim(),
             tipo,
+            tipo_recurso: modalidade === 'recurso_geral' ? filtroTiposRecurso.join(',') : '',
             page: pagina,
             page_size: TAMANHO_PAGINA,
           },
@@ -242,7 +246,7 @@ function ReservasAdmin() {
         setCarregando(false);
       }
     }
-  }, [busca, modalidade, pagina]);
+  }, [busca, modalidade, filtroTiposRecurso, pagina]);
 
   useEffect(() => {
     const controle = new AbortController();
@@ -534,7 +538,6 @@ function ReservasAdmin() {
           </p>
         </div>
 
-        <RelatorioUso />
         <span className={styles.contador}>
           {total}{' '}
           {total === 1
@@ -543,7 +546,7 @@ function ReservasAdmin() {
         </span>
       </div>
 
-      <div className={styles.filtros}>
+      <BarraFiltros acoes={<RelatorioUso />}>
         <CampoBusca
           valor={busca}
           aoAlterar={(valor) => {
@@ -557,6 +560,7 @@ function ReservasAdmin() {
           valor={modalidade}
           aoAlterar={(valor) => {
             setModalidade(valor);
+            setFiltroTiposRecurso([]);
             setPagina(1);
           }}
           valorTodos="todas"
@@ -577,7 +581,21 @@ function ReservasAdmin() {
             },
           ]}
         />
-      </div>
+        {modalidade === 'recurso_geral' && (
+          <SelectRemoto
+            url="/api/tipos-recurso/"
+            valor={filtroTiposRecurso}
+            aoAlterar={(valor) => {
+              setFiltroTiposRecurso(valor);
+              setPagina(1);
+            }}
+            rotuloTodos="Todos os tipos de recurso"
+            ariaLabel="Filtrar reservas por tipo de recurso geral"
+            placeholderBusca="Buscar tipo..."
+            multiplo
+          />
+        )}
+      </BarraFiltros>
 
 
       {mensagemSucesso && (

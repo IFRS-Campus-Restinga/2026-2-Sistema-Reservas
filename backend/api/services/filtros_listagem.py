@@ -5,7 +5,7 @@ from rest_framework.exceptions import ValidationError
 
 BUSCA = {
     'area': ('nome',),
-    'bloco': ('nome',),
+    'bloco': ('nome', 'numero'),
     'veiculo': ('nome', 'marca', 'modelo', 'placa'),
     'recursogeral': ('nome', 'codigo', 'tipo_recurso__descricao'),
     'tiporecurso': ('descricao',),
@@ -25,10 +25,21 @@ FILTROS = {
     'grupo': {'tipo_membro': 'tipo_membro_permitido',
               'recurso': 'autorizacoes__tipo_recurso_autorizado',
               'tipo_recurso': 'autorizacoes__tipo_recurso_id'},
-    'reserva': {'status': 'status'},
+    'reserva': {'status': 'status',
+                'tipo_recurso': 'reservarecursogeral__recurso_geral__tipo_recurso_id'},
 }
 MODALIDADES = {'area': 'reservaarea', 'veiculo': 'reservaveiculo',
                'recurso_geral': 'reservarecursogeral'}
+
+
+def ids_do_parametro(parametros, nome):
+    valor = parametros.get(nome, '')
+    if not valor or valor in ('todos', 'todas'):
+        return []
+    try:
+        return [int(parte) for parte in valor.split(',') if parte.strip()]
+    except ValueError:
+        raise ValidationError({nome: 'Informe números inteiros separados por vírgula.'})
 
 
 def filtrar_listagem(request, queryset):
@@ -49,9 +60,14 @@ def filtrar_listagem(request, queryset):
     for parametro, campo in FILTROS.get(modelo, {}).items():
         if modelo == 'tiporecurso' and parametro == 'categoria' and parametros.get('catalogo') == 'true':
             campo = 'categoria_catalogo'
+        if campo.endswith('_id'):
+            ids = ids_do_parametro(parametros, parametro)
+            if ids:
+                queryset = queryset.filter(**{f'{campo}__in': ids})
+            continue
         valor = parametros.get(parametro)
         if valor and valor not in ('todos', 'todas'):
-            if campo.endswith('_id') or campo == 'capacidade__gte':
+            if campo == 'capacidade__gte':
                 try:
                     valor = int(valor)
                 except ValueError:

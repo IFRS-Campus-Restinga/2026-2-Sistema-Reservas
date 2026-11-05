@@ -8,6 +8,7 @@ import { criarGrupo, atualizarGrupo, excluirGrupo } from '../../../services';
 
 import { ehAdministrador, podeGerenciarGrupos } from '../../../utils/permissoes';
 import Botao from '../../Botao/Botao';
+import BarraFiltros from '../../BarraFiltros/BarraFiltros';
 import CampoBusca from '../../Administracao/CampoBusca/CampoBusca';
 import Select from '../../Select/Select';
 import ModalConfirmacao from '../../Administracao/ModalConfirmacao/ModalConfirmacao';
@@ -29,18 +30,18 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
     const [tipoAtivo, setTipoAtivo] = useState(ehAdmin ? 'servidor' : 'aluno');
     const [busca, setBusca] = useState('');
     const [filtroRecurso, setFiltroRecurso] = useState(FILTRO_TODOS);
-    const [filtroTipoRecurso, setFiltroTipoRecurso] = useState(FILTRO_TODOS);
+    const [filtroTiposRecurso, setFiltroTiposRecurso] = useState([]);
 
     const [modalAberto, setModalAberto] = useState(false);
     const [grupoEditando, setGrupoEditando] = useState(null);
     const [grupoExcluindo, setGrupoExcluindo] = useState(null);
 
-    const { itens: gruposDaTela, carregando, erro, setErro, recarregar: carregarGrupos, paginacao } = useListaPaginada('/api/grupos/', { busca, tipo_membro: tipoAtivo, recurso: filtroRecurso, tipo_recurso: filtroTipoRecurso, meus: apenasMeusGrupos });
+    const { itens: gruposDaTela, carregando, erro, setErro, recarregar: carregarGrupos, paginacao } = useListaPaginada('/api/grupos/', { busca, tipo_membro: tipoAtivo, recurso: filtroRecurso, tipo_recurso: filtroTiposRecurso.join(','), meus: apenasMeusGrupos });
     const filtrandoRecursoGeral = filtroRecurso === TIPO_RECURSO_RESERVAVEL.RECURSO_GERAL;
 
     function selecionarFiltroRecurso(recurso) {
         setFiltroRecurso(recurso);
-        setFiltroTipoRecurso(FILTRO_TODOS);
+        setFiltroTiposRecurso([]);
     }
 
     function abrirCadastro() {
@@ -120,33 +121,8 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
                 <h2 className={styles.tituloUnico}>Grupos de Alunos</h2>
             )}
 
-            <div className={styles.barraAcoes}>
-                <div className={styles.filtros}>
-                    <CampoBusca
-                        valor={busca}
-                        aoAlterar={setBusca}
-                        placeholder="Buscar grupo por nome..."
-                    />
-                    <Select
-                        valor={filtroRecurso}
-                        aoAlterar={selecionarFiltroRecurso}
-                        opcoes={OPCOES_RECURSO}
-                        valorTodos={FILTRO_TODOS}
-                        rotuloTodos="Todos os recursos"
-                        ariaLabel="Filtrar por recurso"
-                    />
-                    {filtrandoRecursoGeral && (
-                        <SelectRemoto url="/api/tipos-recurso/"
-                            valor={filtroTipoRecurso}
-                            aoAlterar={setFiltroTipoRecurso}
-                            valorTodos={FILTRO_TODOS}
-                            rotuloTodos="Todos os tipos"
-                            ariaLabel="Filtrar por tipo de recurso geral"
-                            placeholderBusca="Buscar tipo..."
-                        />
-                    )}
-                </div>
-                {podeCriarGrupo && (
+            <BarraFiltros
+                acoes={podeCriarGrupo && (
                     <Botao
                         titulo="Novo grupo"
                         icone={Plus}
@@ -154,7 +130,31 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
                         aoClicar={abrirCadastro}
                     />
                 )}
-            </div>
+            >
+                <CampoBusca
+                    valor={busca}
+                    aoAlterar={setBusca}
+                    placeholder="Buscar grupo por nome..."
+                />
+                <Select
+                    valor={filtroRecurso}
+                    aoAlterar={selecionarFiltroRecurso}
+                    opcoes={OPCOES_RECURSO}
+                    valorTodos={FILTRO_TODOS}
+                    rotuloTodos="Todos os recursos"
+                    ariaLabel="Filtrar por recurso"
+                />
+                {filtrandoRecursoGeral && (
+                    <SelectRemoto url="/api/tipos-recurso/"
+                        valor={filtroTiposRecurso}
+                        aoAlterar={setFiltroTiposRecurso}
+                        rotuloTodos="Todos os tipos de recurso"
+                        multiplo
+                        ariaLabel="Filtrar por tipo de recurso geral"
+                        placeholderBusca="Buscar tipo..."
+                    />
+                )}
+            </BarraFiltros>
 
             {erro && (
                 <p className={styles.erro} role="alert">{erro}</p>

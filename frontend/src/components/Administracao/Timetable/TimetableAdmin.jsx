@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useTimetableStore } from '../../../store/timetableStore';
+import Select from '../../Select/Select';
 import styles from './TimetableAdmin.module.css';
 
 const PERIODOS_MATRIZ = [
@@ -167,10 +168,16 @@ function TimetableAdmin() {
       <div className={styles.header}>
         <h2>Grade Horária do EduPage</h2>
         <div className={styles.filtros}>
-          <label>Selecione a Sala: </label>
-          <select value={salaAtual} onChange={(e) => setSalaSelecionada(e.target.value)}>
-            {salas.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <label className={styles.campoSala}>
+            Sala
+            <Select
+              valor={salaAtual}
+              aoAlterar={setSalaSelecionada}
+              opcoes={salas.map((sala) => ({ valor: sala, rotulo: sala }))}
+              ariaLabel="Sala"
+              filtro
+            />
+          </label>
           <button 
             type="button"
             className={styles.botaoSincronizar} 

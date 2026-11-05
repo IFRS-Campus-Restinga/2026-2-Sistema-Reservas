@@ -175,6 +175,8 @@ function AuditoriaAdmin() {
                         opcoes={paraOpcoes(PERFIL_RESPONSAVEL_LABEL)}
                         valorTodos=""
                         rotuloTodos="Todos os perfis"
+                        filtro
+                        larguraTotal
                         ariaLabel="Filtrar por perfil do responsável"
                     />
                 </label>
@@ -198,6 +200,8 @@ function AuditoriaAdmin() {
                         opcoes={paraOpcoes(ACAO_AUDITORIA_LABEL)}
                         valorTodos=""
                         rotuloTodos="Todas as ações"
+                        filtro
+                        larguraTotal
                         ariaLabel="Filtrar por ação"
                     />
                 </label>
@@ -210,6 +214,8 @@ function AuditoriaAdmin() {
                         opcoes={paraOpcoes(ENTIDADE_AUDITORIA_LABEL)}
                         valorTodos=""
                         rotuloTodos="Todas as entidades"
+                        filtro
+                        larguraTotal
                         ariaLabel="Filtrar por entidade"
                     />
                 </label>

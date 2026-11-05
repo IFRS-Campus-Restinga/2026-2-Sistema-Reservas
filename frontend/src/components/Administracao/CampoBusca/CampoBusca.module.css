@@ -16,13 +16,13 @@
 
 .input {
   width: 100%;
-  padding: 8px 16px 8px 36px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  padding: var(--filtro-espaco-y) 16px var(--filtro-espaco-y) 36px;
+  border: 1px solid var(--filtro-borda);
+  border-radius: var(--filtro-raio);
   background-color: #ffffff;
-  color: #374151;
-  font-size: 14px;
-  line-height: 20px;
+  color: var(--filtro-texto);
+  font-size: var(--filtro-fonte);
+  line-height: var(--filtro-linha);
 }
 
 .input::placeholder {
