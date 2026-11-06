@@ -15,6 +15,8 @@ import ReservaVeiculoModal from '../../components/ReservaVeiculo/ReservaVeiculoM
 import TermoReserva from '../../components/TermoReserva/TermoReserva';
 import Select from '../../components/Select/Select';
 import BarraFiltros from '../../components/BarraFiltros/BarraFiltros';
+import CampoBusca from '../../components/Administracao/CampoBusca/CampoBusca';
+import CampoPeriodo from '../../components/CampoPeriodo/CampoPeriodo';
 import SelectRemoto from '../../components/SelectRemoto/SelectRemoto';
 import { cancelarReservaArea, cancelarReservaVeiculo } from '../../services';
 import { cancelarReservaRecursoGeral } from '../../services/reservasRecursosGerais';
@@ -65,6 +67,8 @@ function MinhasReservas() {
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [filtroTiposRecurso, setFiltroTiposRecurso] = useState([]);
   const [filtroStatus, setFiltroStatus] = useState('todos');
+  const [busca, setBusca] = useState('');
+  const [periodo, setPeriodo] = useState({ inicio: '', fim: '' });
   const [aviso, setAviso] = useState(
     location.state?.criada
       ? location.state?.tipo === 'veiculo'
@@ -74,11 +78,16 @@ function MinhasReservas() {
   );
 
   const { itens: reservas, erro, setErro, carregando, recarregar, paginacao } = useListaPaginada('/api/reservas/minhas/', {
+    busca: busca.trim(),
     modalidade: filtroTipo,
     tipo_recurso: filtroTipo === 'recurso_geral' ? filtroTiposRecurso.join(',') : '',
     situacao: filtroStatus,
+    data_inicio: periodo.inicio,
+    data_fim: periodo.fim,
     agrupar_recorrencias: true,
   });
+  const filtrando = Boolean(busca.trim()) || filtroTipo !== 'todos' || filtroStatus !== 'todos'
+    || Boolean(periodo.inicio) || Boolean(periodo.fim);
   const recursos = reservas.map((item) => item.recurso_detalhe).filter(Boolean);
   const tipos = reservas.map((item) => item.tipo_detalhe).filter(Boolean);
   const veiculos = reservas.map((item) => item.veiculo_detalhe).filter(Boolean);
@@ -334,6 +343,12 @@ function MinhasReservas() {
       )}
 
       <BarraFiltros>
+        <CampoBusca
+          valor={busca}
+          aoAlterar={setBusca}
+          placeholder="Buscar por título ou item..."
+        />
+
         <Select
           valor={filtroTipo}
           aoAlterar={selecionarFiltroTipo}
@@ -363,12 +378,21 @@ function MinhasReservas() {
           rotuloTodos="Todas as situações"
           ariaLabel="Filtrar por situação da reserva"
         />
+
+        <CampoPeriodo
+          inicio={periodo.inicio}
+          fim={periodo.fim}
+          aoAlterar={setPeriodo}
+          ariaLabel="Filtrar por período"
+        />
       </BarraFiltros>
 
       <section className={styles.lista} aria-label="Minhas reservas">
-        {ordenadas.length === 0 && (
+        {!carregando && ordenadas.length === 0 && (
           <p className={styles.vazio}>
-            Você ainda não possui reservas cadastradas.
+            {filtrando
+              ? 'Nenhuma reserva encontrada para os filtros aplicados.'
+              : 'Você ainda não possui reservas cadastradas.'}
           </p>
         )}
 

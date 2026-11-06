@@ -15,6 +15,7 @@ import { consultarTodasPaginas } from '../../../services/paginacao';
 
 import CampoBusca from '../CampoBusca/CampoBusca';
 import BarraFiltros from '../../BarraFiltros/BarraFiltros';
+import CampoPeriodo from '../../CampoPeriodo/CampoPeriodo';
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import ModalConfirmacao from '../ModalConfirmacao/ModalConfirmacao';
 import Select from '../../Select/Select';
@@ -57,6 +58,25 @@ function formatarHorario(horario) {
   return horario
     ? horario.slice(0, 5)
     : '—';
+}
+
+
+function periodoReserva(reserva) {
+  const inicio = formatarHorario(reserva.horario_inicio);
+  const fim = formatarHorario(reserva.horario_fim);
+  const devolucao = reserva.detalhes?.data_devolucao_prevista;
+
+  if (devolucao && devolucao !== reserva.data) {
+    return {
+      datas: `${formatarData(reserva.data)} até ${formatarData(devolucao)}`,
+      horarios: `Retirada ${inicio} · Devolução ${fim}`,
+    };
+  }
+
+  return {
+    datas: formatarData(reserva.data),
+    horarios: `${inicio}–${fim}`,
+  };
 }
 
 
@@ -159,6 +179,7 @@ function ReservasAdmin() {
   const [busca, setBusca] = useState('');
   const [modalidade, setModalidade] = useState('todas');
   const [filtroTiposRecurso, setFiltroTiposRecurso] = useState([]);
+  const [periodo, setPeriodo] = useState({ inicio: '', fim: '' });
 
   const [pagina, setPagina] = useState(1);
   const [total, setTotal] = useState(0);
@@ -218,6 +239,8 @@ function ReservasAdmin() {
             busca: busca.trim(),
             tipo,
             tipo_recurso: modalidade === 'recurso_geral' ? filtroTiposRecurso.join(',') : '',
+            data_inicio: periodo.inicio,
+            data_fim: periodo.fim,
             page: pagina,
             page_size: TAMANHO_PAGINA,
           },
@@ -246,7 +269,7 @@ function ReservasAdmin() {
         setCarregando(false);
       }
     }
-  }, [busca, modalidade, filtroTiposRecurso, pagina]);
+  }, [busca, modalidade, filtroTiposRecurso, periodo, pagina]);
 
   useEffect(() => {
     const controle = new AbortController();
@@ -409,6 +432,20 @@ function ReservasAdmin() {
           </small>
         </div>
       ),
+    },
+    {
+      chave: 'data',
+      titulo: 'Data',
+      renderizar: (reserva) => {
+        const { datas, horarios } = periodoReserva(reserva);
+
+        return (
+          <div className={styles.dadoPrincipal}>
+            <span>{datas}</span>
+            <small>{horarios}</small>
+          </div>
+        );
+      },
     },
     {
       chave: 'status',
@@ -595,6 +632,15 @@ function ReservasAdmin() {
             multiplo
           />
         )}
+        <CampoPeriodo
+          inicio={periodo.inicio}
+          fim={periodo.fim}
+          aoAlterar={(valor) => {
+            setPeriodo(valor);
+            setPagina(1);
+          }}
+          ariaLabel="Filtrar reservas por período"
+        />
       </BarraFiltros>
 
 
@@ -632,7 +678,9 @@ function ReservasAdmin() {
             dados={reservas}
             mensagemVazia={
               busca.trim() ||
-              modalidade !== 'todas'
+              modalidade !== 'todas' ||
+              periodo.inicio ||
+              periodo.fim
                 ? 'Nenhuma reserva encontrada para os filtros selecionados.'
                 : 'Nenhuma reserva cadastrada.'
             }

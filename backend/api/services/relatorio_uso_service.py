@@ -11,6 +11,7 @@ from api.models.recurso_geral_model import RecursoGeral
 from api.models.reserva_model import Reserva
 from api.models.veiculo_model import Veiculo
 from api.models.termo_responsabilidade_model import TermoResponsabilidade
+from api.services.filtros_listagem import sobreposicao_periodo
 from api.services.timetable.reservas_timetable_service import ReservasTimetableService
 from api.services.situacao_reserva_service import filtro_situacao, situacao_reserva
 
@@ -84,14 +85,7 @@ def gerar_relatorio(parametros, periodo_inicio, periodo_fim):
     modalidade = parametros.get('modalidade', 'todas')
     if modalidade not in (*MODALIDADES, 'todas'):
         raise ValidationError({'modalidade': 'Modalidade inválida.'})
-    sobreposicao = (
-        Q(reservaarea__data__range=(periodo_inicio, periodo_fim), reservaarea__celula_timetable__isnull=True) |
-        Q(reservaarea__celula_timetable__periodo_letivo__data_inicio__lte=periodo_fim,
-          reservaarea__celula_timetable__periodo_letivo__data_fim__gte=periodo_inicio) |
-        Q(reservaveiculo__data__lte=periodo_fim, reservaveiculo__data_devolucao_prevista__gte=periodo_inicio) |
-        Q(reservarecursogeral__data__lte=periodo_fim, reservarecursogeral__data_devolucao_prevista__gte=periodo_inicio)
-    )
-    reservas = Reserva.objects.filter(sobreposicao).select_related(
+    reservas = Reserva.objects.filter(sobreposicao_periodo(periodo_inicio, periodo_fim)).select_related(
         'reservaarea__celula_timetable__periodo_letivo', 'usuario', 'reservaarea__area__bloco', 'reservaveiculo__veiculo',
         'reservarecursogeral__recurso_geral__tipo_recurso',
     ).prefetch_related(Prefetch(

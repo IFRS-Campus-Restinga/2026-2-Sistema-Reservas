@@ -1,0 +1,33 @@
+.periodo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.data {
+  min-width: 0;
+  padding: var(--filtro-espaco-y) var(--filtro-espaco-x);
+  border: 1px solid var(--filtro-borda);
+  border-radius: var(--filtro-raio);
+  background-color: #ffffff;
+  color: var(--filtro-texto);
+  font-size: var(--filtro-fonte);
+  line-height: var(--filtro-linha);
+}
+
+.data:focus {
+  outline: 2px solid var(--cor-marca);
+  outline-offset: 0;
+}
+
+.separador {
+  color: #9ca3af;
+  font-size: var(--filtro-fonte);
+}
+
+@media (max-width: 767px) {
+  .data {
+    flex: 1;
+  }
+}

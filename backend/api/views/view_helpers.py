@@ -21,8 +21,8 @@ class BuscarObjetoComPermissaoMixin:
         return obj
 
 
-def listar(request, queryset, serializer_class):
-    queryset = filtrar_listagem(request, queryset)
+def listar(request, queryset, serializer_class, campos_busca=None):
+    queryset = filtrar_listagem(request, queryset, campos_busca)
     paginator = PaginacaoPadrao()
     pagina = paginator.paginate_queryset(queryset, request)
     serializer = serializer_class(pagina, many=True)
