@@ -33,12 +33,12 @@ def reservas_com_recurso():
     ))
 
 
-def resposta_arquivo(campo, nome, content_type):
+def resposta_arquivo(campo, nome, content_type, baixar=True):
     try:
         arquivo = campo.open('rb')
     except (FileNotFoundError, OSError):
         raise NotFound('O arquivo não está disponível. Entre em contato com a administração.')
-    resposta = FileResponse(arquivo, as_attachment=True, filename=nome, content_type=content_type)
+    resposta = FileResponse(arquivo, as_attachment=baixar, filename=nome, content_type=content_type)
     resposta['Cache-Control'] = 'private, no-store'
     resposta['X-Content-Type-Options'] = 'nosniff'
     return resposta
@@ -147,7 +147,8 @@ class ArquivoTermoView(APIView):
         if self.original:
             return resposta_arquivo(termo.arquivo_original, 'termo-em-branco.docx',
                                     'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-        return resposta_arquivo(termo.arquivo_assinado, termo.nome_original, 'application/pdf')
+        baixar = request.query_params.get('visualizar') != 'true'
+        return resposta_arquivo(termo.arquivo_assinado, termo.nome_original, 'application/pdf', baixar)
 
 
 class AnaliseTermoView(APIView):

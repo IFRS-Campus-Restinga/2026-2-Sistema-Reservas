@@ -134,6 +134,14 @@
   overflow-wrap: anywhere;
 }
 
+.arquivo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  max-width: 100%;
+}
+
 .documento {
   display: flex;
   flex-direction: column;

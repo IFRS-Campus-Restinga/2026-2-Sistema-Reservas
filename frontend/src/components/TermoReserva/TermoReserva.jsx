@@ -1,10 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
-import { CheckCircle, Download, FileText, FileWarning, LoaderCircle, Upload, XCircle } from 'lucide-react';
+import { CheckCircle, Download, Eye, FileText, FileWarning, LoaderCircle, Upload, XCircle } from 'lucide-react';
 import { analisarTermo, analisarTermoOperacional, buscarTermo, buscarTermoOperacional, enviarTermo, enviarTermoOperacional } from '../../services/termos';
 import styles from './TermoReserva.module.css';
 
 const SITUACOES = { PENDENTE: 'Aguardando análise', APROVADO: 'Aprovado', REJEITADO: 'Rejeitado' };
 const formatarData = (data) => new Date(data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
+function ArquivoAssinado({ termo }) {
+  return (
+    <span className={styles.arquivo}>
+      <a className={styles.link} href={`${termo.url_arquivo}?visualizar=true`} target="_blank" rel="noopener noreferrer"
+        aria-label={`Visualizar ${termo.nome_original} em nova aba`}>
+        <Eye size={13} />Visualizar
+      </a>
+      <a className={styles.link} href={termo.url_arquivo}><Download size={13} />{termo.nome_original}</a>
+    </span>
+  );
+}
 
 function HistoricoTermos({ termos }) {
   if (!termos.length) return null;
@@ -15,7 +27,7 @@ function HistoricoTermos({ termos }) {
       {termos.map((termo) => (
         <div className={styles.envioAnterior} key={termo.id}>
           <strong>{SITUACOES[termo.status]} · Substituído</strong>
-          <a className={styles.link} href={termo.url_arquivo}><Download size={13} />{termo.nome_original}</a>
+          <ArquivoAssinado termo={termo} />
           <span>Enviado em {formatarData(termo.data_envio)}</span>
           {termo.motivo_rejeicao && <p className={styles.motivo}>Motivo: {termo.motivo_rejeicao}</p>}
           <a className={styles.link} href={termo.url_modelo}>Modelo deste envio</a>
@@ -163,7 +175,7 @@ export default function TermoReserva({
       documento = (
         <div className={styles.documento} data-administrativo={administrativo} data-status={atual.status}>
           {administrativo && <strong className={styles.tituloEnvio}><IconeDocumento size={12} />{tituloEnvio}</strong>}
-          <a className={styles.link} href={atual.url_arquivo}><Download size={13} />{atual.nome_original}</a>
+          <ArquivoAssinado termo={atual} />
           <span>Enviado em {formatarData(atual.data_envio)} por {atual.enviado_por}</span>
           {atual.data_validacao && <span>Analisado em {formatarData(atual.data_validacao)} por {atual.validado_por}</span>}
           {atual.motivo_rejeicao && <p className={styles.motivo}><strong>Motivo da rejeição:</strong> {atual.motivo_rejeicao}</p>}
