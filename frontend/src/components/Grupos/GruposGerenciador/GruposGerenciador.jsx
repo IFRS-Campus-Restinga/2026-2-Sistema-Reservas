@@ -178,6 +178,7 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
                             grupo={grupo}
                             aoEditar={abrirEdicao}
                             aoExcluir={solicitarExclusao}
+                            aoAtualizar={carregarGrupos}
                         />
                     ))}
                 </div>

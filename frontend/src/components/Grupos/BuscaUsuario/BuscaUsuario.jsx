@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import { buscarCandidatos } from '../../../services';
 import useDebounce from '../../../hooks/useDebounce';
@@ -8,6 +8,8 @@ const LIMITE_RESULTADOS = 10;
 
 function BuscaUsuario({ grupoId, idsSelecionados, idsMembros, aoSelecionar, placeholder = 'Nome ou e-mail...' }) {
     const [termo, setTermo] = useState('');
+    const [expandido, setExpandido] = useState(false);
+    const containerRef = useRef(null);
     const [resultado, setResultado] = useState({ consulta: null, dados: null });
     const termoBuscado = useDebounce(termo.trim());
     const aberto = termo.trim().length >= 2 && termoBuscado.length >= 2;
@@ -30,11 +32,24 @@ function BuscaUsuario({ grupoId, idsSelecionados, idsMembros, aoSelecionar, plac
         };
     }, [grupoId, termoBuscado]);
 
+    useEffect(() => {
+        if (!expandido) return undefined;
+
+        function fecharAoClicarFora(evento) {
+            if (!containerRef.current?.contains(evento.target)) {
+                setExpandido(false);
+            }
+        }
+
+        document.addEventListener('mousedown', fecharAoClicarFora, true);
+        return () => document.removeEventListener('mousedown', fecharAoClicarFora, true);
+    }, [expandido]);
+
     const idsIgnorados = [...idsSelecionados, ...idsMembros];
     const disponiveis = (dados?.resultados ?? []).filter((usuario) => !idsIgnorados.includes(usuario.id));
 
     return (
-        <div className={styles.container}>
+        <div className={styles.container} ref={containerRef}>
             <div className={styles.campo}>
                 <Search size={14} className={styles.icone} aria-hidden="true" />
                 <input
@@ -42,6 +57,7 @@ function BuscaUsuario({ grupoId, idsSelecionados, idsMembros, aoSelecionar, plac
                     className={styles.input}
                     value={termo}
                     onChange={(evento) => setTermo(evento.target.value)}
+                    onFocus={() => setExpandido(true)}
                     placeholder={placeholder}
                     aria-label={placeholder}
                 />
@@ -57,7 +73,7 @@ function BuscaUsuario({ grupoId, idsSelecionados, idsMembros, aoSelecionar, plac
                 )}
             </div>
 
-            {aberto && (
+            {aberto && expandido && (
                 <div className={styles.dropdown}>
                     <ul className={styles.lista} role="listbox">
                         {carregando && (

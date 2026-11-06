@@ -9,7 +9,7 @@ import TabelaAdministracao from '../../Administracao/TabelaAdmin/TabelaAdmin';
 import Paginacao from '../../Administracao/Paginacao/Paginacao';
 import BuscaUsuario from '../BuscaUsuario/BuscaUsuario';
 import Botao from '../../Botao/Botao';
-import { formatarValidadeMembro, extrairMensagemErro } from '../gruposUtils';
+import { formatarValidadeMembro, formatarVigenciaGrupo, extrairMensagemErro } from '../gruposUtils';
 import styles from './ModalMembros.module.css';
 
 const TAMANHO_PAGINA = 10;
@@ -147,6 +147,8 @@ function ModalMembros({ grupo, aoFechar }) {
                 }
             >
                 <div className={styles.conteudo}>
+                    <p className={styles.vigencia}>Vigência do grupo: {formatarVigenciaGrupo(grupo)}</p>
+
                     <section className={styles.secao}>
                         <h3 className={styles.tituloSecao}>Adicionar membros</h3>
                         <form className={styles.formAdicionar} onSubmit={(evento) => { evento.preventDefault(); setConfirmandoAdicao(true); }}>

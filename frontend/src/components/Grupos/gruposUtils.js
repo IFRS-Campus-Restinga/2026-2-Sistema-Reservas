@@ -21,6 +21,12 @@ export function formatarData(dataISO) {
     return `${dia}/${mes}/${ano}`;
 }
 
+export function formatarVigenciaGrupo(grupo) {
+    return grupo.data_fim_validade
+        ? `${formatarData(grupo.data_inicio_validade)} a ${formatarData(grupo.data_fim_validade)}`
+        : `a partir de ${formatarData(grupo.data_inicio_validade)}`;
+}
+
 export function formatarValidadeMembro(membro, grupo) {
     const validade = membro.data_fim_validade || grupo.data_fim_validade;
     return validade ? `Ativo até ${formatarData(validade)}` : 'Ativo sem prazo definido';
