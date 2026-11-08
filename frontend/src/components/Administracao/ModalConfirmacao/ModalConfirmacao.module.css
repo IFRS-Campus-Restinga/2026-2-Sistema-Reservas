@@ -35,16 +35,6 @@
   overflow-wrap: anywhere;
 }
 
-.aviso {
-  padding: 12px;
-  border: 1px solid #fef08a;
-  border-radius: 8px;
-  background-color: #fefce8;
-  color: #a16207;
-  font-size: 12px;
-  line-height: 16px;
-}
-
 .cancelar,
 .confirmar {
   flex: 1;

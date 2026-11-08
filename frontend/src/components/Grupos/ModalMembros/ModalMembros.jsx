@@ -10,6 +10,7 @@ import Paginacao from '../../Administracao/Paginacao/Paginacao';
 import BuscaUsuario from '../BuscaUsuario/BuscaUsuario';
 import Botao from '../../Botao/Botao';
 import { formatarValidadeMembro, formatarVigenciaGrupo, extrairMensagemErro } from '../gruposUtils';
+import AlertBanner from '../../AlertBanner/AlertBanner';
 import styles from './ModalMembros.module.css';
 
 const TAMANHO_PAGINA = 10;
@@ -19,26 +20,33 @@ function ModalMembros({ grupo, aoFechar }) {
     const [selecionados, setSelecionados] = useState([]);
     const [validoAte, setValidoAte] = useState('');
     const [adicionando, setAdicionando] = useState(false);
-    const [erroAdicionar, setErroAdicionar] = useState('');
+    const [avisoAdicionar, setAvisoAdicionar] = useState(null);
     const [confirmandoAdicao, setConfirmandoAdicao] = useState(false);
     const [membroRemovendo, setMembroRemovendo] = useState(null);
     const [processandoId, setProcessandoId] = useState(null);
-    const [erroMembro, setErroMembro] = useState('');
+    const [avisoMembro, setAvisoMembro] = useState(null);
 
     const { itens: membros, total, erro: erroLista, carregando, recarregar, paginacao } = useListaPaginada(`/api/grupos/${grupo.id}/membros/`, { busca, page_size: TAMANHO_PAGINA });
     const membrosDaPagina = membros;
+    const selecionadosComErro = selecionados.filter((usuario) => usuario.erro);
     const alterarBusca = setBusca;
 
     async function handleAdicionar() {
         setConfirmandoAdicao(false);
         try {
             setAdicionando(true);
-            setErroAdicionar('');
+            setAvisoAdicionar(null);
             await adicionarMembros(
                 grupo.id,
                 selecionados.map(({ id }) => ({ usuario: id, data_fim_validade: validoAte || null }))
             );
             recarregar();
+            setAvisoAdicionar({
+                tipo: 'sucesso',
+                mensagem: selecionados.length === 1
+                    ? '1 membro adicionado com sucesso.'
+                    : `${selecionados.length} membros adicionados com sucesso.`,
+            });
             setSelecionados([]);
             setValidoAte('');
         } catch (erro) {
@@ -49,20 +57,21 @@ function ModalMembros({ grupo, aoFechar }) {
                     erro: Object.values(errosApi[indice] ?? {}).flat().join(' '),
                 })));
             } else {
-                setErroAdicionar(extrairMensagemErro(erro, 'Não foi possível adicionar os membros.'));
+                setAvisoAdicionar({ tipo: 'erro', mensagem: extrairMensagemErro(erro, 'Não foi possível adicionar os membros.') });
             }
         } finally {
             setAdicionando(false);
         }
     }
 
-    async function alterarMembro(membro, acao, mensagemPadrao) {
+    async function alterarMembro(membro, acao, mensagemSucesso, mensagemPadrao) {
         try {
             setProcessandoId(membro.id);
-            setErroMembro('');
+            setAvisoMembro(null);
             await acao();
+            setAvisoMembro({ tipo: 'sucesso', mensagem: mensagemSucesso });
         } catch (erro) {
-            setErroMembro(extrairMensagemErro(erro, mensagemPadrao));
+            setAvisoMembro({ tipo: 'erro', mensagem: extrairMensagemErro(erro, mensagemPadrao) });
         } finally {
             setProcessandoId(null);
         }
@@ -73,7 +82,7 @@ function ModalMembros({ grupo, aoFechar }) {
         return alterarMembro(membro, async () => {
             await removerMembro(grupo.id, membro.id);
             recarregar();
-        }, 'Não foi possível remover o membro.');
+        }, 'Membro removido com sucesso.', 'Não foi possível remover o membro.');
     }
 
     function handleAlterarValidade(membro, evento) {
@@ -83,7 +92,7 @@ function ModalMembros({ grupo, aoFechar }) {
         return alterarMembro(membro, async () => {
             await atualizarMembro(grupo.id, membro.id, { data_fim_validade: evento.target.value || null });
             recarregar();
-        }, 'Não foi possível atualizar a validade do membro.');
+        }, 'Validade atualizada com sucesso.', 'Não foi possível atualizar a validade do membro.');
     }
 
     const colunasMembros = [
@@ -194,10 +203,20 @@ function ModalMembros({ grupo, aoFechar }) {
                             </div>
                         )}
 
-                        {selecionados.filter((usuario) => usuario.erro).map((usuario) => (
-                            <p key={usuario.id} className={styles.erro} role="alert">{usuario.nome}: {usuario.erro}</p>
-                        ))}
-                        {erroAdicionar && <p className={styles.erro} role="alert">{erroAdicionar}</p>}
+                        <AlertBanner
+                            tipo="erro"
+                            mensagem={selecionadosComErro.length > 0 && (
+                                <>
+                                    <p className="mb-1">Não foi possível adicionar:</p>
+                                    <ul className="mb-0 ps-3">
+                                        {selecionadosComErro.map((usuario) => (
+                                            <li key={usuario.id}>{usuario.nome}: {usuario.erro}</li>
+                                        ))}
+                                    </ul>
+                                </>
+                            )}
+                        />
+                        <AlertBanner tipo={avisoAdicionar?.tipo} mensagem={avisoAdicionar?.mensagem} aoFechar={() => setAvisoAdicionar(null)} />
                     </section>
 
                     <section className={styles.secao}>
@@ -206,8 +225,8 @@ function ModalMembros({ grupo, aoFechar }) {
                             <CampoBusca valor={busca} aoAlterar={alterarBusca} />
                         </div>
 
-                        {erroMembro && <p className={styles.erro} role="alert">{erroMembro}</p>}
-                        {erroLista && <p className={styles.erro} role="alert">{erroLista}</p>}
+                        <AlertBanner tipo={avisoMembro?.tipo} mensagem={avisoMembro?.mensagem} aoFechar={() => setAvisoMembro(null)} />
+                        <AlertBanner tipo="erro" mensagem={erroLista} />
 
                         {carregando && !erroLista ? (
                             <p className={styles.mensagem} role="status">Carregando membros...</p>

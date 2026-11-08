@@ -14,6 +14,7 @@ import RecursoModal from './ModalRecurso/RecursoModal';
 import Select from '../../Select/Select';
 import SelectRemoto from '../../SelectRemoto/SelectRemoto';
 import { OPCOES_STATUS_RECURSO, STATUS_RECURSO_LABEL } from '../../../utils/statusRecurso';
+import AlertBanner from '../../AlertBanner/AlertBanner';
 
 function RecursosAdmin() {
     const [busca, setBusca] = useState('');
@@ -23,6 +24,7 @@ function RecursosAdmin() {
     const [modalRecursoAberto, setModalRecursoAberto] = useState(false);
     const [recursoEditando, setRecursoEditando] = useState(null);
     const [recursoExcluindo, setRecursoExcluindo] = useState(null);
+    const [aviso, setAviso] = useState(null);
 
 
     const { itens: recursos, carregando, erro, setErro, recarregar: carregarDados, paginacao } = useListaPaginada('/api/recursos-gerais/', {
@@ -60,6 +62,7 @@ function RecursosAdmin() {
         }
 
         fecharModalRecurso();
+        setAviso({ tipo: 'sucesso', mensagem: recursoEditando ? 'Recurso atualizado com sucesso.' : 'Recurso cadastrado com sucesso.' });
         await carregarDados();
     }
 
@@ -77,9 +80,10 @@ function RecursosAdmin() {
             await excluirRecursoGeral(recursoExcluindo.id);
             setRecursoExcluindo(null);
             await carregarDados();
+            setAviso({ tipo: 'sucesso', mensagem: 'Recurso excluído com sucesso.' });
         } catch (erro) {
             console.error(erro);
-            setErro('Não foi possível excluir o recurso.');
+            setAviso({ tipo: 'erro', mensagem: 'Não foi possível excluir o recurso.' });
         }
     }
 
@@ -185,9 +189,9 @@ function RecursosAdmin() {
                 />
             </BarraFiltros>
 
-            {erro && (
-                <p className={styles.erro} role="alert">{erro}</p>
-            )}
+            <AlertBanner tipo={aviso?.tipo} mensagem={aviso?.mensagem} aoFechar={() => setAviso(null)} />
+
+            <AlertBanner tipo="erro" mensagem={erro} />
 
             {carregando ? (
                 <p className={styles.carregando} role="status">Carregando recursos...</p>

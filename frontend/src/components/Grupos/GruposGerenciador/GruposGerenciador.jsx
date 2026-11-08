@@ -16,6 +16,7 @@ import CardGrupo from '../CardGrupo/CardGrupo';
 import GrupoModal from '../ModalGrupo/GrupoModal';
 import { FILTRO_TODOS } from '../gruposUtils';
 import { TIPO_RECURSO_RESERVAVEL, TIPO_RECURSO_RESERVAVEL_LABEL } from '../../../utils/tipoRecursoReservavel';
+import AlertBanner from '../../AlertBanner/AlertBanner';
 import styles from './GruposGerenciador.module.css';
 
 const OPCOES_RECURSO = Object.entries(TIPO_RECURSO_RESERVAVEL_LABEL)
@@ -35,6 +36,7 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
     const [modalAberto, setModalAberto] = useState(false);
     const [grupoEditando, setGrupoEditando] = useState(null);
     const [grupoExcluindo, setGrupoExcluindo] = useState(null);
+    const [aviso, setAviso] = useState(null);
 
     const { itens: gruposDaTela, carregando, erro, setErro, recarregar: carregarGrupos, paginacao } = useListaPaginada('/api/grupos/', { busca, tipo_membro: tipoAtivo, recurso: filtroRecurso, tipo_recurso: filtroTiposRecurso.join(','), meus: apenasMeusGrupos });
     const filtrandoRecursoGeral = filtroRecurso === TIPO_RECURSO_RESERVAVEL.RECURSO_GERAL;
@@ -68,6 +70,7 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
             await criarGrupo(dados);
         }
         fecharModal();
+        setAviso({ tipo: 'sucesso', mensagem: grupoEditando ? 'Grupo atualizado com sucesso.' : 'Grupo cadastrado com sucesso.' });
 
         await carregarGrupos();
     }
@@ -88,9 +91,10 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
             setGrupoExcluindo(null);
 
             await carregarGrupos();
+            setAviso({ tipo: 'sucesso', mensagem: 'Grupo excluído com sucesso.' });
         } catch (erro) {
             console.error(erro);
-            setErro('Não foi possível excluir o grupo.');
+            setAviso({ tipo: 'erro', mensagem: 'Não foi possível excluir o grupo.' });
         }
     }
 
@@ -156,9 +160,9 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
                 )}
             </BarraFiltros>
 
-            {erro && (
-                <p className={styles.erro} role="alert">{erro}</p>
-            )}
+            <AlertBanner tipo={aviso?.tipo} mensagem={aviso?.mensagem} aoFechar={() => setAviso(null)} />
+
+            <AlertBanner tipo="erro" mensagem={erro} />
 
             {carregando ? (
                 <p className={styles.carregando} role="status">Carregando grupos...</p>

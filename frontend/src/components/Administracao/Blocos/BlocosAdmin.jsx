@@ -12,12 +12,14 @@ import ModalConfirmacao from '../ModalConfirmacao/ModalConfirmacao';
 import CampoBusca from '../CampoBusca/CampoBusca';
 import BarraFiltros from '../../BarraFiltros/BarraFiltros';
 import { ACESSIBILIDADE_LABELS } from '../../../utils/acessibilidadeBloco';
+import AlertBanner from '../../AlertBanner/AlertBanner';
 
 function BlocosAdministracao() {
 
     const [modalBlocoAberto, setModalBlocoAberto] = useState(false);
     const [blocoEditando, setBlocoEditando] = useState(null);
     const [blocoExcluindo, setBlocoExcluindo] = useState(null);
+    const [aviso, setAviso] = useState(null);
     const [busca, setBusca] = useState('');
 
     const { itens: blocos, carregando, erro, setErro, recarregar: carregarBlocos, paginacao } = useListaPaginada('/api/blocos/', { busca });
@@ -46,6 +48,7 @@ function BlocosAdministracao() {
             await criarBloco(dados);
         }
         fecharModalBloco();
+        setAviso({ tipo: 'sucesso', mensagem: blocoEditando ? 'Bloco atualizado com sucesso.' : 'Bloco cadastrado com sucesso.' });
 
         await carregarBlocos();
     }
@@ -66,9 +69,10 @@ function BlocosAdministracao() {
             setBlocoExcluindo(null);
 
             await carregarBlocos();
+            setAviso({ tipo: 'sucesso', mensagem: 'Bloco excluído com sucesso.' });
         } catch (erro) {
             console.error(erro);
-            setErro('Não foi possível excluir o bloco.');
+            setAviso({ tipo: 'erro', mensagem: 'Não foi possível excluir o bloco.' });
         }
     }
 
@@ -157,9 +161,9 @@ function BlocosAdministracao() {
                 />
             </BarraFiltros>
 
-            {erro && (
-                <p className={styles.erro} role="alert">{erro}</p>
-            )}
+            <AlertBanner tipo={aviso?.tipo} mensagem={aviso?.mensagem} aoFechar={() => setAviso(null)} />
+
+            <AlertBanner tipo="erro" mensagem={erro} />
 
             {carregando ? (
                 <p className={styles.carregando} role="status">Carregando blocos...</p>

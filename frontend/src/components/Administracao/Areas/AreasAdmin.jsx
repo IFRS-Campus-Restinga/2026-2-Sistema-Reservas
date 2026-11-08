@@ -15,12 +15,14 @@ import Select from '../../Select/Select';
 import SelectRemoto from '../../SelectRemoto/SelectRemoto';
 import { OPCOES_STATUS_RECURSO, STATUS_RECURSO_LABEL } from '../../../utils/statusRecurso';
 import { TIPO_AREA_LABEL } from '../../../utils/tipoArea';
+import AlertBanner from '../../AlertBanner/AlertBanner';
 
 function AreasAdministracao() {
 
     const [modalAreaAberto, setModalAreaAberto] = useState(false);
     const [areaEditando, setAreaEditando] = useState(null);
     const [areaExcluindo, setAreaExcluindo] = useState(null);
+    const [aviso, setAviso] = useState(null);
     const [busca, setBusca] = useState('');
     const [filtroBloco, setFiltroBloco] = useState('todos');
     const [filtroStatus, setFiltroStatus] = useState('todos');
@@ -52,6 +54,7 @@ function AreasAdministracao() {
             await criarArea(dados);
         }
         fecharModalArea();
+        setAviso({ tipo: 'sucesso', mensagem: areaEditando ? 'Área atualizada com sucesso.' : 'Área cadastrada com sucesso.' });
 
         await carregarDados();
     }
@@ -72,9 +75,10 @@ function AreasAdministracao() {
             setAreaExcluindo(null);
 
             await carregarDados();
+            setAviso({ tipo: 'sucesso', mensagem: 'Área excluída com sucesso.' });
         } catch (erro) {
             console.error(erro);
-            setErro('Não foi possível excluir a área.');
+            setAviso({ tipo: 'erro', mensagem: 'Não foi possível excluir a área.' });
         }
     }
 
@@ -190,9 +194,9 @@ function AreasAdministracao() {
                 />
             </BarraFiltros>
 
-            {erro && (
-                <p className={styles.erro} role="alert">{erro}</p>
-            )}
+            <AlertBanner tipo={aviso?.tipo} mensagem={aviso?.mensagem} aoFechar={() => setAviso(null)} />
+
+            <AlertBanner tipo="erro" mensagem={erro} />
 
             {carregando ? (
                 <p className={styles.carregando} role="status">Carregando áreas...</p>

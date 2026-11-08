@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import AlertBanner from '../../../AlertBanner/AlertBanner';
 import styles from './ModalDetalheAuditoria.module.css';
 
 import { buscarLogAuditoria } from '../../../../services';
@@ -104,7 +105,7 @@ function ModalDetalheAuditoria({ log, aoFechar }) {
                     </div>
                 </dl>
 
-                {erro && <p className={styles.erro} role="alert">{erro}</p>}
+                <AlertBanner tipo="erro" mensagem={erro} />
 
                 {!detalhe && !erro && (
                     <p className={styles.carregando} role="status">Carregando alterações...</p>

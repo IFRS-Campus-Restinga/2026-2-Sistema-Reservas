@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Modal from '../../Modal/Modal';
+import AlertBanner from '../../../AlertBanner/AlertBanner';
 import styles from './VeiculoModal.module.css';
 
 const formularioInicial = {
@@ -133,7 +134,7 @@ function VeiculoModal({
                 onSubmit={enviarFormulario}
                 onInvalid={mostrarErro}
             >
-                {mensagemErro('geral')}
+                <AlertBanner tipo="erro" mensagem={erros.geral} />
                 <div className={styles.campo}>
                     <label htmlFor="nome">
                         Nome *

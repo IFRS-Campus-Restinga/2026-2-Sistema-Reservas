@@ -13,6 +13,7 @@ import CampoBusca from '../CampoBusca/CampoBusca';
 import BarraFiltros from '../../BarraFiltros/BarraFiltros';
 import Select from '../../Select/Select';
 import { OPCOES_STATUS_RECURSO, STATUS_RECURSO_LABEL } from '../../../utils/statusRecurso';
+import AlertBanner from '../../AlertBanner/AlertBanner';
 
 function VeiculosAdministracao() {
     const [busca, setBusca] = useState('');
@@ -21,6 +22,7 @@ function VeiculosAdministracao() {
     const [modalVeiculoAberto, setModalVeiculoAberto] =  useState(false);
     const [veiculoEditando, setVeiculoEditando] =useState(null);
     const [veiculoExcluindo, setVeiculoExcluindo] = useState(null);
+    const [aviso, setAviso] = useState(null);
 
 
     const { itens: veiculos, carregando, erro, setErro, recarregar: carregarVeiculos, paginacao } = useListaPaginada('/api/veiculos/', { busca, status: filtroStatus });
@@ -50,6 +52,7 @@ function VeiculosAdministracao() {
             await criarVeiculo(dados);
         }
         fecharModalVeiculo();
+        setAviso({ tipo: 'sucesso', mensagem: veiculoEditando ? 'Veículo atualizado com sucesso.' : 'Veículo cadastrado com sucesso.' });
 
         await carregarVeiculos();
     }
@@ -72,9 +75,10 @@ function VeiculosAdministracao() {
             setVeiculoExcluindo(null);
 
             await carregarVeiculos();
+            setAviso({ tipo: 'sucesso', mensagem: 'Veículo excluído com sucesso.' });
         } catch (erro) {
             console.error(erro);
-            setErro('Não foi possível excluir o veículo.');
+            setAviso({ tipo: 'erro', mensagem: 'Não foi possível excluir o veículo.' });
         }
     }
 
@@ -170,9 +174,9 @@ function VeiculosAdministracao() {
                 />
             </BarraFiltros>
 
-            {erro && (
-                <p className={styles.erro} role="alert">{erro}</p>
-            )}
+            <AlertBanner tipo={aviso?.tipo} mensagem={aviso?.mensagem} aoFechar={() => setAviso(null)} />
+
+            <AlertBanner tipo="erro" mensagem={erro} />
 
             {carregando ? (
                 <p className={styles.carregando} role="status">Carregando veículos...</p>
