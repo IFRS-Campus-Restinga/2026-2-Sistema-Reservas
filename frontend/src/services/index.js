@@ -63,6 +63,9 @@ export {
   cancelarReservaVeiculo,
   consultarDisponibilidadeVeiculo,
   buscarAgendaVeiculo,
+  buscarRecorrenciaVeiculo,
+  atualizarRecorrenciaVeiculo,
+  cancelarRecorrenciaVeiculo,
 } from './reservasVeiculos';
 export { 
   confirmarReservaPendente, 
