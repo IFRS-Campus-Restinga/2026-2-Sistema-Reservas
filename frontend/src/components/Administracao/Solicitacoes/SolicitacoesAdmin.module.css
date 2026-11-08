@@ -93,11 +93,6 @@
   background: #ede9fe;
 }
 
-.origemTermo {
-  color: #c2410c;
-  background: #ffedd5;
-}
-
 .situacao[data-status="AGUARDANDO_ENVIO_TERMO"],
 .situacao[data-status="AGUARDANDO_ENVIO_TERMO_RETIRADA"],
 .situacao[data-status="AGUARDANDO_TERMO"],

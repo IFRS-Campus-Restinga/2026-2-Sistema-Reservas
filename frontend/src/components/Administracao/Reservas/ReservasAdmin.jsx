@@ -525,58 +525,42 @@ function ReservasAdmin() {
   return (
     <div className={styles.reservas}>
       <div className={styles.cabecalhoSecao}>
-        <div>
-          <h2>Reservas</h2>
+        <div className={styles.filtros}>
+          <CampoBusca
+            valor={busca}
+            aoAlterar={(valor) => {
+              setBusca(valor);
+              setPagina(1);
+            }}
+            placeholder="Buscar reserva..."
+          />
 
-          <p>
-            Consulte e gerencie todas as reservas
-            do sistema.
-          </p>
+          <Select
+            valor={modalidade}
+            aoAlterar={(valor) => {
+              setModalidade(valor);
+              setPagina(1);
+            }}
+            valorTodos="todas"
+            rotuloTodos="Todos os tipos"
+            ariaLabel="Filtrar reservas por tipo"
+            opcoes={[
+              {
+                valor: 'area',
+                rotulo: 'Áreas',
+              },
+              {
+                valor: 'veiculo',
+                rotulo: 'Veículos',
+              },
+              {
+                valor: 'recurso_geral',
+                rotulo: 'Recursos gerais',
+              },
+            ]}
+          />
         </div>
-
         <RelatorioUso />
-        <span className={styles.contador}>
-          {total}{' '}
-          {total === 1
-            ? 'reserva'
-            : 'reservas'}
-        </span>
-      </div>
-
-      <div className={styles.filtros}>
-        <CampoBusca
-          valor={busca}
-          aoAlterar={(valor) => {
-            setBusca(valor);
-            setPagina(1);
-          }}
-          placeholder="Buscar reserva..."
-        />
-
-        <Select
-          valor={modalidade}
-          aoAlterar={(valor) => {
-            setModalidade(valor);
-            setPagina(1);
-          }}
-          valorTodos="todas"
-          rotuloTodos="Todos os tipos"
-          ariaLabel="Filtrar reservas por tipo"
-          opcoes={[
-            {
-              valor: 'area',
-              rotulo: 'Áreas',
-            },
-            {
-              valor: 'veiculo',
-              rotulo: 'Veículos',
-            },
-            {
-              valor: 'recurso_geral',
-              rotulo: 'Recursos gerais',
-            },
-          ]}
-        />
       </div>
 
 

@@ -222,9 +222,9 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
                 <header className={styles.titulo}>
                   <h3>{reserva.nome}</h3>
                   <span className={styles.etiqueta}>{modalidade(reserva)}</span>
-                  <span className={`${styles.origem} ${ reserva.origem_solicitacao === 'TERMO' ? styles.origemTermo : styles.origemReserva}`}>
-                    {reserva.origem_solicitacao === 'TERMO' ? 'Termo' : 'Reserva'}
-                  </span>
+                  {reserva.origem_solicitacao === 'RESERVA' && (
+                    <span className={`${styles.origem} ${styles.origemReserva}`}>Reserva</span>
+                  )}
                   {reserva.tipo_reserva === 'EXTERNA' && <span className={styles.externo}>Externo</span>}
                   <span className={styles.situacao} data-status={statusApresentado}>
                     {['AGUARDANDO_ENVIO_TERMO', 'AGUARDANDO_ENVIO_TERMO_RETIRADA', 'TERMO_EM_ANALISE', 'AGUARDANDO_TERMO_DEVOLUCAO'].includes(statusApresentado) && <FileWarning size={10} />}{rotuloSituacao}

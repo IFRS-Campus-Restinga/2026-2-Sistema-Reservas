@@ -6,36 +6,14 @@
 }
 
 .cabecalhoSecao {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
   gap: 16px;
 }
 
-.cabecalhoSecao h2 {
-  margin: 0;
-  color: #1f2937;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 28px;
-}
-
-.cabecalhoSecao p {
-  margin: 4px 0 0;
-  color: #9ca3af;
-  font-size: 13px;
-  line-height: 20px;
-}
-
-.contador {
-  flex-shrink: 0;
-  padding: 5px 10px;
-  border-radius: 999px;
-  background-color: var(--cor-marca-clara);
-  color: var(--cor-marca);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 18px;
+.cabecalhoSecao > :last-child {
+  justify-self: end;
 }
 
 .filtros {
@@ -44,8 +22,14 @@
   gap: 12px;
 }
 
+.filtros input,
+.filtros select {
+  height: 40px;
+}
+
 .filtros > :first-child {
   flex: 1;
+  min-width: 0;
 }
 
 .dadoPrincipal {
@@ -153,14 +137,14 @@
 }
 
 @media (max-width: 639px) {
-  .cabecalhoSecao,
+  .cabecalhoSecao {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
   .filtros {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .contador {
-    align-self: flex-start;
   }
 
   .filtros > :first-child {
