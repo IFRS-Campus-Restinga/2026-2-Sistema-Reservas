@@ -296,3 +296,130 @@
   color: #9ca3af;
   font-size: 11px;
 }
+
+.serie {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.expandir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
+}
+
+.expandir:hover {
+  background: var(--cor-marca-clara);
+  color: var(--cor-marca);
+}
+
+.dadoSerie {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dadoSerie small {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #9ca3af;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.ocorrencias {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 520px;
+  max-height: 280px;
+  margin: 0;
+  padding: 0 0 0 28px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.ocorrencia {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 6px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #4b5563;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ocorrencia:hover {
+  border-color: var(--cor-marca);
+}
+
+.ocorrencia strong {
+  color: #374151;
+  font-weight: 600;
+}
+
+.ocorrencia .status {
+  margin-left: auto;
+}
+
+.acoesDetalhe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.acoesDetalhe button {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.acoesDetalhe button:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+.acoesDetalhe button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.acoesDetalhe .cancelarDetalhe {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.acoesDetalhe .cancelarDetalhe:hover:not(:disabled) {
+  background: #fee2e2;
+}
+
+.acoesDetalhe .larguraTotal {
+  flex-basis: 100%;
+}
