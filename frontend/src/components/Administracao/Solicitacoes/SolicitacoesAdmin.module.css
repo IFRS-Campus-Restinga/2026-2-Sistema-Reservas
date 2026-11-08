@@ -225,10 +225,6 @@
   font-size: 14px;
 }
 
-.estado[role="alert"] {
-  color: #b91c1c;
-}
-
 .girando {
   animation: girar 1s linear infinite;
 }

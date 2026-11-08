@@ -8,6 +8,8 @@ import BarraFiltros from '../../BarraFiltros/BarraFiltros';
 import ModalDetalheReserva from '../../ModalDetalheReserva/ModalDetalheReserva';
 import ModalTermo from '../../TermoReserva/ModalTermo';
 import Paginacao from '../Paginacao/Paginacao';
+import { mensagemDeErro } from '../../../utils/erros';
+import AlertBanner from '../../AlertBanner/AlertBanner';
 import styles from './SolicitacoesAdmin.module.css';
 import {confirmarReservaPendente, cancelarReservaAdmin} from '../../../services';
 import ModalReservaPendente from '../Reservas/ModalReservaPendente/ModalReservaPendente';
@@ -92,9 +94,9 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
         if (controle.signal.aborted) return;
         const reserva = dados.results[0];
         if (reserva) setSelecionada({ ...reserva, mostrarTermo: true, rejeitar: false });
-        else setErro('Solicita??o n?o encontrada ou indispon?vel.');
+        else setErro('Solicitação não encontrada ou indisponível.');
       })
-      .catch((falha) => { if (!controle.signal.aborted) setErro(falha.message); });
+      .catch((falha) => { if (!controle.signal.aborted) setErro(mensagemDeErro(falha, 'Não foi possível abrir a solicitação.')); });
     return () => controle.abort();
   }, [solicitacaoInicial]);
   const [confirmandoId, setConfirmandoId] = useState(null);
@@ -109,7 +111,7 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
         if (!controle.signal.aborted) setLista(resultado);
       })
       .catch((falha) => {
-        if (!controle.signal.aborted) setErro(falha.message);
+        if (!controle.signal.aborted) setErro(mensagemDeErro(falha, 'Não foi possível carregar as solicitações.'));
       })
       .finally(() => {
         if (!controle.signal.aborted) setCarregando(false);
@@ -125,7 +127,7 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
       setSelecionada(null);
       recarregar();
     } catch (falha) {
-      setErro(falha.message || 'Não foi possível confirmar a reserva.');
+      setErro(mensagemDeErro(falha, 'Não foi possível confirmar a reserva.'));
     } finally {
       setConfirmandoId(null);
     }
@@ -181,9 +183,7 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
       setPagina(1);
       recarregar();
     } catch (falha) {
-      setErroReserva(
-        falha.message || 'Não foi possível confirmar a reserva.'
-      );
+      setErroReserva(mensagemDeErro(falha, 'Não foi possível confirmar a reserva.'));
     } finally {
       setConfirmandoId(null);
     }
@@ -202,9 +202,7 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
       setPagina(1);
       recarregar();
     } catch (falha) {
-      setErroReserva(
-        falha.message || 'Não foi possível cancelar a reserva.'
-      );
+      setErroReserva(mensagemDeErro(falha, 'Não foi possível cancelar a reserva.'));
     } finally {
       setCancelandoId(null);
     }
@@ -214,9 +212,7 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
   if (carregando) {
     conteudoLista = <div className={styles.estado} role="status"><LoaderCircle size={28} className={styles.girando} /><p>Carregando solicitações…</p></div>;
   } else if (erro) {
-    conteudoLista = <div className={styles.estado} role="alert">
-      <FileWarning size={28} /><p>{erro}</p><button type="button" onClick={recarregar}>Tentar novamente</button>
-    </div>;
+    conteudoLista = <AlertBanner tipo="erro" mensagem={erro} acao={{ rotulo: 'Tentar novamente', aoClicar: recarregar }} />;
   } else if (!lista.results.length) {
     conteudoLista = <div className={styles.estado}><CheckCircle size={32} /><p>Nenhuma solicitação encontrada.</p></div>;
   } else {

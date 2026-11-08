@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 import Paginacao from '../Paginacao/Paginacao';
+import { mensagemDeErro } from '../../../utils/erros';
 import styles from './ReservasAdmin.module.css';
 import RelatorioUso from '../RelatorioUso/RelatorioUso';
+import AlertBanner from '../../AlertBanner/AlertBanner';
 import SelectRemoto from '../../SelectRemoto/SelectRemoto';
 
 import {
@@ -186,6 +188,7 @@ function ReservasAdmin() {
 
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
+  const [erroCatalogo, setErroCatalogo] = useState('');
   const [mensagemSucesso, setMensagemSucesso] =
     useState('');
 
@@ -219,7 +222,7 @@ function ReservasAdmin() {
         if (!ativo) return;
         setAreas(areas || []); setBlocos(blocos || []); setVeiculos(veiculos || []);
         setRecursos(recursos || []); setTiposRecurso(tipos || []);
-      }).catch((falha) => { if (ativo) setErro(falha.message); });
+      }).catch((falha) => { if (ativo) setErroCatalogo(mensagemDeErro(falha, 'Não foi possível carregar as áreas, veículos e recursos.')); });
     return () => { ativo = false; };
   }, []);
 
@@ -260,10 +263,7 @@ function ReservasAdmin() {
 
       console.error(falha);
 
-      setErro(
-        falha.message ||
-          'Não foi possível carregar as reservas.'
-      );
+      setErro(mensagemDeErro(falha, 'Não foi possível carregar as reservas.'));
     } finally {
       if (!signal?.aborted) {
         setCarregando(false);
@@ -380,10 +380,7 @@ function ReservasAdmin() {
     } catch (falha) {
       console.error(falha);
 
-      setErroCancelamento(
-        falha.message ||
-        'Não foi possível cancelar a reserva.'
-      );
+      setErroCancelamento(mensagemDeErro(falha, 'Não foi possível cancelar a reserva.'));
     } finally {
       setCancelando(false);
     }
@@ -644,24 +641,12 @@ function ReservasAdmin() {
       </BarraFiltros>
 
 
-      {mensagemSucesso && (
-        <p
-          className={styles.sucesso}
-          role="status"
-        >
-          {mensagemSucesso}
-        </p>
-      )}
+      <AlertBanner mensagem={mensagemSucesso} aoFechar={() => setMensagemSucesso('')} />
 
 
-      {erro && (
-        <p
-          className={styles.erro}
-          role="alert"
-        >
-          {erro}
-        </p>
-      )}
+      <AlertBanner tipo="erro" mensagem={erroCatalogo} />
+
+      <AlertBanner tipo="erro" mensagem={erro} />
 
 
       {carregando ? (

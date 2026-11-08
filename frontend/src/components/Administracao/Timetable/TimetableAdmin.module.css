@@ -152,7 +152,7 @@
   box-shadow: 0 1px 2px rgba(0,0,0,0.02);
 }
 
-.loading, .error, .empty {
+.loading, .empty {
   padding: 20px;
   text-align: center;
   background-color: white;
@@ -160,7 +160,7 @@
   color: #4a5568;
 }
 
-.emptyContainer, .errorContainer {
+.emptyContainer {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -212,14 +212,4 @@
   to {
     transform: rotate(360deg);
   }
-}
-
-.alertaSucesso {
-  background-color: #f0fdf4;
-  color: #166534;
-  border: 1px solid #bbf7d0;
-  padding: 10px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
 }

@@ -10,6 +10,8 @@ import Botao from '../Botao/Botao';
 import CalendarioReserva from '../CalendarioReserva/CalendarioReserva';
 import { criarReservaRecursoGeral, atualizarReservaRecursoGeral, consultarDisponibilidadeRecursoGeral } from '../../services/reservasRecursosGerais';
 import { TIPO_PRAZO_LABEL } from '../../utils/tipoPrazo';
+import AlertBanner from '../AlertBanner/AlertBanner';
+import { mensagemDeErro } from '../../utils/erros';
 import styles from './ReservaRecursoGeralModal.module.css';
 
 const HORARIOS = Array.from({ length: 29 }, (_, indice) => {
@@ -122,9 +124,7 @@ function ReservaRecursoGeralModal({
       })
       .catch((falha) => {
         if (ativo) {
-          setErro(
-            falha.message || 'Não foi possível consultar a disponibilidade.'
-          );
+          setErro(mensagemDeErro(falha, 'Não foi possível consultar a disponibilidade.'));
         }
       })
       .finally(() => {
@@ -225,7 +225,7 @@ function ReservaRecursoGeralModal({
 
       aoReservar(resultado);
     } catch (erroRequisicao) {
-      setErro(erroRequisicao.message);
+      setErro(mensagemDeErro(erroRequisicao, 'Não foi possível salvar a reserva.'));
     } finally {
       setEnviando(false);
     }
@@ -380,11 +380,7 @@ function ReservaRecursoGeralModal({
           </p>
         )}
 
-        {erro && (
-          <p className={styles.erro} role="alert">
-            {erro}
-          </p>
-        )}
+        <AlertBanner tipo="erro" mensagem={erro} />
 
         <div className={styles.acoes}>
           <Botao
