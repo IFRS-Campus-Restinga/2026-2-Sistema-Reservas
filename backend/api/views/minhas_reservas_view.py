@@ -41,12 +41,18 @@ class MinhaReservaSerializer(serializers.BaseSerializer):
             return dados
 
 
+# Reservas de veículo podem terminar em outro dia
+def _data_fim(reserva):
+    veiculo = getattr(reserva, 'reservaveiculo', None)
+    return veiculo.data_devolucao_prevista if veiculo is not None else reserva.data
+
+
 class MinhasReservasListView(APIView):
     permission_classes = [UsuarioAutenticado]
 
     def get(self, request):
         reservas = Reserva.objects.filter(usuario=request.user).select_related(
-            'reservaarea__area__bloco', 'reservaarea__recorrencia', 'usuario',
+            'reservaarea__area__bloco', 'reservaarea__recorrencia', 'reservaveiculo__recorrencia', 'usuario',
             'reservaveiculo__veiculo', 'reservarecursogeral__recurso_geral__tipo_recurso',
         ).prefetch_related(Prefetch(
             'termos', queryset=TermoResponsabilidade.objects.filter(atual=True), to_attr='termos_atuais',
@@ -68,8 +74,7 @@ class MinhasReservasListView(APIView):
             return listar(request, reservas, MinhaReservaSerializer)
         grupos = {}
         for reserva in filtrar_listagem(request, reservas):
-            area = getattr(reserva, 'reservaarea', None)
-            chave = ('serie', area.recorrencia_id) if area and area.recorrencia_id else ('reserva', reserva.pk)
+            chave = ('serie', reserva.recorrencia_id) if reserva.recorrencia_id else ('reserva', reserva.pk)
             grupos.setdefault(chave, []).append(reserva)
         paginator = PaginacaoPadrao()
         pagina = paginator.paginate_queryset(list(grupos.values()), request)
@@ -77,10 +82,10 @@ class MinhasReservasListView(APIView):
         for grupo in pagina:
             grupo.sort(key=lambda r: (r.data, r.horario_inicio, r.pk))
             futuras = [r for r in grupo if r.status not in ('CANCELADA', 'REJEITADA') and
-                       (r.data, r.horario_fim) >= (agora.date(), agora.time().replace(tzinfo=None))]
+                       (_data_fim(r), r.horario_fim) >= (agora.date(), agora.time().replace(tzinfo=None))]
             principal = (futuras or grupo)[0]
             dados = MinhaReservaSerializer(principal).data
-            if dados.get('recorrencia') and dados['modalidade'] == 'area':
+            if dados.get('recorrencia'):
                 dados.update(primeira_data=grupo[0].data, ultima_data=grupo[-1].data,
                              total_ocorrencias=len(grupo),
                              ocorrencias=MinhaReservaSerializer(grupo, many=True).data)

@@ -16,6 +16,11 @@ from api.serializers.reserva_veiculo_serializer import ReservaVeiculoSerializer
 from api.enumerations.auditoria_enumerations import AcaoAuditoria
 from api.services.auditoria import foto, registrar_auditoria
 from api.services.termo_service import invalidar_termo_apos_edicao
+from api.services.recorrencia_service import (
+    RECORRENCIA_VEICULO,
+    criar_reservas_recorrentes,
+    serializar_recorrencia,
+)
 from api.services.reserva_veiculo_service import (
     validar_cancelamento,
     validar_disponibilidade,
@@ -45,7 +50,7 @@ class ReservaVeiculoListCreateView(APIView):
         reservas = (
             ReservaVeiculo.objects
             .filter(usuario=request.user)
-            .select_related("veiculo", "usuario")
+            .select_related("veiculo", "usuario", "recorrencia")
             .order_by("-data", "-horario_inicio")
         )
         return listar(request, reservas, ReservaVeiculoSerializer)
@@ -56,10 +61,24 @@ class ReservaVeiculoListCreateView(APIView):
 
         with transaction.atomic():
             dados = serializer.validated_data
+            dados_recorrencia = dados.pop("recorrencia", None)
             veiculo = get_object_or_404(
                 Veiculo.objects.select_for_update(), pk=dados["veiculo"].pk
             )
             dados["veiculo"] = veiculo
+
+            if dados_recorrencia:
+                recorrencia, datas_puladas = criar_reservas_recorrentes(
+                    RECORRENCIA_VEICULO, request.user, dados, dados_recorrencia
+                )
+                return Response(
+                    {
+                        **serializar_recorrencia(RECORRENCIA_VEICULO, recorrencia, request.user),
+                        "datas_puladas": datas_puladas,
+                    },
+                    status=status.HTTP_201_CREATED,
+                )
+
             validar_reserva(request.user, dados)
             serializer.save(usuario=request.user)
 
@@ -68,7 +87,7 @@ class ReservaVeiculoListCreateView(APIView):
 
 class ReservaVeiculoDetailView(BuscarObjetoComPermissaoMixin, APIView):
     permission_classes = [PodeGerenciarReserva]
-    queryset = ReservaVeiculo.objects.select_related("veiculo", "usuario")
+    queryset = ReservaVeiculo.objects.select_related("veiculo", "usuario", "recorrencia")
 
     def get(self, request, pk):
         return Response(ReservaVeiculoSerializer(self.get_object(pk)).data)
