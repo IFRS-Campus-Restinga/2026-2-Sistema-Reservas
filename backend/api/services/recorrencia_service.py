@@ -9,13 +9,17 @@ from api.enumerations import StatusRecurso, StatusReserva, TipoRecorrencia
 from api.enumerations.auditoria_enumerations import EntidadeAuditoria
 from api.models.area_model import Area
 from api.models.recorrencia_model import Recorrencia
+from api.models.recurso_geral_model import RecursoGeral
 from api.models.reserva_area_model import ReservaArea
+from api.models.reserva_recurso_geral_model import ReservaRecursoGeral
 from api.models.reserva_veiculo_model import ReservaVeiculo
 from api.models.veiculo_model import Veiculo
 from api.permissions.regras_comuns import usuario_e_admin
 from api.serializers.recorrencia_serializer import RecorrenciaSerializer
 from api.serializers.reserva_area_serializer import ReservaAreaSerializer
+from api.serializers.reserva_recurso_geral_serializer import ReservaRecursoGeralSerializer
 from api.serializers.reserva_veiculo_serializer import ReservaVeiculoSerializer
+from api.validators import reserva_recurso_geral_validator as validador_recurso
 from api.services.auditoria import foto
 from api.services.reserva_veiculo_service import (
     MARGEM_ENTRE_RESERVAS,
@@ -114,6 +118,39 @@ RECORRENCIA_VEICULO = ModalidadeRecorrencia(
     antecedencia=lambda usuario: timedelta(0) if usuario_e_admin(usuario) else PRAZO_GERENCIAMENTO,
     apos_edicao=invalidar_termo_apos_edicao,
     margem_entre_ocorrencias=MARGEM_ENTRE_RESERVAS,
+)
+
+
+def _validar_previa_recurso_geral(dados):
+    if dados["recurso_geral"].status != StatusRecurso.ATIVO:
+        raise ValidationError({"recurso_geral": "O recurso não está disponível para reserva."})
+
+
+def _validar_ocorrencia_recurso_geral(ator, dados, reserva=None, excluir_ids=()):
+    validador_recurso.validar_autorizacao(reserva.usuario if reserva is not None else ator, dados)
+    validador_recurso.validar_disponibilidade(
+        dados, excluir_reserva=reserva.pk if reserva is not None else None
+    )
+
+RECORRENCIA_RECURSO_GERAL = ModalidadeRecorrencia(
+    modelo=ReservaRecursoGeral,
+    serializer=ReservaRecursoGeralSerializer,
+    campo_recurso="recurso_geral",
+    modelo_recurso=RecursoGeral,
+    campos_disponibilidade=(
+        "recurso_geral", "data", "data_devolucao_prevista", "horario_inicio",
+        "horario_fim", "quantidades",
+    ),
+    campos_edicao=frozenset({
+        "nome", "descricao", "horario_inicio", "horario_fim", "recurso_geral", "quantidades",
+    }),
+    select_related=("recurso_geral__tipo_recurso", "usuario", "recorrencia"),
+    entidade_auditoria=EntidadeAuditoria.RECORRENCIA_RESERVA_RECURSO,
+    validar_previa=_validar_previa_recurso_geral,
+    validar_ocorrencia=_validar_ocorrencia_recurso_geral,
+    apos_edicao=invalidar_termo_apos_edicao,
+    campos_criacao={"status": StatusReserva.CONFIRMADA},
+    status_alteraveis=(StatusReserva.PENDENTE, StatusReserva.CONFIRMADA, StatusReserva.AGUARDANDO_TERMO),
 )
 
 

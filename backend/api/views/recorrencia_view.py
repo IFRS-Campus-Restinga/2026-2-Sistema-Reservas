@@ -12,6 +12,7 @@ from api.permissions.reserva_permissions import PodeGerenciarReserva
 from api.services.auditoria import foto, foto_agrupada, registrar_auditoria
 from api.services.recorrencia_service import (
     RECORRENCIA_AREA,
+    RECORRENCIA_RECURSO_GERAL,
     RECORRENCIA_VEICULO,
     cancelar_recorrencia,
     editar_recorrencia,
@@ -120,3 +121,7 @@ class RecorrenciaReservaAreaDetailView(RecorrenciaReservaDetailView):
 
 class RecorrenciaReservaVeiculoDetailView(RecorrenciaReservaDetailView):
     modalidade = RECORRENCIA_VEICULO
+
+
+class RecorrenciaReservaRecursoGeralDetailView(RecorrenciaReservaDetailView):
+    modalidade = RECORRENCIA_RECURSO_GERAL

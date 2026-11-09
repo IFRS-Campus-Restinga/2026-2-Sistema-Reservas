@@ -20,7 +20,11 @@ from api.views.reserva_veiculo_view import (
     ReservaVeiculoDetailView,
     ReservaVeiculoListCreateView,
 )
-from api.views.recorrencia_view import RecorrenciaReservaAreaDetailView, RecorrenciaReservaVeiculoDetailView
+from api.views.recorrencia_view import (
+    RecorrenciaReservaAreaDetailView,
+    RecorrenciaReservaRecursoGeralDetailView,
+    RecorrenciaReservaVeiculoDetailView,
+)
 from api.views.agenda_reserva_view import AgendaReservasView
 from api.views.opcoes_disponibilidade_view import OpcoesDisponibilidadeView
 from api.views.relatorio_uso_view import RelatorioUsoView
@@ -68,6 +72,7 @@ urlpatterns = [
     path('grupos/<int:grupo_pk>/membros/<int:pk>/', MembroGrupoDetailView.as_view(), name='membro-grupo-detail'),
     path("reservas/recursos-gerais/", ReservaRecursoGeralListCreateView.as_view(), name="reserva-recurso-geral-list-create"),
     path("reservas/recursos-gerais/disponibilidade/", DisponibilidadeRecursoGeralView.as_view(), name="disponibilidade-recurso-geral"),
+    path("reservas/recursos-gerais/recorrencias/<int:pk>/", RecorrenciaReservaRecursoGeralDetailView.as_view(), name="reserva-recurso-geral-recorrencia-detail"),
     path("reservas/recursos-gerais/<int:pk>/", ReservaRecursoGeralDetailView.as_view(), name="reserva-recurso-geral-detail"),
     path("reservas/areas/", ReservaAreaListCreateView.as_view(), name="reserva-area-list-create"),
     path("reservas/areas/minhas/", MinhasReservasAreaListView.as_view(), name="reserva-area-minhas"),

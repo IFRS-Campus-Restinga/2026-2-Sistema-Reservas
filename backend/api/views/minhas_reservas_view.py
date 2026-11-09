@@ -45,7 +45,8 @@ class MinhasReservasListView(APIView):
 
     def get(self, request):
         reservas = Reserva.objects.filter(usuario=request.user).select_related(
-            'reservaarea__area__bloco', 'reservaarea__recorrencia', 'reservaveiculo__recorrencia', 'usuario',
+            'reservaarea__area__bloco', 'reservaarea__recorrencia', 'reservaveiculo__recorrencia',
+            'reservarecursogeral__recorrencia', 'usuario',
             'reservaveiculo__veiculo', 'reservarecursogeral__recurso_geral__tipo_recurso',
         ).prefetch_related(Prefetch(
             'termos', queryset=TermoResponsabilidade.objects.filter(atual=True), to_attr='termos_atuais',
