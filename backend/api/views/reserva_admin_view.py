@@ -6,6 +6,7 @@ from api.models.reserva_model import Reserva
 from api.pagination import PaginacaoPadrao
 from api.permissions.regras_comuns import SomenteAdmin
 from api.serializers.reserva_serializer import ReservaSerializer
+from .view_helpers import listar_agrupado_por_recorrencia
 
 
 class ReservasAdminListView(APIView):
@@ -19,6 +20,7 @@ class ReservasAdminListView(APIView):
             Reserva.objects
             .select_related(
                 'usuario',
+                'recorrencia',
                 'reservaarea__area__bloco',
                 'reservaveiculo__veiculo',
                 'reservarecursogeral__recurso_geral__tipo_recurso',
@@ -55,6 +57,9 @@ class ReservasAdminListView(APIView):
                 | Q(reservarecursogeral__recurso_geral__tipo_recurso__descricao__icontains=busca)
                 | Q(status__icontains=busca)
             ).distinct()
+
+        if request.query_params.get('agrupar_recorrencias') == 'true':
+            return listar_agrupado_por_recorrencia(request, reservas, ReservaSerializer)
 
         paginacao = PaginacaoPadrao()
         pagina = paginacao.paginate_queryset(

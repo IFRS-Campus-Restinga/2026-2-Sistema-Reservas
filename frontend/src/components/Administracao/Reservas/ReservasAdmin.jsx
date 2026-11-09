@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pencil, Repeat, Trash2 } from 'lucide-react';
 import Paginacao from '../Paginacao/Paginacao';
 import styles from './ReservasAdmin.module.css';
 import RelatorioUso from '../RelatorioUso/RelatorioUso';
@@ -25,7 +25,14 @@ import ReservaRecursoGeralModal from '../../ReservaRecursoGeral/ReservaRecursoGe
 
 import ReservaVeiculoModal from '../../ReservaVeiculo/ReservaVeiculoModal';
 
+import GerenciarRecorrenciaModal from '../../RecorrenciaArea/GerenciarRecorrenciaModal';
+
+import GerenciarRecorrenciaVeiculoModal from '../../RecorrenciaVeiculo/GerenciarRecorrenciaVeiculoModal';
+
+import GerenciarRecorrenciaRecursoGeralModal from '../../RecorrenciaRecursoGeral/GerenciarRecorrenciaRecursoGeralModal';
+
 import { STATUS_RESERVA_LABEL } from '../../../utils/reserva';
+import { TIPO_RECORRENCIA_LABEL } from '../../../utils/recorrencia';
 
 const MODALIDADE_LABEL = {
   area: 'Área',
@@ -96,6 +103,53 @@ function detalheSecundario(reserva) {
   }
 
   return item.tipo || '—';
+}
+
+
+// Série recorrente agrupada pelo backend (agrupar_recorrencias)
+function ehSerie(reserva) {
+  return Boolean(
+    reserva?.recorrencia &&
+    !reserva.ehOcorrenciaIndividual &&
+    reserva.ocorrencias?.length
+  );
+}
+
+
+function podeGerenciarRecorrencia(reserva) {
+  return Boolean(
+    reserva?.recorrencia &&
+    ['area', 'veiculo', 'recurso_geral'].includes(reserva.modalidade) &&
+    !reserva.detalhes?.celula_timetable
+  );
+}
+
+
+// Reservas de veículo podem terminar em outro dia
+function horarioOcorrencia(reserva) {
+  const inicio = formatarHorario(reserva.horario_inicio);
+  const fim = formatarHorario(reserva.horario_fim);
+  const devolucao = reserva.detalhes?.data_devolucao_prevista;
+
+  return reserva.modalidade === 'veiculo' && devolucao && devolucao !== reserva.data
+    ? `${inicio} até ${formatarData(devolucao)} ${fim}`
+    : `${inicio}–${fim}`;
+}
+
+
+function motivoBloqueioGerenciamento(reserva) {
+  return reserva.detalhes?.celula_timetable
+    ? 'Reservas do Timetable são gerenciadas pela sincronização.'
+    : 'Esta reserva não pode mais ser alterada.';
+}
+
+
+function periodoDetalhe(reserva) {
+  const horario = `${formatarHorario(reserva.horario_inicio)} às ${formatarHorario(reserva.horario_fim)}`;
+
+  return ehSerie(reserva)
+    ? `${formatarData(reserva.primeira_data)} até ${formatarData(reserva.ultima_data)} · ${horario}`
+    : `${formatarData(reserva.data)} · ${horario}`;
 }
 
 
@@ -182,6 +236,12 @@ function ReservasAdmin() {
 
   const [cancelando, setCancelando] = useState(false);
 
+  const [seriesExpandidas, setSeriesExpandidas] =
+    useState({});
+
+  const [recorrenciaGerenciada, setRecorrenciaGerenciada] =
+    useState(null);
+
   useEffect(() => {
     let ativo = true;
     Promise.all([
@@ -216,6 +276,7 @@ function ReservasAdmin() {
             tipo,
             page: pagina,
             page_size: TAMANHO_PAGINA,
+            agrupar_recorrencias: true,
           },
           signal
         );
@@ -299,11 +360,87 @@ function ReservasAdmin() {
   }
 
 
+  function alternarSerie(idRecorrencia) {
+    setSeriesExpandidas((atuais) => ({
+      ...atuais,
+      [idRecorrencia]: !atuais[idRecorrencia],
+    }));
+  }
+
+
+  function abrirRecorrencia(reserva) {
+    setMensagemSucesso('');
+    setReservaDetalhes(null);
+    setRecorrenciaGerenciada({
+      id: reserva.recorrencia.id,
+      modalidade: reserva.modalidade,
+    });
+  }
+
+
+  async function recorrenciaAlterada(mensagem) {
+    setRecorrenciaGerenciada(null);
+
+    await carregarReservas();
+
+    setMensagemSucesso(mensagem);
+  }
+
+
+  function renderizarOcorrencias(reserva) {
+    if (!ehSerie(reserva) || !seriesExpandidas[reserva.recorrencia.id]) {
+      return null;
+    }
+
+    return (
+      <ul className={styles.ocorrencias}>
+        {reserva.ocorrencias.map((ocorrencia) => (
+          <li key={ocorrencia.id}>
+            <button
+              type="button"
+              className={styles.ocorrencia}
+              onClick={() =>
+                setReservaDetalhes({
+                  ...ocorrencia,
+                  ehOcorrenciaIndividual: true,
+                })
+              }
+            >
+              <strong>{formatarData(ocorrencia.data)}</strong>
+
+              <span>{horarioOcorrencia(ocorrencia)}</span>
+
+              <span
+                className={styles.status}
+                data-status={ocorrencia.status}
+              >
+                {labelStatus(ocorrencia.status)}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+
   function solicitarCancelamento(reserva) {
     setMensagemSucesso('');
     setErroCancelamento('');
     setMotivoCancelamento('');
     setReservaCancelando(reserva);
+  }
+
+
+  function abrirEdicaoDetalhes(reserva) {
+    setReservaDetalhes(null);
+    abrirEdicao(reserva);
+  }
+
+
+  function solicitarCancelamentoDetalhes(reserva) {
+    setReservaDetalhes(null);
+    solicitarCancelamento(reserva);
   }
 
 
@@ -366,17 +503,66 @@ function ReservasAdmin() {
     {
       chave: 'nome',
       titulo: 'Reserva',
-      renderizar: (reserva) => (
-        <button
-          type="button"
-          className={styles.nomeReserva}
-          onClick={() =>
-            setReservaDetalhes(reserva)
-          }
-        >
-          {reserva.nome}
-        </button>
-      ),
+      renderizar: (reserva) => {
+        if (!ehSerie(reserva)) {
+          return (
+            <button
+              type="button"
+              className={styles.nomeReserva}
+              onClick={() =>
+                setReservaDetalhes(reserva)
+              }
+            >
+              {reserva.nome}
+            </button>
+          );
+        }
+
+        const expandida = Boolean(
+          seriesExpandidas[reserva.recorrencia.id]
+        );
+
+        return (
+          <div className={styles.serie}>
+            <button
+              type="button"
+              className={styles.expandir}
+              aria-expanded={expandida}
+              aria-label={`${expandida ? 'Recolher' : 'Expandir'} reservas da série ${reserva.nome}`}
+              onClick={() =>
+                alternarSerie(reserva.recorrencia.id)
+              }
+            >
+              {expandida
+                ? <ChevronDown size={14} />
+                : <ChevronRight size={14} />}
+            </button>
+
+            <div className={styles.dadoSerie}>
+              <button
+                type="button"
+                className={styles.nomeReserva}
+                onClick={() =>
+                  setReservaDetalhes(reserva)
+                }
+              >
+                {reserva.nome}
+              </button>
+
+              <small>
+                <Repeat size={11} />
+                {TIPO_RECORRENCIA_LABEL[reserva.recorrencia.tipo] ||
+                  reserva.recorrencia.tipo}
+                {' · '}
+                {formatarData(reserva.primeira_data)} até{' '}
+                {formatarData(reserva.ultima_data)}
+                {' · '}
+                {reserva.total_ocorrencias} reservas
+              </small>
+            </div>
+          </div>
+        );
+      },
     },
     {
       chave: 'modalidade',
@@ -438,13 +624,15 @@ function ReservasAdmin() {
       chave: 'acoes',
       titulo: 'Ações',
       renderizar: (reserva) => {
+        if (ehSerie(reserva)) {
+          return null;
+        }
+
         const gerenciavel =
           podeGerenciar(reserva);
 
         const motivoBloqueio =
-          reserva.detalhes?.celula_timetable
-            ? 'Reservas do Timetable são gerenciadas pela sincronização.'
-            : 'Esta reserva não pode mais ser alterada.';
+          motivoBloqueioGerenciamento(reserva);
 
         return (
           <div className={styles.acoes}>
@@ -612,6 +800,7 @@ function ReservasAdmin() {
           <TabelaAdministracao
             colunas={colunas}
             dados={reservas}
+            renderizarExpansao={renderizarOcorrencias}
             mensagemVazia={
               busca.trim() ||
               modalidade !== 'todas'
@@ -650,18 +839,18 @@ function ReservasAdmin() {
         }
         periodo={
           reservaDetalhes
-            ? `${formatarData(
-                reservaDetalhes.data
-              )} · ${formatarHorario(
-                reservaDetalhes.horario_inicio
-              )} às ${formatarHorario(
-                reservaDetalhes.horario_fim
-              )}`
+            ? periodoDetalhe(reservaDetalhes)
             : ''
         }
         detalhes={
           reservaDetalhes
             ? [
+                {
+                  rotulo: 'Total de repetições',
+                  valor: ehSerie(reservaDetalhes)
+                    ? `${reservaDetalhes.total_ocorrencias} datas agendadas`
+                    : null,
+                },
                 {
                   rotulo: 'Descrição',
                   valor:
@@ -713,10 +902,94 @@ function ReservasAdmin() {
             : []
         }
         administrativo
+        motivoAcoesIndisponiveis={
+          reservaDetalhes &&
+          !ehSerie(reservaDetalhes) &&
+          !podeGerenciar(reservaDetalhes)
+            ? motivoBloqueioGerenciamento(reservaDetalhes)
+            : undefined
+        }
+        acoesAdministrativas={
+          reservaDetalhes ? (
+            <div className={styles.acoesDetalhe}>
+              {!ehSerie(reservaDetalhes) && (
+                <>
+                  <button
+                    type="button"
+                    disabled={!podeGerenciar(reservaDetalhes)}
+                    onClick={() =>
+                      abrirEdicaoDetalhes(reservaDetalhes)
+                    }
+                  >
+                    <Pencil size={13} /> Editar
+                  </button>
+
+                  <button
+                    type="button"
+                    className={styles.cancelarDetalhe}
+                    disabled={!podeGerenciar(reservaDetalhes)}
+                    onClick={() =>
+                      solicitarCancelamentoDetalhes(reservaDetalhes)
+                    }
+                  >
+                    <Trash2 size={13} /> Cancelar
+                  </button>
+                </>
+              )}
+
+              {podeGerenciarRecorrencia(reservaDetalhes) && (
+                <button
+                  type="button"
+                  className={styles.larguraTotal}
+                  onClick={() =>
+                    abrirRecorrencia(reservaDetalhes)
+                  }
+                >
+                  <Repeat size={13} /> Gerenciar recorrência
+                </button>
+              )}
+            </div>
+          ) : null
+        }
         aoFechar={() =>
           setReservaDetalhes(null)
         }
       />
+
+
+      {recorrenciaGerenciada?.modalidade === 'area' && (
+        <GerenciarRecorrenciaModal
+          aberto
+          recorrenciaId={recorrenciaGerenciada.id}
+          areas={areas}
+          blocos={blocos}
+          aoFechar={() => setRecorrenciaGerenciada(null)}
+          aoSalvar={() => recorrenciaAlterada('Recorrência atualizada com sucesso.')}
+          aoCancelarRecorrencia={() => recorrenciaAlterada('Recorrência cancelada com sucesso.')}
+        />
+      )}
+
+
+      {recorrenciaGerenciada?.modalidade === 'veiculo' && (
+        <GerenciarRecorrenciaVeiculoModal
+          aberto
+          recorrenciaId={recorrenciaGerenciada.id}
+          aoFechar={() => setRecorrenciaGerenciada(null)}
+          aoSalvar={() => recorrenciaAlterada('Recorrência atualizada com sucesso.')}
+          aoCancelarRecorrencia={() => recorrenciaAlterada('Recorrência cancelada com sucesso.')}
+        />
+      )}
+
+
+      {recorrenciaGerenciada?.modalidade === 'recurso_geral' && (
+        <GerenciarRecorrenciaRecursoGeralModal
+          aberto
+          recorrenciaId={recorrenciaGerenciada.id}
+          aoFechar={() => setRecorrenciaGerenciada(null)}
+          aoSalvar={() => recorrenciaAlterada('Recorrência atualizada com sucesso.')}
+          aoCancelarRecorrencia={() => recorrenciaAlterada('Recorrência cancelada com sucesso.')}
+        />
+      )}
 
 
       {reservaEditando?.modalidade === 'area' && (

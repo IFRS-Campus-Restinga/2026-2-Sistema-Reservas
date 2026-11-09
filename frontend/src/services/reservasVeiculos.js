@@ -10,7 +10,9 @@ async function tratarResposta(resposta) {
       ? primeiroErro
       : 'Não foi possível concluir a operação.';
 
-    throw new Error(dados.detail || mensagem);
+    const erro = new Error(dados.detail || mensagem);
+    erro.dados = dados;
+    throw erro;
   }
 
   return dados;
@@ -48,6 +50,27 @@ export async function consultarDisponibilidadeVeiculo(dados) {
     credentials: 'include',
   });
   return tratarResposta(resposta);
+}
+
+export async function buscarRecorrenciaVeiculo(id) {
+  const resposta = await fetch(`${URL}recorrencias/${id}/`, {
+    credentials: 'include',
+  });
+  return tratarResposta(resposta);
+}
+
+export async function atualizarRecorrenciaVeiculo(id, dados) {
+  const resposta = await fetch(`${URL}recorrencias/${id}/`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dados),
+  });
+  return tratarResposta(resposta);
+}
+
+export async function cancelarRecorrenciaVeiculo(id) {
+  return atualizarRecorrenciaVeiculo(id, { status: 'CANCELADA' });
 }
 
 export async function buscarAgendaVeiculo(id) {

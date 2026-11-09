@@ -11,6 +11,8 @@ export const ENTIDADE_AUDITORIA_LABEL = {
   RESERVA_VEICULO: "Reserva de veículo",
   RESERVA_RECURSO_GERAL: "Reserva de recurso geral",
   RECORRENCIA_RESERVA_AREA: "Recorrência de reserva de área",
+  RECORRENCIA_RESERVA_VEICULO: "Recorrência de reserva de veículo",
+  RECORRENCIA_RESERVA_RECURSO: "Recorrência de reserva de recurso geral",
   GRUPO: "Grupo",
   MEMBRO_GRUPO: "Membro de grupo",
   RECURSO_GERAL: "Recurso geral",

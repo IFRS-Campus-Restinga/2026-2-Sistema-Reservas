@@ -37,6 +37,7 @@ class ReservasPendentesListView(APIView):
             .filter(status=StatusReserva.PENDENTE)
             .select_related(
                 "usuario",
+                "recorrencia",
                 "reservaarea__area__bloco",
                 "reservaveiculo__veiculo",
                 "reservarecursogeral__recurso_geral__tipo_recurso",

@@ -1,8 +1,12 @@
 from django.utils import timezone
 from rest_framework import serializers
+from api.enumerations.tipo_prazo import TipoPrazo
 from api.models.reserva_recurso_geral_model import ReservaRecursoGeral
+from .recorrencia_serializer import RecorrenciaSerializer, validar_recorrencia
 
 class ReservaRecursoGeralSerializer(serializers.ModelSerializer):
+    recorrencia = RecorrenciaSerializer(required=False, allow_null=True)
+
     class Meta:
         model = ReservaRecursoGeral
         fields = [
@@ -19,6 +23,7 @@ class ReservaRecursoGeralSerializer(serializers.ModelSerializer):
             "recurso_geral",
             "data_devolucao_prevista",
             "quantidades",
+            "recorrencia",
         ]
         read_only_fields = ["id", "status", "duracao", "usuario"]
 
@@ -55,6 +60,18 @@ class ReservaRecursoGeralSerializer(serializers.ModelSerializer):
         if devolucao == data and fim <= inicio:
             raise serializers.ValidationError({
                 "horario_fim": "A devolução deve ser posterior à retirada."
+            })
+
+        recorrencia = dados.get("recorrencia")
+
+        if recorrencia:
+            validar_recorrencia(data, recorrencia)
+
+        recorrente = recorrencia or getattr(self.instance, "recorrencia_id", None)
+
+        if recorrente and valor("recurso_geral").tipo_prazo == TipoPrazo.LONGO_PRAZO:
+            raise serializers.ValidationError({
+                "recorrencia": "Recursos de longo prazo não permitem reserva recorrente."
             })
 
         return dados
