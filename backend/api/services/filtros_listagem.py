@@ -26,7 +26,7 @@ BUSCA = {
 FILTROS = {
     'area': {'bloco': 'bloco_id', 'capacidade': 'capacidade__gte', 'status': 'status'},
     'veiculo': {'status': 'status'},
-    'recursogeral': {'tipo_recurso': 'tipo_recurso_id', 'status': 'status'},
+    'recursogeral': {'tipo_recurso': 'tipo_recurso_id', 'status': 'status', 'tipo_prazo': 'tipo_prazo'},
     'tiporecurso': {'categoria': 'categoria'},
     'grupo': {'tipo_membro': 'tipo_membro_permitido',
               'recurso': 'autorizacoes__tipo_recurso_autorizado',

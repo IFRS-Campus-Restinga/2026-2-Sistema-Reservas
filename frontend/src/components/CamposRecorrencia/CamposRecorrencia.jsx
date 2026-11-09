@@ -40,6 +40,8 @@ import styles from './CamposRecorrencia.module.css';
  * - aoPularConflitos (opcional): função chamada para criar a recorrência sem as datas em
  *   conflito; quando não informada, o botão "Pular datas" não é exibido
  * - desabilitado (opcional, default false): desabilita o botão "Pular datas" (ex.: enquanto salva)
+ * - erroAdicional (opcional): erro da modalidade exibido quando as datas são válidas
+ *   (ex.: viagens de veículo que se sobrepõem)
  */
 
 function CamposRecorrencia({
@@ -54,8 +56,9 @@ function CamposRecorrencia({
   datasConflitantes = [],
   aoPularConflitos,
   desabilitado = false,
+  erroAdicional = '',
 }) {
-  const erro = dataFim ? validarRecorrencia(dataInicio, tipo, dataFim) : '';
+  const erro = (dataFim ? validarRecorrencia(dataInicio, tipo, dataFim) : '') || erroAdicional;
   const datas = erro ? [] : gerarDatasRecorrencia(dataInicio, tipo, dataFim);
   const restantes = datas.filter((data) => !datasConflitantes.includes(data)).length;
   const podePular = Boolean(aoPularConflitos) && datasConflitantes.length > 0;

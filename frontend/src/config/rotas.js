@@ -89,6 +89,7 @@ export const ROTAS = [
   id: "notificacoes",
   path: "/notificacoes",
   componente: Notificacoes,
+  permissao: podeReservarAlgo,
   menu: {
     titulo: "Notificações",
     icone: Bell,
