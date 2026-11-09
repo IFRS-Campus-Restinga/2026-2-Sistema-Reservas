@@ -20,7 +20,11 @@ from api.views.reserva_veiculo_view import (
     ReservaVeiculoDetailView,
     ReservaVeiculoListCreateView,
 )
-from api.views.recorrencia_view import RecorrenciaReservaAreaDetailView
+from api.views.recorrencia_view import (
+    RecorrenciaReservaAreaDetailView,
+    RecorrenciaReservaRecursoGeralDetailView,
+    RecorrenciaReservaVeiculoDetailView,
+)
 from api.views.agenda_reserva_view import AgendaReservasView
 from api.views.opcoes_disponibilidade_view import OpcoesDisponibilidadeView
 from api.views.relatorio_uso_view import RelatorioUsoView
@@ -69,6 +73,7 @@ urlpatterns = [
     path('grupos/<int:grupo_pk>/membros/<int:pk>/', MembroGrupoDetailView.as_view(), name='membro-grupo-detail'),
     path("reservas/recursos-gerais/", ReservaRecursoGeralListCreateView.as_view(), name="reserva-recurso-geral-list-create"),
     path("reservas/recursos-gerais/disponibilidade/", DisponibilidadeRecursoGeralView.as_view(), name="disponibilidade-recurso-geral"),
+    path("reservas/recursos-gerais/recorrencias/<int:pk>/", RecorrenciaReservaRecursoGeralDetailView.as_view(), name="reserva-recurso-geral-recorrencia-detail"),
     path("reservas/recursos-gerais/<int:pk>/", ReservaRecursoGeralDetailView.as_view(), name="reserva-recurso-geral-detail"),
     path("reservas/areas/", ReservaAreaListCreateView.as_view(), name="reserva-area-list-create"),
     path("reservas/areas/minhas/", MinhasReservasAreaListView.as_view(), name="reserva-area-minhas"),
@@ -76,6 +81,7 @@ urlpatterns = [
     path("reservas/areas/<int:pk>/", ReservaAreaDetailView.as_view(), name="reserva-area-detail"),
     path("reservas/veiculos/", ReservaVeiculoListCreateView.as_view(), name="reserva-veiculo-list-create"),
     path("reservas/veiculos/disponibilidade/", DisponibilidadeReservaVeiculoView.as_view(), name="disponibilidade-reserva-veiculo"),
+    path("reservas/veiculos/recorrencias/<int:pk>/", RecorrenciaReservaVeiculoDetailView.as_view(), name="reserva-veiculo-recorrencia-detail"),
     path("reservas/pendentes/<int:pk>/confirmar/", ConfirmarReservaView.as_view(), name="reserva-pendente-confirmar"),
     path("notificacoes/", MinhasNotificacoesListView.as_view(), name="minhas-notificacoes"),
     path("notificacoes/<int:pk>/lida/", MarcarNotificacaoLidaView.as_view(), name="notificacao-marcar-lida"), 

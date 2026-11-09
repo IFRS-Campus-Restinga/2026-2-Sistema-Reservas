@@ -16,6 +16,11 @@ from api.validators.reserva_recurso_geral_validator import STATUS_RESERVAS_ATIVA
 from api.enumerations.auditoria_enumerations import AcaoAuditoria
 from api.services.auditoria import foto, registrar_auditoria
 from api.services.termo_service import invalidar_termo_apos_edicao
+from api.services.recorrencia_service import (
+    RECORRENCIA_RECURSO_GERAL,
+    criar_reservas_recorrentes,
+    serializar_recorrencia,
+)
 from .view_helpers import BuscarObjetoComPermissaoMixin
 
 STATUS_ALTERAVEIS = [
@@ -42,7 +47,7 @@ class ReservaRecursoGeralListCreateView(APIView):
     def get(self, request):
         reservas = ReservaRecursoGeral.objects.filter(
             usuario=request.user
-        ).order_by("-data", "-horario_inicio")
+        ).select_related("recorrencia").order_by("-data", "-horario_inicio")
 
         return listar(request, reservas, ReservaRecursoGeralSerializer)
 
@@ -52,12 +57,27 @@ class ReservaRecursoGeralListCreateView(APIView):
 
         with transaction.atomic():
             dados = serializer.validated_data
+            dados_recorrencia = dados.pop("recorrencia", None)
             recurso = get_object_or_404(
                 RecursoGeral.objects.select_for_update(),
                 pk=dados["recurso_geral"].pk,
             )
 
             dados["recurso_geral"] = recurso
+
+            if dados_recorrencia:
+                recorrencia, datas_puladas = criar_reservas_recorrentes(
+                    RECORRENCIA_RECURSO_GERAL, request.user, dados, dados_recorrencia
+                )
+
+                return Response(
+                    {
+                        **serializar_recorrencia(RECORRENCIA_RECURSO_GERAL, recorrencia, request.user),
+                        "datas_puladas": datas_puladas,
+                    },
+                    status=status.HTTP_201_CREATED,
+                )
+
             validar_autorizacao(request.user, dados)
             validar_disponibilidade(dados)
 

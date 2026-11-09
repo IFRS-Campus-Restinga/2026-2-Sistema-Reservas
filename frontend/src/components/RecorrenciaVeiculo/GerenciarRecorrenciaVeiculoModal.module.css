@@ -1,0 +1,59 @@
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formulario label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.formulario input,
+.formulario select,
+.formulario textarea {
+  width: 100%;
+  border: 1px solid #dce2eb;
+  border-radius: 9px;
+  padding: 9px 12px;
+  font-size: 14px;
+  background: #fff;
+  color: #1f2937;
+  font-weight: 400;
+}
+
+.formulario textarea {
+  resize: vertical;
+}
+
+.formulario small {
+  font-size: 11px;
+  font-weight: 400;
+  color: #64748b;
+}
+
+.horarios {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.acoes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.acoes button {
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .horarios {
+    grid-template-columns: 1fr;
+  }
+}

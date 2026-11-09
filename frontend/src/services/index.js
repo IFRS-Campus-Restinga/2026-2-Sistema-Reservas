@@ -46,6 +46,9 @@ export {
   listarReservasRecursosGerais,
   criarReservaRecursoGeral,
   cancelarReservaRecursoGeral,
+  buscarRecorrenciaRecursoGeral,
+  atualizarRecorrenciaRecursoGeral,
+  cancelarRecorrenciaRecursoGeral,
 } from './reservasRecursosGerais';
 export {
   listarReservasAreas,
@@ -64,6 +67,9 @@ export {
   cancelarReservaVeiculo,
   consultarDisponibilidadeVeiculo,
   buscarAgendaVeiculo,
+  buscarRecorrenciaVeiculo,
+  atualizarRecorrenciaVeiculo,
+  cancelarRecorrenciaVeiculo,
 } from './reservasVeiculos';
 export { 
   confirmarReservaPendente, 
