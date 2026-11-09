@@ -4,6 +4,8 @@ import useFocoModal from '../../hooks/useFocoModal';
 import TermoReserva from '../TermoReserva/TermoReserva';
 import { TIPO_RECORRENCIA_LABEL } from '../../utils/recorrencia';
 import { SITUACAO_RESERVA_LABEL, statusReservaApresentado } from '../../utils/reserva';
+import AlertBanner from '../AlertBanner/AlertBanner';
+import { mensagemDeErro } from '../../utils/erros';
 import styles from './ModalDetalheReserva.module.css';
 import ModalConfirmacao from '../Administracao/ModalConfirmacao/ModalConfirmacao';
 
@@ -54,7 +56,7 @@ function ModalDetalheReserva({
       setErro('');
       await aoCancelar();
     } catch (falha) {
-      setErro(falha.message || 'Não foi possível cancelar a reserva.');
+      setErro(mensagemDeErro(falha, 'Não foi possível cancelar a reserva.'));
     } finally {
       setProcessando(false);
     }
@@ -154,10 +156,8 @@ function ModalDetalheReserva({
 
           {conteudoExtra}
 
-          {erro && <p className={styles.erro} role="alert">{erro}</p>}
-          {!erro && motivoAcoesIndisponiveis && (
-            <p className={styles.erro}>{motivoAcoesIndisponiveis}</p>
-          )}
+          <AlertBanner tipo="erro" mensagem={erro} />
+          {!erro && <AlertBanner tipo="erro" mensagem={motivoAcoesIndisponiveis} />}
 
           {administrativo && acoesAdministrativas}
           {!administrativo && (

@@ -52,3 +52,13 @@
   text-align: center;
   white-space: normal;
 }
+
+.tabela .linhaExpandida,
+.tabela .linhaExpandida:hover {
+  background-color: #f9fafb;
+}
+
+.tabela .linhaExpandida td {
+  padding: 4px 16px 12px;
+  white-space: normal;
+}

@@ -6,6 +6,7 @@ import {
   marcarNotificacaoComoLida,
   marcarTodasNotificacoesComoLidas,
 } from '../services';
+import { mensagemDeErro } from '../utils/erros';
 
 export function NotificacoesProvider({ children, usuario }) {
   const [notificacoes, setNotificacoes] = useState([]);
@@ -40,7 +41,7 @@ export function NotificacoesProvider({ children, usuario }) {
         setNaoLidas(dados.nao_lidas || 0);
       })
       .catch((falha) => {
-        if (!controle.signal.aborted) setErro(falha.message || 'N?o foi poss?vel carregar as notifica??es.');
+        if (!controle.signal.aborted) setErro(mensagemDeErro(falha, 'Não foi possível carregar as notificações.'));
       })
       .finally(() => { if (!controle.signal.aborted) setCarregando(false); });
     return () => controle.abort();

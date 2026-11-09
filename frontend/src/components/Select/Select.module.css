@@ -1,5 +1,17 @@
 .select {
   width: auto;
+  border-radius: 0.5rem;
+}
+
+.select.filtro {
+  min-width: 180px;
+  padding-top: var(--filtro-espaco-y);
+  padding-bottom: var(--filtro-espaco-y);
+  border-color: var(--filtro-borda);
+  border-radius: var(--filtro-raio);
+  color: var(--filtro-texto);
+  font-size: var(--filtro-fonte);
+  line-height: var(--filtro-linha);
 }
 
 .select.larguraTotal {

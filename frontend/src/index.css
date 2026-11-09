@@ -13,6 +13,15 @@
   --cor-marca-escura: #007832;
   --cor-marca-clara: #e8f5ee;
   --fonte-titulo: 'Outfit', sans-serif;
+
+  --filtro-altura: 38px;
+  --filtro-espaco-y: 8px;
+  --filtro-espaco-x: 12px;
+  --filtro-fonte: 14px;
+  --filtro-linha: 20px;
+  --filtro-borda: #e5e7eb;
+  --filtro-raio: 8px;
+  --filtro-texto: #374151;
 }
 
 *,

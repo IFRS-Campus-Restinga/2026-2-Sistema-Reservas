@@ -1,5 +1,6 @@
 import { Trash2 } from 'lucide-react';
 import Modal from '../Modal/Modal';
+import AlertBanner from '../../AlertBanner/AlertBanner';
 import styles from './ModalConfirmacao.module.css';
 
 function ModalConfirmacao({
@@ -51,9 +52,7 @@ function ModalConfirmacao({
             <div className={styles.conteudo}>
                 <p className={styles.mensagem}>{mensagem}</p>
                 {children}
-                {aviso && (
-                    <p className={styles.aviso}>{aviso}</p>
-                )}
+                <AlertBanner tipo="erro" mensagem={aviso} />
             </div>
         </Modal>
     );

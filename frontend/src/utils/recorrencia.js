@@ -81,6 +81,28 @@ export function validarRecorrencia(dataInicio, tipo, dataFim) {
   return '';
 }
 
+// Mesma regra do backend: cada saída precisa ocorrer pelo menos 1 hora após o retorno anterior
+export function ocorrenciasSobrepostas(datas, data, horarioInicio, dataRetorno, horarioFim, margemMinutos = 60) {
+  if (datas.length < 2 || !data || !horarioInicio || !dataRetorno || !horarioFim) return '';
+
+  const minuto = 60 * 1000;
+  const duracao = new Date(`${dataRetorno}T${horarioFim}:00`) - new Date(`${data}T${horarioInicio}:00`);
+  const menorIntervalo = Math.min(
+    ...datas.slice(1).map((atual, indice) => new Date(`${atual}T12:00:00`) - new Date(`${datas[indice]}T12:00:00`))
+  );
+
+  return duracao + margemMinutos * minuto > menorIntervalo
+    ? 'A duração da reserva não cabe no intervalo da recorrência: cada saída precisa ocorrer pelo menos 1 hora após o retorno anterior.'
+    : '';
+}
+
+// Apenas os campos que mudaram em relação aos valores originais
+export function camposAlterados(originais, atuais) {
+  return Object.fromEntries(
+    Object.entries(atuais).filter(([campo, valor]) => valor !== originais[campo])
+  );
+}
+
 // Campo "recorrencia" enviado no payload de criação
 export function montarRecorrencia(ativa, tipo, dataFim, pularConflitos = false) {
   if (!ativa) return null;

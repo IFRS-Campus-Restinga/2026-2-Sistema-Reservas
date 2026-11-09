@@ -1,14 +1,20 @@
 import { useState } from 'react';
-import { Pencil, Trash2, Users } from 'lucide-react';
+import { CalendarDays, Pencil, Trash2, Users } from 'lucide-react';
 import Botao from '../../Botao/Botao';
 import ModalMembros from '../ModalMembros/ModalMembros';
-import { rotulosRecursos } from '../gruposUtils';
+import { formatarVigenciaGrupo, rotulosRecursos } from '../gruposUtils';
 import styles from './CardGrupo.module.css';
 
-function CardGrupo({ grupo, aoEditar, aoExcluir }) {
+function CardGrupo({ grupo, aoEditar, aoExcluir, aoAtualizar }) {
     const [modalMembrosAberto, setModalMembrosAberto] = useState(false);
 
     const rotuloTipoMembro = grupo.tipo_membro_permitido === 'servidor' ? 'Servidores' : 'Alunos';
+    const membros = grupo.quantidade_membros === 1 ? '1 membro' : `${grupo.quantidade_membros} membros`;
+
+    function fecharMembros() {
+        setModalMembrosAberto(false);
+        aoAtualizar?.();
+    }
 
     return (
         <div className={styles.card}>
@@ -44,6 +50,11 @@ function CardGrupo({ grupo, aoEditar, aoExcluir }) {
                 <span className={styles.criador}>Criado por {grupo.criador_nome}</span>
             </div>
 
+            <div className={styles.informacoes}>
+                <span><CalendarDays size={14} aria-hidden="true" />Vigência: {formatarVigenciaGrupo(grupo)}</span>
+                <span><Users size={14} aria-hidden="true" />{membros}</span>
+            </div>
+
             <Botao
                 titulo="Gerenciar membros"
                 icone={Users}
@@ -54,7 +65,7 @@ function CardGrupo({ grupo, aoEditar, aoExcluir }) {
             {modalMembrosAberto && (
                 <ModalMembros
                     grupo={grupo}
-                    aoFechar={() => setModalMembrosAberto(false)}
+                    aoFechar={fecharMembros}
                 />
             )}
         </div>

@@ -12,7 +12,10 @@ async function tratarResposta(resposta) {
       ? primeiroErro
       : 'Não foi possível concluir a operação.';
 
-    throw new Error(dados.detail || mensagem);
+    const erro = new Error(dados.detail || mensagem);
+    erro.dados = dados;
+
+    throw erro;
   }
 
   return dados;
@@ -59,6 +62,31 @@ export async function atualizarReservaRecursoGeral(id, dados) {
   });
 
   return tratarResposta(resposta);
+}
+
+export async function buscarRecorrenciaRecursoGeral(id) {
+  const resposta = await fetch(`${URL}recorrencias/${id}/`, {
+    credentials: 'include',
+  });
+
+  return tratarResposta(resposta);
+}
+
+export async function atualizarRecorrenciaRecursoGeral(id, dados) {
+  const resposta = await fetch(`${URL}recorrencias/${id}/`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(dados),
+  });
+
+  return tratarResposta(resposta);
+}
+
+export async function cancelarRecorrenciaRecursoGeral(id) {
+  return atualizarRecorrenciaRecursoGeral(id, { status: 'CANCELADA' });
 }
 
 export async function consultarDisponibilidadeRecursoGeral(dados) {

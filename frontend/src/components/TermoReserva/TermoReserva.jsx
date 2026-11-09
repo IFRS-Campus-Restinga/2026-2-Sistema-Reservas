@@ -1,10 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
-import { CheckCircle, Download, FileText, FileWarning, LoaderCircle, Upload, XCircle } from 'lucide-react';
+import { CheckCircle, Download, Eye, FileText, FileWarning, LoaderCircle, Upload, XCircle } from 'lucide-react';
 import { analisarTermo, analisarTermoOperacional, buscarTermo, buscarTermoOperacional, enviarTermo, enviarTermoOperacional } from '../../services/termos';
+import AlertBanner from '../AlertBanner/AlertBanner';
+import { mensagemDeErro } from '../../utils/erros';
 import styles from './TermoReserva.module.css';
 
 const SITUACOES = { PENDENTE: 'Aguardando análise', APROVADO: 'Aprovado', REJEITADO: 'Rejeitado' };
 const formatarData = (data) => new Date(data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
+function ArquivoAssinado({ termo }) {
+  return (
+    <span className={styles.arquivo}>
+      <a className={styles.link} href={`${termo.url_arquivo}?visualizar=true`} target="_blank" rel="noopener noreferrer"
+        aria-label={`Visualizar ${termo.nome_original} em nova aba`}>
+        <Eye size={13} />Visualizar
+      </a>
+      <a className={styles.link} href={termo.url_arquivo}><Download size={13} />{termo.nome_original}</a>
+    </span>
+  );
+}
 
 function HistoricoTermos({ termos }) {
   if (!termos.length) return null;
@@ -15,7 +29,7 @@ function HistoricoTermos({ termos }) {
       {termos.map((termo) => (
         <div className={styles.envioAnterior} key={termo.id}>
           <strong>{SITUACOES[termo.status]} · Substituído</strong>
-          <a className={styles.link} href={termo.url_arquivo}><Download size={13} />{termo.nome_original}</a>
+          <ArquivoAssinado termo={termo} />
           <span>Enviado em {formatarData(termo.data_envio)}</span>
           {termo.motivo_rejeicao && <p className={styles.motivo}>Motivo: {termo.motivo_rejeicao}</p>}
           <a className={styles.link} href={termo.url_modelo}>Modelo deste envio</a>
@@ -49,7 +63,7 @@ export default function TermoReserva({
     buscar.then((resultado) => {
       if (ativo) setDados(resultado);
     }).catch((falha) => {
-      if (ativo) setErro(falha.message);
+      if (ativo) setErro(mensagemDeErro(falha, 'Não foi possível carregar o termo.'));
     });
     return () => { ativo = false; };
   }, [reservaId, tentativa, tipoDocumento]);
@@ -71,12 +85,17 @@ export default function TermoReserva({
       setAviso(mensagem);
       aoAtualizar?.(resultado);
     } catch (falha) {
-      setErro(falha.message);
+      setErro(mensagemDeErro(falha, 'Não foi possível salvar o termo. Tente novamente.'));
       setTentativa((valor) => valor + 1);
     } finally {
       setOcupado(false);
       aoProcessar?.(false);
     }
+  }
+
+  function recarregarTermo() {
+    setErro('');
+    setTentativa((valor) => valor + 1);
   }
 
   function selecionarArquivo(evento) {
@@ -106,13 +125,7 @@ export default function TermoReserva({
 
   let conteudo;
   if (!dados) {
-    conteudo = <p className={styles.carregando} role="status"><LoaderCircle size={14} className={styles.girando} />Carregando termo…</p>;
-    if (erro) {
-      conteudo = <button className={styles.link} type="button" onClick={() => {
-        setErro('');
-        setTentativa((valor) => valor + 1);
-      }}>Tentar novamente</button>;
-    }
+    conteudo = erro ? null : <p className={styles.carregando} role="status"><LoaderCircle size={14} className={styles.girando} />Carregando termo…</p>;
   } else {
     if (ocultarIndisponivel && tipoDocumento !== 'responsabilidade' && !dados.atual && !dados.pode_enviar) {
       return null;
@@ -163,7 +176,7 @@ export default function TermoReserva({
       documento = (
         <div className={styles.documento} data-administrativo={administrativo} data-status={atual.status}>
           {administrativo && <strong className={styles.tituloEnvio}><IconeDocumento size={12} />{tituloEnvio}</strong>}
-          <a className={styles.link} href={atual.url_arquivo}><Download size={13} />{atual.nome_original}</a>
+          <ArquivoAssinado termo={atual} />
           <span>Enviado em {formatarData(atual.data_envio)} por {atual.enviado_por}</span>
           {atual.data_validacao && <span>Analisado em {formatarData(atual.data_validacao)} por {atual.validado_por}</span>}
           {atual.motivo_rejeicao && <p className={styles.motivo}><strong>Motivo da rejeição:</strong> {atual.motivo_rejeicao}</p>}
@@ -260,8 +273,13 @@ export default function TermoReserva({
     <section className={styles.termo} aria-label={tipoDocumento === 'responsabilidade' ? 'Termo de responsabilidade' : `Termo de ${tipoDocumento}`} aria-busy={ocupado}>
       {conteudo}
       {ocupado && administrativo && <p role="status" className={styles.carregando}><LoaderCircle size={14} className={styles.girando} />Salvando análise…</p>}
-      {erro && <p role="alert" className={styles.erro}>{erro}</p>}
-      {aviso && <p role="status" className={styles.sucesso}><CheckCircle size={14} />{aviso}</p>}
+      <AlertBanner
+        tipo="erro"
+        mensagem={erro}
+        aoFechar={dados ? () => setErro('') : undefined}
+        acao={dados ? undefined : { rotulo: 'Tentar novamente', aoClicar: recarregarTermo }}
+      />
+      <AlertBanner mensagem={aviso} aoFechar={() => setAviso('')} />
     </section>
   );
 }

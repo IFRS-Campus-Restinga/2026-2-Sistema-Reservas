@@ -8,7 +8,19 @@ import { CheckCircle2, Clock3 } from 'lucide-react';
 import Modal from '../Administracao/Modal/Modal';
 import Botao from '../Botao/Botao';
 import CalendarioReserva from '../CalendarioReserva/CalendarioReserva';
+import CamposRecorrencia from '../CamposRecorrencia/CamposRecorrencia';
 import { atualizarReservaVeiculo, consultarDisponibilidadeVeiculo, criarReservaVeiculo } from '../../services/reservasVeiculos';
+import {
+  TIPO_RECORRENCIA,
+  conflitosRecorrencia,
+  datasConflitantesRecorrencia,
+  gerarDatasRecorrencia,
+  montarRecorrencia,
+  ocorrenciasSobrepostas,
+  validarRecorrencia,
+} from '../../utils/recorrencia';
+import AlertBanner from '../AlertBanner/AlertBanner';
+import { mensagemDeErro } from '../../utils/erros';
 import styles from './ReservaVeiculoModal.module.css';
 
 const HORARIOS = Array.from({ length: 48 }, (_, indice) => {
@@ -61,6 +73,10 @@ function ReservaVeiculoModal({
   const [destino, setDestino] = useState('');
   const [finalidade, setFinalidade] = useState('');
   const [ocupantes, setOcupantes] = useState(1);
+  const [recorrente, setRecorrente] = useState(false);
+  const [tipoRecorrencia, setTipoRecorrencia] = useState(TIPO_RECORRENCIA.SEMANAL);
+  const [dataFimRecorrencia, setDataFimRecorrencia] = useState('');
+  const [falhaRecorrencia, setFalhaRecorrencia] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [verificando, setVerificando] = useState(false);
   const [disponivel, setDisponivel] = useState(null);
@@ -84,6 +100,10 @@ function ReservaVeiculoModal({
     setDestino(reservaEdicao?.destino || '');
     setFinalidade(reservaEdicao?.finalidade || '');
     setOcupantes(reservaEdicao?.quantidade_passageiros || 1);
+    setRecorrente(false);
+    setTipoRecorrencia(TIPO_RECORRENCIA.SEMANAL);
+    setDataFimRecorrencia('');
+    setFalhaRecorrencia(null);
     setDisponivel(null);
     setErro('');
   }, [aberto, veiculoInicial, reservaEdicao]);
@@ -123,7 +143,7 @@ function ReservaVeiculoModal({
       } catch (falha) {
         if (numeroConsulta === consultaAtual.current) {
           setDisponivel(false);
-          setErro(falha.message);
+          setErro(mensagemDeErro(falha, 'Não foi possível consultar a disponibilidade.'));
         }
       } finally {
         if (numeroConsulta === consultaAtual.current) setVerificando(false);
@@ -170,9 +190,31 @@ function ReservaVeiculoModal({
       (horario > horarioInicio && intervaloDisponivel(disponibilidade.horarios[data] || [], horarioInicio, horario));
   });
 
-  async function enviar(evento) {
+  const recorrenciaAtiva = recorrente && !reservaEdicao;
+  const recorrenciaValida =
+    recorrenciaAtiva && !validarRecorrencia(data, tipoRecorrencia, dataFimRecorrencia);
+  const datasRecorrencia = recorrenciaValida
+    ? gerarDatasRecorrencia(data, tipoRecorrencia, dataFimRecorrencia)
+    : [];
+  const erroSobreposicao = ocorrenciasSobrepostas(
+    datasRecorrencia, data, horarioInicio, dataRetorno, horarioFim
+  );
+  const quantidadeReservas = datasRecorrencia.length || 1;
+
+  const assinaturaPedido = JSON.stringify([
+    veiculoId, data, horarioInicio, dataRetorno, horarioFim, tipoRecorrencia, dataFimRecorrencia,
+  ]);
+  const falhaAtual =
+    falhaRecorrencia?.assinatura === assinaturaPedido ? falhaRecorrencia : null;
+
+  function enviar(evento) {
     evento.preventDefault();
+    salvar();
+  }
+
+  async function salvar({ pularConflitos = false } = {}) {
     setErro('');
+    setFalhaRecorrencia(null);
 
     if (!intervaloCompleto) {
       setErro('Informe uma saída e um retorno válidos.');
@@ -191,6 +233,10 @@ function ReservaVeiculoModal({
       return;
     }
 
+    if (recorrenciaAtiva && (!recorrenciaValida || erroSobreposicao)) {
+      return;
+    }
+
     const dadosIntervalo = {
       veiculo: veiculoId,
       data,
@@ -202,7 +248,7 @@ function ReservaVeiculoModal({
 
     try {
       setEnviando(true);
-      await consultarDisponibilidadeVeiculo(dadosIntervalo);
+      if (!recorrenciaAtiva) await consultarDisponibilidadeVeiculo(dadosIntervalo);
 
       const dados = {
         nome: titulo.trim(),
@@ -218,11 +264,29 @@ function ReservaVeiculoModal({
       };
       const resultado = reservaEdicao
         ? await atualizarReservaVeiculo(reservaEdicao.id, dados)
-        : await criarReservaVeiculo(dados);
+        : await criarReservaVeiculo({
+            ...dados,
+            recorrencia: montarRecorrencia(
+              recorrenciaAtiva,
+              tipoRecorrencia,
+              dataFimRecorrencia,
+              pularConflitos
+            ),
+          });
       aoReservar(resultado);
     } catch (falha) {
-      setDisponivel(false);
-      setErro(falha.message);
+      const conflitos = conflitosRecorrencia(falha);
+
+      if (conflitos.length) {
+        setFalhaRecorrencia({
+          assinatura: assinaturaPedido,
+          conflitos,
+          datas: datasConflitantesRecorrencia(falha),
+        });
+      } else {
+        setDisponivel(false);
+        setErro(mensagemDeErro(falha, 'Não foi possível salvar a reserva.'));
+      }
     } finally {
       setEnviando(false);
     }
@@ -306,9 +370,30 @@ function ReservaVeiculoModal({
             {verificando
               ? 'Verificando disponibilidade...'
               : disponivel
-                ? 'Veículo disponível no período selecionado.'
+                ? recorrenciaAtiva
+                  ? 'Veículo disponível na primeira reserva da série.'
+                  : 'Veículo disponível no período selecionado.'
                 : 'Revise a disponibilidade do período.'}
           </p>
+        )}
+
+        {!reservaEdicao && (
+          <div className={styles.recorrencia}>
+            <CamposRecorrencia
+              ativa={recorrente}
+              aoAlternar={setRecorrente}
+              tipo={tipoRecorrencia}
+              aoAlterarTipo={setTipoRecorrencia}
+              dataFim={dataFimRecorrencia}
+              aoAlterarDataFim={setDataFimRecorrencia}
+              dataInicio={data}
+              conflitos={falhaAtual?.conflitos}
+              datasConflitantes={falhaAtual?.datas}
+              aoPularConflitos={() => salvar({ pularConflitos: true })}
+              desabilitado={enviando}
+              erroAdicional={erroSobreposicao}
+            />
+          </div>
         )}
 
         <label>
@@ -335,12 +420,20 @@ function ReservaVeiculoModal({
             onChange={(evento) => setDescricao(evento.target.value)} />
         </label>
 
-        {erro && <p className={styles.erro} role="alert">{erro}</p>}
+        <AlertBanner tipo="erro" mensagem={erro} />
 
         <div className={styles.acoes}>
           <Botao titulo="Cancelar" estilo="secundario" aoClicar={aoFechar} desabilitado={enviando} />
           <Botao tipo="submit" desabilitado={enviando || verificando}
-            titulo={enviando ? 'Salvando...' : reservaEdicao ? 'Salvar alterações' : 'Confirmar reserva'} />
+            titulo={
+              enviando
+                ? 'Salvando...'
+                : reservaEdicao
+                  ? 'Salvar alterações'
+                  : quantidadeReservas > 1
+                    ? `Confirmar ${quantidadeReservas} reservas`
+                    : 'Confirmar reserva'
+            } />
         </div>
       </form>
     </Modal>
