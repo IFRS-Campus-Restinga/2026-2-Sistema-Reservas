@@ -68,3 +68,7 @@ class GrupoSerializer(serializers.ModelSerializer):
         if tipos_recurso_autorizados is not None:
             salvar_autorizacoes_grupo(grupo, tipos_recurso_autorizados, tipos_recurso)
         return grupo
+
+
+class CopiaGrupoSerializer(GrupoSerializer):
+    incluir_membros = serializers.BooleanField(default=True, write_only=True)

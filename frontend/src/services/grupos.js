@@ -4,6 +4,11 @@ const GRUPOS_URL = '/api/grupos/';
 
 export const buscarGrupos = (parametros, signal) => consultarPagina(GRUPOS_URL, parametros, signal);
 
+export const copiarGrupo = async (id, dados) => {
+    const response = await axios.post(`${GRUPOS_URL}${id}/copiar/`, dados, { withCredentials: true });
+    return response.data;
+};
+
 export const criarGrupo = async (dados) => {
     try {
         const response = await axios.post(

@@ -33,6 +33,7 @@ export {
 export {
     buscarGrupos,
     criarGrupo,
+    copiarGrupo,
     atualizarGrupo,
     excluirGrupo,
     buscarMembros,
