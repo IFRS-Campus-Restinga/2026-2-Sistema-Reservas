@@ -17,6 +17,8 @@ import {
   camposAlterados,
   conflitosRecorrencia,
 } from '../../utils/recorrencia';
+import AlertBanner from '../AlertBanner/AlertBanner';
+import { mensagemDeErro } from '../../utils/erros';
 import styles from './GerenciarRecorrenciaRecursoGeralModal.module.css';
 
 /**
@@ -114,7 +116,7 @@ function GerenciarRecorrenciaRecursoGeralModal({
         setObservacoes(primeira.descricao || '');
       })
       .catch((falha) => {
-        if (!descartada) setErro(falha.message);
+        if (!descartada) setErro(mensagemDeErro(falha, 'Não foi possível carregar a recorrência.'));
       })
       .finally(() => {
         if (!descartada) setCarregando(false);
@@ -170,7 +172,7 @@ function GerenciarRecorrenciaRecursoGeralModal({
       if (conflitosEdicao.length) {
         setConflitos(conflitosEdicao);
       } else {
-        setErro(erroRequisicao.message);
+        setErro(mensagemDeErro(erroRequisicao, 'Não foi possível alterar a recorrência.'));
       }
     } finally {
       setEnviando(false);
@@ -185,7 +187,7 @@ function GerenciarRecorrenciaRecursoGeralModal({
       setErro('');
       aoCancelarRecorrencia(await cancelarRecorrenciaRecursoGeral(recorrenciaId));
     } catch (erroRequisicao) {
-      setErro(erroRequisicao.message);
+      setErro(mensagemDeErro(erroRequisicao, 'Não foi possível cancelar as reservas da recorrência.'));
     } finally {
       setEnviando(false);
     }
@@ -219,9 +221,7 @@ function GerenciarRecorrenciaRecursoGeralModal({
       {carregando ? (
         <p className="text-muted mb-0" role="status">Carregando recorrência...</p>
       ) : !recorrencia ? (
-        <Alert variant="danger" className="py-2 mb-0" role="alert">
-          {erro || 'Não foi possível carregar a recorrência.'}
-        </Alert>
+        <AlertBanner tipo="erro" mensagem={erro || 'Não foi possível carregar a recorrência.'} />
       ) : !referencia ? (
         <Alert variant="warning" className="py-2 mb-0">
           Não há reservas futuras que ainda possam ser alteradas nesta recorrência.
@@ -290,21 +290,22 @@ function GerenciarRecorrenciaRecursoGeralModal({
           </label>
 
           {conflitos.length > 0 && (
-            <Alert variant="danger" className="py-2 mb-0" role="alert">
-              <p className="fw-medium mb-1">Não foi possível alterar a recorrência:</p>
-              <ul className="small mb-0 ps-3">
-                {conflitos.map((conflito) => (
-                  <li key={conflito}>{conflito}</li>
-                ))}
-              </ul>
-            </Alert>
+            <AlertBanner
+              tipo="erro"
+              mensagem={(
+                <>
+                  <p className="fw-medium mb-1">Não foi possível alterar a recorrência:</p>
+                  <ul className="mb-0 ps-3">
+                    {conflitos.map((conflito) => (
+                      <li key={conflito}>{conflito}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            />
           )}
 
-          {erro && (
-            <Alert variant="danger" className="py-2 mb-0" role="alert">
-              {erro}
-            </Alert>
-          )}
+          <AlertBanner tipo="erro" mensagem={erro} />
 
           <div className={styles.acoes}>
             <Botao
