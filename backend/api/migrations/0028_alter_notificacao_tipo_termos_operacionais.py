@@ -1,12 +1,10 @@
-# Gerada manualmente (Django não estava disponível no ambiente de análise): confira com `python manage.py makemigrations --check --dry-run`.
-
 from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('api', '0025_merge_20261029_1018'),
+        ('api', '0027_alter_logauditoria_entidade'),
     ]
 
     operations = [
