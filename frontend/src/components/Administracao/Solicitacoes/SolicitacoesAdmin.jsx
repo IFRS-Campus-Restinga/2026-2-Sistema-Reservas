@@ -300,6 +300,11 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
           valorTodos="todos" rotuloTodos="Todos os tipos" ariaLabel="Tipo de solicitação" />
         <Select valor={situacao} aoAlterar={(valor) => filtrar(setSituacao, valor)} opcoes={SITUACOES}
           valorTodos="todos" rotuloTodos="Todas as situações" ariaLabel="Situação da reserva" />
+        {!carregando && !erro && (
+          <span className={styles.contador} role="status">
+            {lista.count} {lista.count === 1 ? 'solicitação' : 'solicitações'}
+          </span>
+        )}
       </div>
       {conteudoLista}
       {modal}

@@ -560,7 +560,14 @@ function ReservasAdmin() {
             ]}
           />
         </div>
-        <RelatorioUso />
+        <div className={styles.acoesRelatorio}>
+          {!carregando && !erro && (
+            <span className={styles.contador} role="status">
+              {total} {total === 1 ? 'reserva' : 'reservas'}
+            </span>
+          )}
+          <RelatorioUso />
+        </div>
       </div>
 
 
