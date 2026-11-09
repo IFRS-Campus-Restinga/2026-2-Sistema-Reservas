@@ -1,10 +1,13 @@
 from django.core.management.base import BaseCommand
+from django.db import transaction
+from api.services.timetable.sincronizacao_service import sincronizacao_concluida
 from api.services.timetable.estrutura_timetable_service import EstruturaTimetableService
 from api.services.timetable.celulas_service import CelulasService
 
 class Command(BaseCommand):
     help = "Sincroniza os dados da grade horária do Edupage com o banco de dados do Sistema de Reservas."
 
+    @transaction.atomic
     def handle(self, *args, **options):
         self.stdout.write(self.style.WARNING("Iniciando a sincronização da Timetable com o Edupage..."))
         
@@ -26,6 +29,7 @@ class Command(BaseCommand):
             self.stdout.write("Gerando reservas fixas de área para todo o semestre...")
             from api.services.timetable.reservas_timetable_service import ReservasTimetableService
             total_reservas = ReservasTimetableService.gerar_reservas_das_celulas(celulas_salvas)
+            sincronizacao_concluida()
             self.stdout.write(self.style.SUCCESS(f"Sincronização concluída com sucesso! {total_reservas} reservas de área cadastradas para o semestre."))
             
             if quantidade_salvas > 0:
@@ -44,4 +48,5 @@ class Command(BaseCommand):
                 self.stdout.write(f"Horário: {ultimo.horario_inicio} às {ultimo.horario_fim}")
                 self.stdout.write(f"Aula: {ultimo.disciplina} | Turma: {ultimo.turma} | Prof: {ultimo.professor}\n")
         except Exception as e:
+            transaction.set_rollback(True)
             self.stdout.write(self.style.ERROR(f"Erro durante a sincronização da timetable: {str(e)}"))

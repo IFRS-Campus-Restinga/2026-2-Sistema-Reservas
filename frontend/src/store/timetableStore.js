@@ -8,18 +8,19 @@ const api = axios.create({
 
 export const useTimetableStore = create((set, get) => ({
   timetableData: null,
+  ultimaSincronizacao: null,
   isLoading: false,
   error: null,
 
   // Função para buscar e cachear a timetable
   fetchTimetable: async () => {
-    // Previne requisição duplicada caso os dados já estejam cacheados
-    if (get().timetableData) return;
+    // Revalida os dados ao abrir a tela, sem duplicar consultas em andamento.
+    if (get().isLoading) return;
 
     set({ isLoading: true, error: null });
     try {
-      const response = await api.get('/timetable/');
-      set({ timetableData: response.data, isLoading: false });
+      const response = await api.get('/timetable/', { params: { incluir_metadados: 1 } });
+      set({ timetableData: response.data.grade, ultimaSincronizacao: response.data.ultima_sincronizacao, isLoading: false });
     } catch (error) {
       set({ error: error.response?.data?.erro || error.message, isLoading: false });
     }
@@ -30,8 +31,9 @@ export const useTimetableStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const postResponse = await api.post('/timetable/');
-      const response = await api.get('/timetable/');
-      set({ timetableData: response.data, isLoading: false });
+      set({ ultimaSincronizacao: postResponse.data.ultima_sincronizacao });
+      const response = await api.get('/timetable/', { params: { incluir_metadados: 1 } });
+      set({ timetableData: response.data.grade, ultimaSincronizacao: response.data.ultima_sincronizacao, isLoading: false });
       return postResponse.data;
     } catch (error) {
       const msg = error.response?.data?.erro || error.response?.data?.detail || error.message;

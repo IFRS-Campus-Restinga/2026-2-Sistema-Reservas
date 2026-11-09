@@ -29,7 +29,7 @@ const DIAS_ROTULOS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex']; // Exatamente como na 
 const getGridRowStart = (id) => id + 1;
 
 function TimetableAdmin() {
-  const { timetableData, isLoading, error, fetchTimetable, syncTimetable } = useTimetableStore();
+  const { timetableData, ultimaSincronizacao, isLoading, error, fetchTimetable, syncTimetable } = useTimetableStore();
   const [salaSelecionada, setSalaSelecionada] = useState('');
   const [sincronizando, setSincronizando] = useState(false);
   const [mensagemSucesso, setMensagemSucesso] = useState('');
@@ -59,10 +59,25 @@ function TimetableAdmin() {
     }
   };
 
+  const informacaoSincronizacao = (
+    <p className={styles.ultimaSincronizacao} role="status">
+      {ultimaSincronizacao ? <>
+        Última sincronização: <time dateTime={ultimaSincronizacao}>
+          {new Date(ultimaSincronizacao).toLocaleString('pt-BR', {
+            timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short',
+          })}
+        </time> (horário de Brasília)
+      </> : timetableData
+        ? 'Nenhuma sincronização realizada.'
+        : 'Última sincronização indisponível.'}
+    </p>
+  );
+
   if (isLoading && !timetableData) return <div className={styles.loading}>Carregando grade horária...</div>;
   if (error && !timetableData) {
     return (
       <div className={styles.errorContainer}>
+        {informacaoSincronizacao}
         <div className={styles.error}>Erro ao carregar grade: {error}</div>
         <button 
           className={styles.botaoSincronizar} 
@@ -79,6 +94,8 @@ function TimetableAdmin() {
   if (!timetableData || Object.keys(timetableData).length === 0) {
     return (
       <div className={styles.emptyContainer}>
+        {informacaoSincronizacao}
+        {error && <div className={styles.error} role="alert">{error}</div>}
         <p className={styles.empty}>Nenhuma aula cadastrada no banco de dados.</p>
         <button 
           className={styles.botaoSincronizar} 
@@ -165,7 +182,10 @@ function TimetableAdmin() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h2>Grade Horária do EduPage</h2>
+        <div>
+          <h2>Grade Horária do EduPage</h2>
+          {informacaoSincronizacao}
+        </div>
         <div className={styles.filtros}>
           <label>Selecione a Sala: </label>
           <select value={salaAtual} onChange={(e) => setSalaSelecionada(e.target.value)}>
@@ -184,6 +204,7 @@ function TimetableAdmin() {
         </div>
       </div>
 
+      {error && <div className={styles.error} role="alert">{error}</div>}
       {mensagemSucesso && (
         <div className={styles.alertaSucesso}>
           {mensagemSucesso}
