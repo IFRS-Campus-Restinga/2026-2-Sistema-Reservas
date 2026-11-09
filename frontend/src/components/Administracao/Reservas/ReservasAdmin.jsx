@@ -29,6 +29,8 @@ import GerenciarRecorrenciaModal from '../../RecorrenciaArea/GerenciarRecorrenci
 
 import GerenciarRecorrenciaVeiculoModal from '../../RecorrenciaVeiculo/GerenciarRecorrenciaVeiculoModal';
 
+import GerenciarRecorrenciaRecursoGeralModal from '../../RecorrenciaRecursoGeral/GerenciarRecorrenciaRecursoGeralModal';
+
 import { STATUS_RESERVA_LABEL } from '../../../utils/reserva';
 import { TIPO_RECORRENCIA_LABEL } from '../../../utils/recorrencia';
 
@@ -117,7 +119,7 @@ function ehSerie(reserva) {
 function podeGerenciarRecorrencia(reserva) {
   return Boolean(
     reserva?.recorrencia &&
-    ['area', 'veiculo'].includes(reserva.modalidade) &&
+    ['area', 'veiculo', 'recurso_geral'].includes(reserva.modalidade) &&
     !reserva.detalhes?.celula_timetable
   );
 }
@@ -970,6 +972,17 @@ function ReservasAdmin() {
 
       {recorrenciaGerenciada?.modalidade === 'veiculo' && (
         <GerenciarRecorrenciaVeiculoModal
+          aberto
+          recorrenciaId={recorrenciaGerenciada.id}
+          aoFechar={() => setRecorrenciaGerenciada(null)}
+          aoSalvar={() => recorrenciaAlterada('Recorrência atualizada com sucesso.')}
+          aoCancelarRecorrencia={() => recorrenciaAlterada('Recorrência cancelada com sucesso.')}
+        />
+      )}
+
+
+      {recorrenciaGerenciada?.modalidade === 'recurso_geral' && (
+        <GerenciarRecorrenciaRecursoGeralModal
           aberto
           recorrenciaId={recorrenciaGerenciada.id}
           aoFechar={() => setRecorrenciaGerenciada(null)}

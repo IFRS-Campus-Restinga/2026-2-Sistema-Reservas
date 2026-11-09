@@ -15,7 +15,7 @@
   color: #334155;
 }
 
-.formulario input,
+.formulario input:not([type="checkbox"]),
 .formulario select,
 .formulario textarea {
   width: 100%;
@@ -52,6 +52,11 @@
   background: #e9f8f0;
   color: #08763b;
   font-size: 12px;
+}
+
+.recorrencia label {
+  flex-direction: row;
+  align-items: center;
 }
 
 .horarios {

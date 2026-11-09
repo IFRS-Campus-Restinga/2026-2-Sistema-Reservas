@@ -12,10 +12,12 @@ import ModalDetalheReserva from '../../components/ModalDetalheReserva/ModalDetal
 import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/ReservaRecursoGeralModal';
 import ReservaAreaModal from '../../components/ReservaArea/ReservaAreaModal';
 import ReservaVeiculoModal from '../../components/ReservaVeiculo/ReservaVeiculoModal';
+import GerenciarRecorrenciaModal from '../../components/RecorrenciaArea/GerenciarRecorrenciaModal';
 import GerenciarRecorrenciaVeiculoModal from '../../components/RecorrenciaVeiculo/GerenciarRecorrenciaVeiculoModal';
+import GerenciarRecorrenciaRecursoGeralModal from '../../components/RecorrenciaRecursoGeral/GerenciarRecorrenciaRecursoGeralModal';
 import TermoReserva from '../../components/TermoReserva/TermoReserva';
 import Select from '../../components/Select/Select';
-import { cancelarReservaArea, cancelarReservaVeiculo } from '../../services';
+import { buscarAreas, buscarBlocos, cancelarReservaArea, cancelarReservaVeiculo } from '../../services';
 import { cancelarReservaRecursoGeral } from '../../services/reservasRecursosGerais';
 import { statusReservaApresentado, SITUACAO_RESERVA_LABEL } from '../../utils/reserva';
 import { ehAdministrador } from '../../utils/permissoes';
@@ -59,7 +61,8 @@ function MinhasReservas() {
   const [editando, setEditando] = useState(null);
   const [editandoArea, setEditandoArea] = useState(null);
   const [editandoVeiculo, setEditandoVeiculo] = useState(null);
-  const [recorrenciaVeiculo, setRecorrenciaVeiculo] = useState(null);
+  const [recorrenciaGerenciada, setRecorrenciaGerenciada] = useState(null);
+  const [locaisRecorrencia, setLocaisRecorrencia] = useState(null);
   const [selecionada, setSelecionada] = useState(null);
   const [recorrenciasExpandidas, setRecorrenciasExpandidas] = useState({});
   const [filtroTipo, setFiltroTipo] = useState('todos');
@@ -136,6 +139,7 @@ function MinhasReservas() {
           valor: `${reserva.quantidades} unidade(s) · devolução até ${formatarData(reserva.data_devolucao_prevista)}`,
           icone: Package,
         },
+        ...detalhesRecorrencia(reserva),
       ];
     }
 
@@ -278,14 +282,30 @@ function MinhasReservas() {
     setAviso('Reserva atualizada.');
   }
 
-  function abrirRecorrenciaVeiculo(reserva) {
-    setSelecionada(null);
-    setRecorrenciaVeiculo(reserva.recorrencia.id);
+  function podeGerenciarRecorrencia(reserva) {
+    return Boolean(reserva?.recorrencia && !reserva.celula_timetable);
   }
 
-  function concluirRecorrenciaVeiculo(mensagem) {
+  async function abrirRecorrencia(reserva) {
+    setSelecionada(null);
+
+    // O modal de área precisa da lista de áreas e blocos; carrega só na primeira vez
+    if (reserva.modalidade === 'area' && !locaisRecorrencia) {
+      try {
+        const [areas, blocos] = await Promise.all([buscarAreas(), buscarBlocos()]);
+        setLocaisRecorrencia({ areas: areas || [], blocos: blocos || [] });
+      } catch (falha) {
+        setErro(falha.message || 'Não foi possível carregar as áreas.');
+        return;
+      }
+    }
+
+    setRecorrenciaGerenciada({ id: reserva.recorrencia.id, modalidade: reserva.modalidade });
+  }
+
+  function concluirRecorrencia(mensagem) {
     recarregar();
-    setRecorrenciaVeiculo(null);
+    setRecorrenciaGerenciada(null);
     setAviso(mensagem);
   }
 
@@ -467,8 +487,8 @@ function MinhasReservas() {
           aoEditar={podeAlterar(selecionada) ? () => abrirEdicao(selecionada) : undefined}
           aoCancelar={podeAlterar(selecionada) ? cancelarSelecionada : undefined}
           aoGerenciarRecorrencia={
-            selecionada.modalidade === 'veiculo' && selecionada.recorrencia
-              ? () => abrirRecorrenciaVeiculo(selecionada)
+            podeGerenciarRecorrencia(selecionada)
+              ? () => abrirRecorrencia(selecionada)
               : undefined
           }
           motivoAcoesIndisponiveis={motivoIndisponivel(selecionada)}
@@ -509,13 +529,35 @@ function MinhasReservas() {
         />
       )}
 
-      {recorrenciaVeiculo && (
+      {recorrenciaGerenciada?.modalidade === 'area' && (
+        <GerenciarRecorrenciaModal
+          aberto
+          recorrenciaId={recorrenciaGerenciada.id}
+          areas={locaisRecorrencia?.areas}
+          blocos={locaisRecorrencia?.blocos}
+          aoFechar={() => setRecorrenciaGerenciada(null)}
+          aoSalvar={() => concluirRecorrencia('Recorrência atualizada.')}
+          aoCancelarRecorrencia={() => concluirRecorrencia('Recorrência cancelada.')}
+        />
+      )}
+
+      {recorrenciaGerenciada?.modalidade === 'veiculo' && (
         <GerenciarRecorrenciaVeiculoModal
           aberto
-          recorrenciaId={recorrenciaVeiculo}
-          aoFechar={() => setRecorrenciaVeiculo(null)}
-          aoSalvar={() => concluirRecorrenciaVeiculo('Recorrência atualizada.')}
-          aoCancelarRecorrencia={() => concluirRecorrenciaVeiculo('Recorrência cancelada.')}
+          recorrenciaId={recorrenciaGerenciada.id}
+          aoFechar={() => setRecorrenciaGerenciada(null)}
+          aoSalvar={() => concluirRecorrencia('Recorrência atualizada.')}
+          aoCancelarRecorrencia={() => concluirRecorrencia('Recorrência cancelada.')}
+        />
+      )}
+
+      {recorrenciaGerenciada?.modalidade === 'recurso_geral' && (
+        <GerenciarRecorrenciaRecursoGeralModal
+          aberto
+          recorrenciaId={recorrenciaGerenciada.id}
+          aoFechar={() => setRecorrenciaGerenciada(null)}
+          aoSalvar={() => concluirRecorrencia('Recorrência atualizada.')}
+          aoCancelarRecorrencia={() => concluirRecorrencia('Recorrência cancelada.')}
         />
       )}
     </div>
