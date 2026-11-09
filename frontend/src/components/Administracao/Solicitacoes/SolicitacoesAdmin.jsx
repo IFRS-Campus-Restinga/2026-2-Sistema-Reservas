@@ -3,14 +3,18 @@ import { CheckCircle, Eye, FileText, FileWarning, Info, LoaderCircle, MapPin, Pa
 import { listarSolicitacoes } from '../../../services/termos';
 import { SITUACAO_RESERVA_LABEL, statusReservaApresentado } from '../../../utils/reserva';
 import Select from '../../Select/Select';
+import SelectRemoto from '../../SelectRemoto/SelectRemoto';
+import BarraFiltros from '../../BarraFiltros/BarraFiltros';
 import ModalDetalheReserva from '../../ModalDetalheReserva/ModalDetalheReserva';
 import ModalTermo from '../../TermoReserva/ModalTermo';
 import Paginacao from '../Paginacao/Paginacao';
+import { mensagemDeErro } from '../../../utils/erros';
+import AlertBanner from '../../AlertBanner/AlertBanner';
 import styles from './SolicitacoesAdmin.module.css';
 import {confirmarReservaPendente, cancelarReservaAdmin} from '../../../services';
 import ModalReservaPendente from '../Reservas/ModalReservaPendente/ModalReservaPendente';
 
-const TIPOS = [{ valor: 'area', rotulo: 'Áreas' }, { valor: 'veiculo', rotulo: 'Veículos' }, { valor: 'recurso_geral', rotulo: 'Recursos' }];
+const TIPOS = [{ valor: 'area', rotulo: 'Áreas' }, { valor: 'veiculo', rotulo: 'Veículos' }, { valor: 'recurso_geral', rotulo: 'Recursos gerais' }];
 const DOCUMENTOS = [
   { valor: 'responsabilidade', rotulo: 'Responsabilidade' },
   { valor: 'retirada', rotulo: 'Retirada de veículo' },
@@ -72,6 +76,7 @@ function AcoesSolicitacao({ reserva, aoVerTermo, aoVerDetalhes, aoConfirmar, con
 
 export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
   const [tipo, setTipo] = useState('todos');
+  const [filtroTiposRecurso, setFiltroTiposRecurso] = useState([]);
   const [documento, setDocumento] = useState('todos');
   const [situacao, setSituacao] = useState('todos');
   const [pagina, setPagina] = useState(1);
@@ -89,9 +94,9 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
         if (controle.signal.aborted) return;
         const reserva = dados.results[0];
         if (reserva) setSelecionada({ ...reserva, mostrarTermo: true, rejeitar: false });
-        else setErro('Solicita??o n?o encontrada ou indispon?vel.');
+        else setErro('Solicitação não encontrada ou indisponível.');
       })
-      .catch((falha) => { if (!controle.signal.aborted) setErro(falha.message); });
+      .catch((falha) => { if (!controle.signal.aborted) setErro(mensagemDeErro(falha, 'Não foi possível abrir a solicitação.')); });
     return () => controle.abort();
   }, [solicitacaoInicial]);
   const [confirmandoId, setConfirmandoId] = useState(null);
@@ -100,18 +105,19 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
 
   useEffect(() => {
     const controle = new AbortController();
-    listarSolicitacoes({ tipo, documento, situacao, page: pagina, page_size: TAMANHO_PAGINA }, controle.signal)
+    const tiposRecurso = tipo === 'recurso_geral' ? filtroTiposRecurso.join(',') : '';
+    listarSolicitacoes({ tipo, tipo_recurso: tiposRecurso, documento, situacao, page: pagina, page_size: TAMANHO_PAGINA }, controle.signal)
       .then((resultado) => {
         if (!controle.signal.aborted) setLista(resultado);
       })
       .catch((falha) => {
-        if (!controle.signal.aborted) setErro(falha.message);
+        if (!controle.signal.aborted) setErro(mensagemDeErro(falha, 'Não foi possível carregar as solicitações.'));
       })
       .finally(() => {
         if (!controle.signal.aborted) setCarregando(false);
       });
     return () => controle.abort();
-  }, [tipo, documento, situacao, pagina, revisao]);
+  }, [tipo, filtroTiposRecurso, documento, situacao, pagina, revisao]);
 
   async function confirmar(reserva) {
     try {
@@ -121,7 +127,7 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
       setSelecionada(null);
       recarregar();
     } catch (falha) {
-      setErro(falha.message || 'Não foi possível confirmar a reserva.');
+      setErro(mensagemDeErro(falha, 'Não foi possível confirmar a reserva.'));
     } finally {
       setConfirmandoId(null);
     }
@@ -138,6 +144,11 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
     setCarregando(true);
     setPagina(1);
     alterar(valor);
+  }
+
+  function filtrarTipo(valor) {
+    filtrar(setTipo, valor);
+    setFiltroTiposRecurso([]);
   }
 
   function mudarPagina(valor) {
@@ -172,9 +183,7 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
       setPagina(1);
       recarregar();
     } catch (falha) {
-      setErroReserva(
-        falha.message || 'Não foi possível confirmar a reserva.'
-      );
+      setErroReserva(mensagemDeErro(falha, 'Não foi possível confirmar a reserva.'));
     } finally {
       setConfirmandoId(null);
     }
@@ -193,9 +202,7 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
       setPagina(1);
       recarregar();
     } catch (falha) {
-      setErroReserva(
-        falha.message || 'Não foi possível cancelar a reserva.'
-      );
+      setErroReserva(mensagemDeErro(falha, 'Não foi possível cancelar a reserva.'));
     } finally {
       setCancelandoId(null);
     }
@@ -205,9 +212,7 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
   if (carregando) {
     conteudoLista = <div className={styles.estado} role="status"><LoaderCircle size={28} className={styles.girando} /><p>Carregando solicitações…</p></div>;
   } else if (erro) {
-    conteudoLista = <div className={styles.estado} role="alert">
-      <FileWarning size={28} /><p>{erro}</p><button type="button" onClick={recarregar}>Tentar novamente</button>
-    </div>;
+    conteudoLista = <AlertBanner tipo="erro" mensagem={erro} acao={{ rotulo: 'Tentar novamente', aoClicar: recarregar }} />;
   } else if (!lista.results.length) {
     conteudoLista = <div className={styles.estado}><CheckCircle size={32} /><p>Nenhuma solicitação encontrada.</p></div>;
   } else {
@@ -293,14 +298,20 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
 
   return (
     <section className={styles.pagina} aria-label="Solicitações">
-      <div className={styles.filtros}>
+      <BarraFiltros>
         <Select valor={documento} aoAlterar={(valor) => filtrar(setDocumento, valor)} opcoes={DOCUMENTOS}
           valorTodos="todos" rotuloTodos="Termos e reservas" ariaLabel="Tipo de documento" />
-        <Select valor={tipo} aoAlterar={(valor) => filtrar(setTipo, valor)} opcoes={TIPOS}
+        <Select valor={tipo} aoAlterar={filtrarTipo} opcoes={TIPOS}
           valorTodos="todos" rotuloTodos="Todos os tipos" ariaLabel="Tipo de solicitação" />
+        {tipo === 'recurso_geral' && (
+          <SelectRemoto url="/api/tipos-recurso/" valor={filtroTiposRecurso}
+            aoAlterar={(valor) => filtrar(setFiltroTiposRecurso, valor)}
+            rotuloTodos="Todos os tipos de recurso" ariaLabel="Tipo de recurso geral"
+            placeholderBusca="Buscar tipo..." multiplo />
+        )}
         <Select valor={situacao} aoAlterar={(valor) => filtrar(setSituacao, valor)} opcoes={SITUACOES}
           valorTodos="todos" rotuloTodos="Todas as situações" ariaLabel="Situação da reserva" />
-      </div>
+      </BarraFiltros>
       {conteudoLista}
       {modal}
     </section>

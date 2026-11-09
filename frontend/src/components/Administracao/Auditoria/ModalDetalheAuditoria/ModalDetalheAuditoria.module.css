@@ -185,16 +185,6 @@
   text-align: center;
 }
 
-.erro {
-  margin: 0;
-  padding: 12px 16px;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  background-color: #fef2f2;
-  color: #b91c1c;
-  font-size: 14px;
-}
-
 .carregando {
   margin: 0;
   color: #9ca3af;

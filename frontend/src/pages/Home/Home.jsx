@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUsuario } from "../../hooks/useUsuario";
 import { Calendar, ArrowRight } from "lucide-react";
+import { mensagemDeErro } from "../../utils/erros";
+import AlertBanner from "../../components/AlertBanner/AlertBanner";
 import styles from "./Home.module.css";
 import Banner from "../../components/Banner/Banner";
 import CartaoReserva from "../../components/CartaoReserva/CartaoReserva";
@@ -63,7 +65,7 @@ function Home() {
         if (controle.signal.aborted) return;
         setAgora(dataAtual);
         setResumo(dados);
-      }).catch((falha) => { if (!controle.signal.aborted) setErro(falha.message); });
+      }).catch((falha) => { if (!controle.signal.aborted) setErro(mensagemDeErro(falha, 'Não foi possível carregar suas reservas.')); });
     return () => controle.abort();
   }, []);
 
@@ -106,11 +108,7 @@ function Home() {
           .join(" · ")}
       />
 
-      {erro && (
-        <p role="alert" className={styles.estadoVazio}>
-          {erro}
-        </p>
-      )}
+      <AlertBanner tipo="erro" mensagem={erro} />
 
       <div className={styles.grade}>
         <section className={styles.painelReservas}>

@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useTimetableStore } from '../../../store/timetableStore';
+import Select from '../../Select/Select';
+import AlertBanner from '../../AlertBanner/AlertBanner';
 import styles from './TimetableAdmin.module.css';
 
 const PERIODOS_MATRIZ = [
@@ -32,7 +34,7 @@ function TimetableAdmin() {
   const { timetableData, isLoading, error, fetchTimetable, syncTimetable } = useTimetableStore();
   const [salaSelecionada, setSalaSelecionada] = useState('');
   const [sincronizando, setSincronizando] = useState(false);
-  const [mensagemSucesso, setMensagemSucesso] = useState('');
+  const [aviso, setAviso] = useState(null);
 
   useEffect(() => {
     fetchTimetable();
@@ -45,15 +47,15 @@ function TimetableAdmin() {
   const handleSincronizar = async () => {
     try {
       setSincronizando(true);
-      setMensagemSucesso('');
+      setAviso(null);
       const resultado = await syncTimetable();
       const detalhe = resultado?.total_reservas
         ? ` (${resultado.total_aulas} aulas e ${resultado.total_reservas} reservas de área criadas)`
         : '';
-      setMensagemSucesso(`Grade horária sincronizada com sucesso com o EduPage!${detalhe}`);
-      setTimeout(() => setMensagemSucesso(''), 5000);
+      setAviso({ tipo: 'sucesso', mensagem: `Grade horária sincronizada com sucesso com o EduPage!${detalhe}` });
     } catch (err) {
       console.error(err);
+      setAviso({ tipo: 'erro', mensagem: 'Não foi possível sincronizar a grade horária.' });
     } finally {
       setSincronizando(false);
     }
@@ -62,17 +64,11 @@ function TimetableAdmin() {
   if (isLoading && !timetableData) return <div className={styles.loading}>Carregando grade horária...</div>;
   if (error && !timetableData) {
     return (
-      <div className={styles.errorContainer}>
-        <div className={styles.error}>Erro ao carregar grade: {error}</div>
-        <button 
-          className={styles.botaoSincronizar} 
-          onClick={handleSincronizar}
-          disabled={sincronizando}
-        >
-          <RefreshCw size={16} className={sincronizando ? styles.girando : ''} />
-          {sincronizando ? 'Tentando sincronizar...' : 'Tentar sincronizar agora'}
-        </button>
-      </div>
+      <AlertBanner
+        tipo="erro"
+        mensagem={aviso?.mensagem || 'Não foi possível carregar a grade horária.'}
+        acao={{ rotulo: 'Tentar sincronizar novamente', aoClicar: handleSincronizar }}
+      />
     );
   }
 
@@ -167,10 +163,16 @@ function TimetableAdmin() {
       <div className={styles.header}>
         <h2>Grade Horária do EduPage</h2>
         <div className={styles.filtros}>
-          <label>Selecione a Sala: </label>
-          <select value={salaAtual} onChange={(e) => setSalaSelecionada(e.target.value)}>
-            {salas.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <label className={styles.campoSala}>
+            Sala
+            <Select
+              valor={salaAtual}
+              aoAlterar={setSalaSelecionada}
+              opcoes={salas.map((sala) => ({ valor: sala, rotulo: sala }))}
+              ariaLabel="Sala"
+              filtro
+            />
+          </label>
           <button 
             type="button"
             className={styles.botaoSincronizar} 
@@ -184,11 +186,7 @@ function TimetableAdmin() {
         </div>
       </div>
 
-      {mensagemSucesso && (
-        <div className={styles.alertaSucesso}>
-          {mensagemSucesso}
-        </div>
-      )}
+      <AlertBanner tipo={aviso?.tipo} mensagem={aviso?.mensagem} aoFechar={() => setAviso(null)} />
 
       <div className={styles.gridContainer}>
         {/* Cabeçalho da Grade */}

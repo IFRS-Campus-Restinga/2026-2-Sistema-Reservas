@@ -7,7 +7,6 @@
 .horarios { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .disponibilidade { display: flex; align-items: center; gap: 7px; margin: 0; padding: 9px 10px; border-radius: 8px; color: #08763b; background: #e9f8f0; font-size: 12px; }
 .indisponivel { color: #b91c1c; background: #fef2f2; }
-.erro { margin: 0; padding: 10px; border-radius: 8px; color: #b91c1c; background: #fef2f2; font-size: 12px; }
 .acoes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .acoes button { width: 100%; }
 .recorrencia label { flex-direction: row; align-items: center; }

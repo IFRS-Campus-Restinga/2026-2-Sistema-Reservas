@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Alert, Form } from "react-bootstrap";
 import { ClipboardList, Columns, LayoutGrid, Repeat } from "lucide-react";
 import { useUsuario } from "../../hooks/useUsuario";
 import {
@@ -13,8 +12,10 @@ import ModalDetalheReserva from "../../components/ModalDetalheReserva/ModalDetal
 import ReservaAreaModal from "../../components/ReservaArea/ReservaAreaModal";
 import GerenciarRecorrenciaModal from "../../components/RecorrenciaArea/GerenciarRecorrenciaModal";
 import Select from "../../components/Select/Select";
+import AlertBanner from "../../components/AlertBanner/AlertBanner";
 import { diasDaSemana, horarioParaMinutos } from "../../utils/data";
 import { ehAdministrador, podeReservarArea } from "../../utils/permissoes";
+import { mensagemDeErro } from "../../utils/erros";
 import styles from "./Calendario.module.css";
 
 const ALTURA_HORA = 56; // Altura das horas em pixels
@@ -149,7 +150,7 @@ function Calendario() {
         setErro("");
       })
       .catch((falha) => {
-        if (!descartada) setErro(falha.message);
+        if (!descartada) setErro(mensagemDeErro(falha, 'Não foi possível carregar as reservas do calendário.'));
       });
 
     return () => {
@@ -240,16 +241,15 @@ function Calendario() {
   }
 
   if (!agora) {
-    return <p className="text-danger p-4" role="alert">{erro}</p>;
+    return <AlertBanner tipo="erro" mensagem={erro} className="m-3 m-md-4" />;
   }
 
   return (
     <div className={styles.pagina}>
       <div className="d-flex flex-wrap align-items-center gap-2 bg-white border-bottom px-3 px-md-4 py-3 flex-shrink-0">
-        <Form.Control
+        <input
           type="date"
-          size="sm"
-          className="w-auto"
+          className={styles.campoData}
           aria-label="Data"
           value={data}
           onChange={(evento) => evento.target.value && setData(evento.target.value)}
@@ -270,6 +270,7 @@ function Calendario() {
             aoAlterar={setBlocoId}
             opcoes={opcoesBloco}
             ariaLabel="Bloco"
+            filtro
           />
         ) : (
           <Select
@@ -277,6 +278,7 @@ function Calendario() {
             aoAlterar={setAreaId}
             grupos={gruposSelectArea}
             ariaLabel="Área"
+            filtro
           />
         )}
 
@@ -308,26 +310,9 @@ function Calendario() {
         )}
       </div>
 
-      {aviso && (
-        <Alert
-          variant="success"
-          className="d-flex align-items-center justify-content-between gap-3 mx-3 mx-md-4 my-3 py-2 flex-shrink-0"
-        >
-          <span>{aviso}</span>
-          <button
-            type="button"
-            className="btn-close flex-shrink-0"
-            aria-label="Fechar aviso"
-            onClick={() => setAviso("")}
-          />
-        </Alert>
-      )}
+      <AlertBanner mensagem={aviso} aoFechar={() => setAviso("")} className="mx-3 mx-md-4 my-3 flex-shrink-0" />
 
-      {erro && (
-        <Alert variant="danger" className="mx-3 mx-md-4 my-3 py-2 flex-shrink-0" role="alert">
-          {erro}
-        </Alert>
-      )}
+      <AlertBanner tipo="erro" mensagem={erro} className="mx-3 mx-md-4 my-3 flex-shrink-0" />
 
       <div className={styles.grade}>
         <div className={styles.conteudoGrade}>

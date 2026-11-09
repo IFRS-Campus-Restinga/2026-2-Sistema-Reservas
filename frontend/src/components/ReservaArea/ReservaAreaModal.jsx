@@ -23,6 +23,8 @@ import {
   montarRecorrencia,
   validarRecorrencia,
 } from '../../utils/recorrencia';
+import AlertBanner from '../AlertBanner/AlertBanner';
+import { mensagemDeErro } from '../../utils/erros';
 import styles from './ReservaAreaModal.module.css';
 
 // Término sugerido: uma hora depois do início, limitado ao último horário da lista
@@ -239,7 +241,7 @@ function ReservaAreaModal({
           datas: datasConflitantesRecorrencia(erroRequisicao),
         });
       } else {
-        setErro(erroRequisicao.message);
+        setErro(mensagemDeErro(erroRequisicao, 'Não foi possível salvar a reserva.'));
       }
     } finally {
       setEnviando(false);
@@ -434,11 +436,7 @@ function ReservaAreaModal({
           />
         </Form.Group>
 
-        {erro && (
-          <Alert variant="danger" className="py-2 mb-0" role="alert">
-            {erro}
-          </Alert>
-        )}
+        <AlertBanner tipo="erro" mensagem={erro} />
 
         <div className={styles.acoes}>
           <Botao

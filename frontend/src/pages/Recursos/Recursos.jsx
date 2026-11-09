@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PackageSearch } from 'lucide-react';
 import CampoBusca from '../../components/Administracao/CampoBusca/CampoBusca';
+import BarraFiltros from '../../components/BarraFiltros/BarraFiltros';
 import CardRecurso from '../../components/CardRecurso/CardRecurso';
 import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/ReservaRecursoGeralModal';
 import Select from '../../components/Select/Select';
 import { CATEGORIA_RECURSO_LABEL } from '../../utils/categoriaRecurso';
+import AlertBanner from '../../components/AlertBanner/AlertBanner';
 import styles from './Recursos.module.css';
 
 function Recursos() {
@@ -23,7 +25,7 @@ function Recursos() {
 
   return (
     <div className={styles.pagina}>
-      <div className="d-flex flex-wrap align-items-center justify-content-center gap-2">
+      <BarraFiltros>
         <CampoBusca
           valor={busca}
           aoAlterar={setBusca}
@@ -38,9 +40,9 @@ function Recursos() {
           rotuloTodos="Todas as categorias"
           ariaLabel="Filtrar por categoria"
         />
-      </div>
+      </BarraFiltros>
 
-      {erro && <p role="alert">{erro}</p>}
+      <AlertBanner tipo="erro" mensagem={erro} />
       <section
         className={styles.resultados}
         aria-label="Tipos de recursos disponíveis"

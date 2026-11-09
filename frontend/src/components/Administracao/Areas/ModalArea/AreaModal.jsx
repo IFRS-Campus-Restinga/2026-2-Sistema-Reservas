@@ -1,6 +1,7 @@
 import SelectRemoto from '../../../SelectRemoto/SelectRemoto';
 import { useEffect, useState } from 'react';
 import Modal from '../../Modal/Modal';
+import AlertBanner from '../../../AlertBanner/AlertBanner';
 import styles from './AreaModal.module.css';
 
 const formularioInicial = {
@@ -142,7 +143,7 @@ function AreaModal({
                 onSubmit={enviarFormulario}
                 onInvalid={mostrarErro}
             >
-                {mensagemErro('geral')}
+                <AlertBanner tipo="erro" mensagem={erros.geral} />
                 
                 <div className={styles.linhaDupla}>
                     <div className={styles.campo}>
