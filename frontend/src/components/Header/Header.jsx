@@ -127,7 +127,7 @@ function Header({ titulo, usuario }) {
             modalidade:
               atualizada.reserva.modalidade,
             termo_tipo:
-              atualizada.reserva.termo_tipo ||
+              atualizada.termo_tipo ||
               "responsabilidade",
           },
         },

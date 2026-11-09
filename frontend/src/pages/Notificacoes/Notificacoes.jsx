@@ -96,7 +96,9 @@ function Notificacoes() {
           id: atualizada.reserva.id,
           modalidade:
             atualizada.reserva.modalidade,
-          termo_tipo: "responsabilidade",
+          termo_tipo:
+            atualizada.termo_tipo ||
+            "responsabilidade",
         },
       },
     });
