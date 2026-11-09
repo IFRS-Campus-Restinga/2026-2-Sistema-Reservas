@@ -9,6 +9,7 @@ import CampoBusca from '../../components/Administracao/CampoBusca/CampoBusca';
 import BarraFiltros from '../../components/BarraFiltros/BarraFiltros';
 import CardVeiculo from '../../components/CardVeiculo/CardVeiculo';
 import Select from '../../components/Select/Select';
+import AlertBanner from '../../components/AlertBanner/AlertBanner';
 import styles from './Veiculos.module.css';
 
 const OPCOES_STATUS = [
@@ -32,7 +33,7 @@ function Veiculos() {
           valorTodos="todos" rotuloTodos="Todos os status" ariaLabel="Filtrar por status" />
       </BarraFiltros>
 
-      {erro && <p className="text-danger" role="alert">{erro}</p>}
+      <AlertBanner tipo="erro" mensagem={erro} />
       {carregando ? (
         <p className="text-muted" role="status">Carregando veículos...</p>
       ) : filtrados.length === 0 ? (

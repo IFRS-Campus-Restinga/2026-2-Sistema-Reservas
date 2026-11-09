@@ -9,6 +9,7 @@ import CardRecurso from '../../components/CardRecurso/CardRecurso';
 import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/ReservaRecursoGeralModal';
 import Select from '../../components/Select/Select';
 import { CATEGORIA_RECURSO_LABEL } from '../../utils/categoriaRecurso';
+import AlertBanner from '../../components/AlertBanner/AlertBanner';
 import styles from './Recursos.module.css';
 
 function Recursos() {
@@ -41,7 +42,7 @@ function Recursos() {
         />
       </BarraFiltros>
 
-      {erro && <p role="alert">{erro}</p>}
+      <AlertBanner tipo="erro" mensagem={erro} />
       <section
         className={styles.resultados}
         aria-label="Tipos de recursos disponíveis"

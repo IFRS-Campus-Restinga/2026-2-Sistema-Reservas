@@ -13,6 +13,7 @@ import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/Reser
 import ReservaAreaModal from '../../components/ReservaArea/ReservaAreaModal';
 import ReservaVeiculoModal from '../../components/ReservaVeiculo/ReservaVeiculoModal';
 import TermoReserva from '../../components/TermoReserva/TermoReserva';
+import AlertBanner from '../../components/AlertBanner/AlertBanner';
 import Select from '../../components/Select/Select';
 import BarraFiltros from '../../components/BarraFiltros/BarraFiltros';
 import CampoBusca from '../../components/Administracao/CampoBusca/CampoBusca';
@@ -98,9 +99,7 @@ function MinhasReservas() {
   }
 
   function recursoDaReserva(reserva) {
-    return recursos.find(
-      (recurso) => String(recurso.id) === String(reserva.recurso_geral)
-    );
+    return reserva.recurso_detalhe;
   }
 
   function nomeItem(reserva) {
@@ -330,17 +329,6 @@ function MinhasReservas() {
   return (
     <div className={styles.pagina}>
       {carregando && <p role="status">Carregando reservas...</p>}
-      {aviso && (
-        <p className={styles.aviso}>
-          {aviso}
-        </p>
-      )}
-
-      {erro && (
-        <p className={styles.erro} role="alert">
-          {erro}
-        </p>
-      )}
 
       <BarraFiltros>
         <CampoBusca
@@ -386,6 +374,9 @@ function MinhasReservas() {
           ariaLabel="Filtrar por período"
         />
       </BarraFiltros>
+
+      <AlertBanner mensagem={aviso} aoFechar={() => setAviso('')} />
+      <AlertBanner tipo="erro" mensagem={erro} />
 
       <section className={styles.lista} aria-label="Minhas reservas">
         {!carregando && ordenadas.length === 0 && (

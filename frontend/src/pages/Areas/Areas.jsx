@@ -9,6 +9,7 @@ import CampoBusca from "../../components/Administracao/CampoBusca/CampoBusca";
 import BarraFiltros from "../../components/BarraFiltros/BarraFiltros";
 import Select from "../../components/Select/Select";
 import CardArea from "../../components/CardArea/CardArea";
+import AlertBanner from "../../components/AlertBanner/AlertBanner";
 import styles from "./Areas.module.css";
 
 const OPCOES_CAPACIDADE = [
@@ -51,9 +52,7 @@ function Areas() {
         />
       </BarraFiltros>
 
-      {erro && (
-        <p className="text-danger" role="alert">{erro}</p>
-      )}
+      <AlertBanner tipo="erro" mensagem={erro} />
 
       {carregando ? (
         <p className="text-muted" role="status">Carregando áreas...</p>
