@@ -10,7 +10,17 @@ from hub_integrations.services.demonstracao import (
     garantir_usuario_demonstracao,
     gerar_token_demonstracao,
     gravar_cookie_demonstracao,
+    listar_usuarios_demonstracao,
 )
+
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def usuarios_demonstracao(request):
+    if not settings.MODO_DEMONSTRACAO:
+        raise Http404
+    return Response(listar_usuarios_demonstracao())
 
 
 @api_view(['POST'])
