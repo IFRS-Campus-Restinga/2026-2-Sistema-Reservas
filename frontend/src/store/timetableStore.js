@@ -34,7 +34,7 @@ export const useTimetableStore = create((set, get) => {
         set({ timetableData: response.data.grade, ultimaSincronizacao: response.data.ultima_sincronizacao, isLoading: false });
       } catch (error) {
         if (versao !== versaoRequisicao || controle.signal.aborted) return;
-        set({ error: error.response?.data?.erro || error.message, isLoading: false });
+        set({ error: error.response?.data?.erro || 'Não foi possível carregar a grade horária.', isLoading: false });
       } finally {
         if (controleConsulta === controle) controleConsulta = null;
       }
@@ -55,7 +55,7 @@ export const useTimetableStore = create((set, get) => {
           set({ timetableData: response.data.grade, ultimaSincronizacao: response.data.ultima_sincronizacao, isLoading: false });
           return postResponse.data;
         } catch (error) {
-          const msg = error.response?.data?.erro || error.response?.data?.detail || error.message;
+          const msg = error.response?.data?.erro || error.response?.data?.detail || 'Não foi possível sincronizar a grade horária.';
           set({ error: msg, isLoading: false });
           throw error;
         } finally {
