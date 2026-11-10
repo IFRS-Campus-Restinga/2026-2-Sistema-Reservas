@@ -1,4 +1,4 @@
-import { Alert, Form } from 'react-bootstrap';
+import { Form } from 'react-bootstrap';
 import { Repeat } from 'lucide-react';
 import Botao from '../Botao/Botao';
 import Select from '../Select/Select';
@@ -8,6 +8,7 @@ import {
   gerarDatasRecorrencia,
   validarRecorrencia,
 } from '../../utils/recorrencia';
+import AlertBanner from '../AlertBanner/AlertBanner';
 import styles from './CamposRecorrencia.module.css';
 
 /**
@@ -39,6 +40,8 @@ import styles from './CamposRecorrencia.module.css';
  * - aoPularConflitos (opcional): função chamada para criar a recorrência sem as datas em
  *   conflito; quando não informada, o botão "Pular datas" não é exibido
  * - desabilitado (opcional, default false): desabilita o botão "Pular datas" (ex.: enquanto salva)
+ * - erroAdicional (opcional): erro da modalidade exibido quando as datas são válidas
+ *   (ex.: viagens de veículo que se sobrepõem)
  */
 
 function CamposRecorrencia({
@@ -53,8 +56,9 @@ function CamposRecorrencia({
   datasConflitantes = [],
   aoPularConflitos,
   desabilitado = false,
+  erroAdicional = '',
 }) {
-  const erro = dataFim ? validarRecorrencia(dataInicio, tipo, dataFim) : '';
+  const erro = (dataFim ? validarRecorrencia(dataInicio, tipo, dataFim) : '') || erroAdicional;
   const datas = erro ? [] : gerarDatasRecorrencia(dataInicio, tipo, dataFim);
   const restantes = datas.filter((data) => !datasConflitantes.includes(data)).length;
   const podePular = Boolean(aoPularConflitos) && datasConflitantes.length > 0;
@@ -114,32 +118,37 @@ function CamposRecorrencia({
           )}
 
           {conflitos.length > 0 && (
-            <Alert variant="danger" className="py-2 mb-0" role="alert">
-              <p className="fw-medium mb-1">Não foi possível criar a recorrência:</p>
-              <ul className="small mb-0 ps-3">
-                {conflitos.map((conflito) => (
-                  <li key={conflito}>{conflito}</li>
-                ))}
-              </ul>
+            <AlertBanner
+              tipo="erro"
+              mensagem={(
+                <>
+                  <p className="fw-medium mb-1">Não foi possível criar a recorrência:</p>
+                  <ul className="mb-0 ps-3">
+                    {conflitos.map((conflito) => (
+                      <li key={conflito}>{conflito}</li>
+                    ))}
+                  </ul>
 
-              {podePular && restantes >= 2 && (
-                <div className="mt-2">
-                  <Botao
-                    titulo={`Pular ${datasConflitantes.length} data(s) e criar ${restantes} reservas`}
-                    estilo="secundario"
-                    tamanhoFonte="13px"
-                    aoClicar={aoPularConflitos}
-                    desabilitado={desabilitado}
-                  />
-                </div>
-              )}
+                  {podePular && restantes >= 2 && (
+                    <div className="mt-2">
+                      <Botao
+                        titulo={`Pular ${datasConflitantes.length} data(s) e criar ${restantes} reservas`}
+                        estilo="secundario"
+                        tamanhoFonte="13px"
+                        aoClicar={aoPularConflitos}
+                        desabilitado={desabilitado}
+                      />
+                    </div>
+                  )}
 
-              {podePular && restantes < 2 && (
-                <p className="small mb-0 mt-2">
-                  Não há reservas suficientes para criar a recorrência sem essas datas.
-                </p>
+                  {podePular && restantes < 2 && (
+                    <p className="mb-0 mt-2">
+                      Não há reservas suficientes para criar a recorrência sem essas datas.
+                    </p>
+                  )}
+                </>
               )}
-            </Alert>
+            />
           )}
         </>
       )}

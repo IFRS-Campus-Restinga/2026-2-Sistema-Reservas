@@ -8,6 +8,7 @@ import { buscarVeiculo } from '../../services';
 import { buscarAgendaVeiculo } from '../../services/reservasVeiculos';
 import { STATUS_RECURSO_LABEL } from '../../utils/statusRecurso';
 import { podeReservarVeiculo } from '../../utils/permissoes';
+import AlertBanner from '../../components/AlertBanner/AlertBanner';
 import styles from './VeiculoDetalhe.module.css';
 
 function dataHora(data, horario) {
@@ -47,7 +48,7 @@ function VeiculoDetalhe() {
   }, [id]);
 
   if (carregando) return <p className="text-muted p-4" role="status">Carregando veículo...</p>;
-  if (erro || !veiculo) return <p className="text-danger p-4" role="alert">{erro}</p>;
+  if (erro || !veiculo) return <AlertBanner tipo="erro" mensagem={erro || 'Veículo não encontrado.'} className="m-3 m-md-4" />;
 
   const podeSolicitar = podeReservarVeiculo(usuario);
   const agora = new Date();

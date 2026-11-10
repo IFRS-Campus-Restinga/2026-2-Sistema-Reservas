@@ -143,8 +143,7 @@
   background: #009a44;
 }
 
-.estado,
-.erro {
+.estado {
   margin: 0;
   padding: 35px 20px;
   border-radius: 12px;
@@ -156,12 +155,6 @@
   border: 1px solid #e5e7eb;
   background: #ffffff;
   color: #94a3b8;
-}
-
-.erro {
-  margin-bottom: 12px;
-  background: #fef2f2;
-  color: #b91c1c;
 }
 
 @media (max-width: 650px) {

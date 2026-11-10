@@ -202,3 +202,18 @@
   font-size: 0.75rem;
   opacity: 0.85;
 }
+
+.campoData {
+  padding: var(--filtro-espaco-y) var(--filtro-espaco-x);
+  border: 1px solid var(--filtro-borda);
+  border-radius: var(--filtro-raio);
+  background-color: #ffffff;
+  color: var(--filtro-texto);
+  font-size: var(--filtro-fonte);
+  line-height: var(--filtro-linha);
+}
+
+.campoData:focus {
+  outline: 2px solid var(--cor-marca);
+  outline-offset: 0;
+}

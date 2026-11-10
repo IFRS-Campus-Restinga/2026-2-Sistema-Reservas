@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Check, XCircle } from 'lucide-react';
 import Modal from '../../Modal/Modal';
+import AlertBanner from '../../../AlertBanner/AlertBanner';
 import styles from './ModalReservaPendente.module.css';
 
 const MODALIDADE_LABEL = {
@@ -144,11 +145,7 @@ function ModalReservaPendente({ aberto, reserva, aoFechar, aoConfirmar, confirma
           <span className={styles.status}>Pendente</span>
         </div>
 
-        {erroAcao && (
-          <p className={styles.erro} role="alert">
-            {erroAcao}
-          </p>
-        )}
+        <AlertBanner tipo="erro" mensagem={erroAcao} />
 
         {modoCancelamento && (
           <section className={styles.blocoCancelamento}>

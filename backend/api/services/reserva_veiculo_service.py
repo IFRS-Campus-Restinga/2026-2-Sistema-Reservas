@@ -71,10 +71,10 @@ def reservas_bloqueantes(veiculo):
     ).order_by('data', 'horario_inicio')
 
 
-def _validar_ocupacao(veiculo, inicio, fim, reserva=None):
+def _validar_ocupacao(veiculo, inicio, fim, reserva=None, excluir_ids=()):
     if veiculo.status != StatusRecurso.ATIVO:
         raise ValidationError({'veiculo': 'O veículo não está disponível para reserva.'})
-    reservas = reservas_bloqueantes(veiculo)
+    reservas = reservas_bloqueantes(veiculo).exclude(pk__in=excluir_ids)
     if reserva is not None:
         reservas = reservas.exclude(pk=reserva.pk)
     for existente in reservas:
@@ -90,7 +90,7 @@ def validar_disponibilidade(dados, reserva=None, usuario=None, agora=None):
     _validar_ocupacao(dados['veiculo'], inicio, fim, reserva)
 
 
-def validar_reserva(usuario, dados, reserva=None, agora=None):
+def validar_reserva(usuario, dados, reserva=None, agora=None, excluir_ids=()):
 
     if reserva is not None:
         campos = ('veiculo', 'data', 'data_devolucao_prevista', 'horario_inicio',
@@ -109,4 +109,4 @@ def validar_reserva(usuario, dados, reserva=None, agora=None):
     if quantidade > dados['veiculo'].capacidade:
         raise ValidationError({'quantidade_passageiros': 'A quantidade de ocupantes, incluindo o motorista, não pode exceder a capacidade do veículo.'})
     validar_autorizacao(reserva.usuario if reserva is not None else usuario, dados)
-    _validar_ocupacao(dados['veiculo'], inicio, fim, reserva)
+    _validar_ocupacao(dados['veiculo'], inicio, fim, reserva, excluir_ids)

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Bell, CalendarClock, CheckCircle2, Clock3, X, UserRound, XCircle, FileText } from "lucide-react";
 import { STATUS_RESERVA_LABEL } from "../../utils/reserva";
+import { notificacaoTermoEnviado, notificacaoTermoRejeitado } from "../../utils/notificacoes";
 import styles from "./ModalNotificacao.module.css";
 
 function formatarData(data) {
@@ -37,8 +38,8 @@ function ModalNotificacao({ notificacao, aoFechar }) {
   const reserva = notificacao.reserva;
   const status = String(reserva?.status || "").toLowerCase();
   const cancelamento = notificacao.tipo === "CANCELAMENTO_RESERVA";
-  const termoRejeitado = notificacao.tipo === "TERMO_REJEITADO";
-  const termoEnviado = notificacao.tipo === "TERMO_ENVIADO" || notificacao.tipo === "TERMO_REENVIADO";
+  const termoRejeitado = notificacaoTermoRejeitado(notificacao.tipo);
+  const termoEnviado = notificacaoTermoEnviado(notificacao.tipo);
   const IconeStatus = cancelamento || termoRejeitado
     ? XCircle
     : termoEnviado

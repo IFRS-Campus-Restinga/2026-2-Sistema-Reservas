@@ -15,10 +15,6 @@ import AuditoriaAdmin from "../../components/Administracao/Auditoria/AuditoriaAd
 import SolicitacoesAdmin from "../../components/Administracao/Solicitacoes/SolicitacoesAdmin";
 
 const abas = [
-  {
-    id: "visao-geral",
-    rotulo: "Visão Geral",
-  },
   { 
     id: "solicitacoes", 
     rotulo: "Solicitações" 
@@ -61,7 +57,7 @@ function Administracao() {
   const location = useLocation();
 
   const [abaAtiva, setAbaAtiva] = useState(
-    location.state?.aba || "visao-geral"
+    location.state?.aba || "solicitacoes"
   );
 
   useEffect(() => {
@@ -85,11 +81,6 @@ function Administracao() {
 
       <div className={styles.conteudo}>
         {abaAtiva === "solicitacoes" && (<SolicitacoesAdmin solicitacaoInicial={location.state?.solicitacaoInicial}/>)}
-        {abaAtiva === "visao-geral" && (
-          <p className={styles.visaoGeral}>
-            Visão geral da administração.
-          </p>
-        )}
 
         {abaAtiva === "reservas" && (
                   <ReservasAdmin />

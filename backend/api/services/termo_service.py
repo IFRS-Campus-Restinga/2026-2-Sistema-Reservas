@@ -14,7 +14,10 @@ from api.enumerations.status_termo import StatusTermo
 from api.models import Reserva, TermoResponsabilidade
 from api.permissions.regras_comuns import usuario_e_admin
 from api.services.situacao_reserva_service import situacao_reserva
-from api.services.notificacao_service import criar_notificacao_termo_aprovado, criar_notificacao_termo_enviado, criar_notificacao_termo_rejeitado
+from api.services.notificacao_service import (
+    criar_notificacao_termo_aprovado, criar_notificacao_termo_enviado, criar_notificacao_termo_rejeitado,
+    criar_notificacao_termo_operacional_analisado, criar_notificacao_termo_operacional_enviado,
+)
 
 
 ABERTAS = (StatusReserva.AGUARDANDO_TERMO, StatusReserva.PENDENTE)
@@ -175,6 +178,8 @@ def enviar_termo(reserva, usuario, arquivo, tipo=TipoTermo.RESPONSABILIDADE):
                 )
                 reserva.status = StatusReserva.PENDENTE
                 Reserva.objects.filter(pk=reserva.pk).update(status=reserva.status)
+            else:
+                criar_notificacao_termo_operacional_enviado(termo, reenviado=reenviado)
     except Exception:
         for campo in (termo.arquivo_original, termo.arquivo_assinado):
             if campo.name:
@@ -295,6 +300,8 @@ def analisar_termo(reserva, termo_id, usuario, decisao, motivo, tipo=TipoTermo.R
                 reserva,
                 motivo,
             )
+    else:
+        criar_notificacao_termo_operacional_analisado(reserva, tipo, decisao, motivo)
 
 def montar_solicitacao_termo(reserva, documento_parametro):
     concreta, modalidade = reserva_concreta(reserva)

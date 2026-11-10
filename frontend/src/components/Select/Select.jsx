@@ -46,10 +46,11 @@ function Select({
   ariaLabel,
   required = false,
   larguraTotal = false,
+  filtro = false,
 }) {
   return (
     <Form.Select
-      className={`rounded-3 ${styles.select} ${larguraTotal ? styles.larguraTotal : ''}`}
+      className={`${styles.select} ${filtro ? styles.filtro : ''} ${larguraTotal ? styles.larguraTotal : ''}`}
       value={valor}
       onChange={(evento) => aoAlterar(evento.target.value)}
       aria-label={ariaLabel}

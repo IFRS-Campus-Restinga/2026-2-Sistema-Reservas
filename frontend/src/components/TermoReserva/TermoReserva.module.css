@@ -134,6 +134,14 @@
   overflow-wrap: anywhere;
 }
 
+.arquivo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  max-width: 100%;
+}
+
 .documento {
   display: flex;
   flex-direction: column;
@@ -305,24 +313,6 @@
 .envioAnterior strong {
   font-weight: 500;
   color: #374151;
-}
-
-.erro {
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: #fef2f2;
-  color: #b91c1c;
-  overflow-wrap: anywhere;
-}
-
-.sucesso {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  color: #007832;
-  background: #e8f5ee;
 }
 
 .carregando {

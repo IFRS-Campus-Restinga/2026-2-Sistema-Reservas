@@ -1,12 +1,20 @@
 from rest_framework import serializers
 
 from api.models.notificacao_model import Notificacao
-from api.enumerations.tipo_notificacao import TipoNotificacao
+from api.enumerations.tipo_termo import TipoTermo
+from api.services.notificacao_service import TIPO_TERMO_POR_NOTIFICACAO, TIPOS_NOTIFICACAO_TERMO_REJEITADO
 from api.services.termo_service import reserva_concreta
+
+DOCUMENTO_POR_TIPO_TERMO = {
+    TipoTermo.RESPONSABILIDADE: 'responsabilidade',
+    TipoTermo.RETIRADA_VEICULO: 'retirada',
+    TipoTermo.DEVOLUCAO_VEICULO: 'devolucao',
+}
 
 class NotificacaoSerializer(serializers.ModelSerializer):
     reserva = serializers.SerializerMethodField()
     motivo_rejeicao_termo = serializers.SerializerMethodField()
+    termo_tipo = serializers.SerializerMethodField()
 
     class Meta:
         model = Notificacao
@@ -20,6 +28,7 @@ class NotificacaoSerializer(serializers.ModelSerializer):
             "lida_em",
             "reserva",
             "motivo_rejeicao_termo",
+            "termo_tipo",
         ]
 
     def get_reserva(self, notificacao):
@@ -46,8 +55,11 @@ class NotificacaoSerializer(serializers.ModelSerializer):
                 else None
             ),
         }
+    def get_termo_tipo(self, notificacao):
+        return DOCUMENTO_POR_TIPO_TERMO.get(TIPO_TERMO_POR_NOTIFICACAO.get(notificacao.tipo))
+
     def get_motivo_rejeicao_termo(self, notificacao):
-        if notificacao.tipo != TipoNotificacao.TERMO_REJEITADO:
+        if notificacao.tipo not in TIPOS_NOTIFICACAO_TERMO_REJEITADO:
             return None
 
         termo = getattr(
@@ -56,7 +68,9 @@ class NotificacaoSerializer(serializers.ModelSerializer):
             [],
         )
 
-        if not termo:
-            return None
+        tipo_termo = TIPO_TERMO_POR_NOTIFICACAO[notificacao.tipo]
 
-        return termo[0].motivo_rejeicao
+        return next(
+            (item.motivo_rejeicao for item in termo if item.tipo == tipo_termo),
+            None,
+        )
