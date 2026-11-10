@@ -4,6 +4,7 @@ from .usuarios_demonstracao import (
     USUARIOS_DEMONSTRACAO,
     eh_usuario_demonstracao,
     garantir_usuario_demonstracao,
+    listar_usuarios_demonstracao,
 )
 
 __all__ = [
@@ -14,4 +15,5 @@ __all__ = [
     'garantir_usuario_demonstracao',
     'gerar_token_demonstracao',
     'gravar_cookie_demonstracao',
+    'listar_usuarios_demonstracao',
 ]
