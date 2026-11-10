@@ -16,16 +16,15 @@ export function rotulosRecursos(grupo) {
     });
 }
 
-export function correspondeAoFiltroRecurso(grupo, filtroRecurso, filtroTipoRecurso) {
-    if (filtroRecurso === FILTRO_TODOS) return true;
-    if (!grupo.tipos_recurso_autorizados?.includes(filtroRecurso)) return false;
-    if (filtroRecurso !== TIPO_RECURSO_RESERVAVEL.RECURSO_GERAL || filtroTipoRecurso === FILTRO_TODOS) return true;
-    return (grupo.tipos_recurso ?? []).some((tipoRecurso) => String(tipoRecurso) === String(filtroTipoRecurso));
-}
-
 export function formatarData(dataISO) {
     const [ano, mes, dia] = dataISO.split('-');
     return `${dia}/${mes}/${ano}`;
+}
+
+export function formatarVigenciaGrupo(grupo) {
+    return grupo.data_fim_validade
+        ? `${formatarData(grupo.data_inicio_validade)} a ${formatarData(grupo.data_fim_validade)}`
+        : `a partir de ${formatarData(grupo.data_inicio_validade)}`;
 }
 
 export function formatarValidadeMembro(membro, grupo) {

@@ -1,6 +1,8 @@
 import SelectRemoto from '../../../SelectRemoto/SelectRemoto';
 import { useEffect, useState } from 'react';
 import Modal from '../../Modal/Modal';
+import AlertBanner from '../../../AlertBanner/AlertBanner';
+import { mensagemDeErro } from '../../../../utils/erros';
 import styles from './RecursoModal.module.css';
 
 const formularioInicial = {
@@ -97,7 +99,7 @@ function RecursoModal({
 
             setErros(Object.keys(novosErros).length > 0
                 ? novosErros
-                : { geral: erro.message || 'Não foi possível salvar o recurso.' });
+                : { geral: mensagemDeErro(erro, 'Não foi possível salvar o recurso. Tente novamente.') });
         } finally {
             setSalvando(false);
         }
@@ -135,7 +137,7 @@ function RecursoModal({
                 onSubmit={enviarFormulario}
                 onInvalid={mostrarErro}
             >
-                {mensagemErro('geral')}
+                <AlertBanner tipo="erro" mensagem={erros.geral} />
 
                 <div className={styles.campo}>
                     <label htmlFor="nome">Nome *</label>

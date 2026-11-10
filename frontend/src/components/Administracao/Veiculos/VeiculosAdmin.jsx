@@ -10,17 +10,23 @@ import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import VeiculoModal from './ModalVeiculo/VeiculoModal';
 import ModalConfirmacao from '../ModalConfirmacao/ModalConfirmacao';
 import CampoBusca from '../CampoBusca/CampoBusca';
-
+import BarraFiltros from '../../BarraFiltros/BarraFiltros';
+import Select from '../../Select/Select';
+import { OPCOES_STATUS_RECURSO, STATUS_RECURSO_LABEL } from '../../../utils/statusRecurso';
+import AlertBanner from '../../AlertBanner/AlertBanner';
 
 function VeiculosAdministracao() {
     const [busca, setBusca] = useState('');
+    const [filtroStatus, setFiltroStatus] = useState('todos');
 
     const [modalVeiculoAberto, setModalVeiculoAberto] =  useState(false);
     const [veiculoEditando, setVeiculoEditando] =useState(null);
     const [veiculoExcluindo, setVeiculoExcluindo] = useState(null);
+    const [aviso, setAviso] = useState(null);
 
 
-    const { itens: veiculos, carregando, erro, setErro, recarregar: carregarVeiculos, paginacao } = useListaPaginada('/api/veiculos/', { busca });
+    const { itens: veiculos, carregando, erro, setErro, recarregar: carregarVeiculos, paginacao } = useListaPaginada('/api/veiculos/', { busca, status: filtroStatus });
+    const filtrando = Boolean(busca.trim()) || filtroStatus !== 'todos';
 
     function abrirCadastro() {
         setVeiculoEditando(null);
@@ -46,6 +52,7 @@ function VeiculosAdministracao() {
             await criarVeiculo(dados);
         }
         fecharModalVeiculo();
+        setAviso({ tipo: 'sucesso', mensagem: veiculoEditando ? 'Veículo atualizado com sucesso.' : 'Veículo cadastrado com sucesso.' });
 
         await carregarVeiculos();
     }
@@ -68,28 +75,12 @@ function VeiculosAdministracao() {
             setVeiculoExcluindo(null);
 
             await carregarVeiculos();
+            setAviso({ tipo: 'sucesso', mensagem: 'Veículo excluído com sucesso.' });
         } catch (erro) {
             console.error(erro);
-            setErro('Não foi possível excluir o veículo.');
+            setAviso({ tipo: 'erro', mensagem: 'Não foi possível excluir o veículo.' });
         }
     }
-
-    function mostrarStatus(status) {
-      switch (status) {
-        case 'ATIVO':
-          return 'Ativo';
-        case 'MANUTENCAO':
-          return 'Manutenção';
-        case 'INATIVO':
-          return 'Inativo';
-        default:
-          return status;
-      }
-    }
-
-
-    const termoBusca = busca.trim().toLowerCase();
-    const veiculosFiltrados = veiculos;
 
     const colunas = [
         {
@@ -116,7 +107,7 @@ function VeiculosAdministracao() {
                     {veiculo.status === 'ATIVO'
                         ? <ToggleRight size={13} aria-hidden="true" />
                         : <ToggleLeft size={13} aria-hidden="true" />}
-                    {mostrarStatus(veiculo.status)}
+                    {STATUS_RECURSO_LABEL[veiculo.status] || veiculo.status}
                 </span>
             ),
         },
@@ -156,34 +147,45 @@ function VeiculosAdministracao() {
 
     return (
         <div className={styles.veiculos}>
-            <div className={styles.barraAcoes}>
+            <BarraFiltros
+                acoes={(
+                    <button
+                        type="button"
+                        className={styles.adicionar}
+                        onClick={abrirCadastro}
+                    >
+                        <Plus size={16} />
+                        Adicionar
+                    </button>
+                )}
+            >
                 <CampoBusca
                     valor={busca}
                     aoAlterar={setBusca}
                     placeholder="Buscar por nome ou placa..."
                 />
-                <button
-                    type="button"
-                    className={styles.adicionar}
-                    onClick={abrirCadastro}
-                >
-                    <Plus size={16} />
-                    Adicionar
-                </button>
-            </div>
+                <Select
+                    valor={filtroStatus}
+                    aoAlterar={setFiltroStatus}
+                    opcoes={OPCOES_STATUS_RECURSO}
+                    valorTodos="todos"
+                    rotuloTodos="Todos os status"
+                    ariaLabel="Filtrar veículos por status"
+                />
+            </BarraFiltros>
 
-            {erro && (
-                <p className={styles.erro} role="alert">{erro}</p>
-            )}
+            <AlertBanner tipo={aviso?.tipo} mensagem={aviso?.mensagem} aoFechar={() => setAviso(null)} />
+
+            <AlertBanner tipo="erro" mensagem={erro} />
 
             {carregando ? (
                 <p className={styles.carregando} role="status">Carregando veículos...</p>
             ) : (
                 <TabelaAdministracao
                     colunas={colunas}
-                    dados={veiculosFiltrados}
-                    mensagemVazia={termoBusca
-                        ? 'Nenhum veículo encontrado para esta busca.'
+                    dados={veiculos}
+                    mensagemVazia={filtrando
+                        ? 'Nenhum veículo encontrado para os filtros aplicados.'
                         : 'Nenhum veículo cadastrado.'}
                 />
             )}

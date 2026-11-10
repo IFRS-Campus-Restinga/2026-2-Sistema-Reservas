@@ -1,3 +1,4 @@
+from django.db.models import Count, Q
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -18,7 +19,11 @@ class GrupoListCreateView(APIView):
     permission_classes = [PodeCriarGrupo]
 
     def get(self, request):
-        queryset = Grupo.objects.select_related('criador').prefetch_related('autorizacoes__tipo_recurso').order_by('id')
+        queryset = (
+            Grupo.objects.select_related('criador').prefetch_related('autorizacoes__tipo_recurso')
+            .annotate(quantidade_membros=Count('membros', filter=Q(membros__excluido_em__isnull=True), distinct=True))
+            .order_by('id')
+        )
         apenas_meus = request.query_params.get('meus') == 'true'
         if apenas_meus or not usuario_e_admin(request.user):
             queryset = queryset.filter(criador=request.user)

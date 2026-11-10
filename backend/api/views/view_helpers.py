@@ -1,11 +1,13 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
+from django.db.models import Count, Max, Min
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
 from api.enumerations.auditoria_enumerations import AcaoAuditoria
+from api.models.reserva_model import Reserva
 from api.pagination import PaginacaoPadrao
 from api.services.filtros_listagem import filtrar_listagem
 from api.services.auditoria import foto, registrar_auditoria
@@ -22,8 +24,8 @@ class BuscarObjetoComPermissaoMixin:
         return obj
 
 
-def listar(request, queryset, serializer_class):
-    queryset = filtrar_listagem(request, queryset)
+def listar(request, queryset, serializer_class, campos_busca=None):
+    queryset = filtrar_listagem(request, queryset, campos_busca)
     paginator = PaginacaoPadrao()
     pagina = paginator.paginate_queryset(queryset, request)
     serializer = serializer_class(pagina, many=True)
@@ -45,6 +47,12 @@ def listar_agrupado_por_recorrencia(request, reservas, serializer_class):
     total_reservas = sum(len(grupo) for grupo in grupos.values())
     paginator = PaginacaoPadrao()
     pagina = paginator.paginate_queryset(list(grupos.values()), request)
+    ids_series = {grupo[0].recorrencia_id for grupo in pagina if grupo[0].recorrencia_id}
+    series = {
+        resumo['recorrencia_id']: resumo
+        for resumo in Reserva.objects.filter(recorrencia_id__in=ids_series).order_by()
+        .values('recorrencia_id').annotate(primeira=Min('data'), ultima=Max('data'), total=Count('id'))
+    }
     agora = timezone.localtime()
     resultados = []
     for grupo in pagina:
@@ -54,8 +62,9 @@ def listar_agrupado_por_recorrencia(request, reservas, serializer_class):
         principal = (futuras or grupo)[0]
         dados = serializer_class(principal).data
         if principal.recorrencia_id:
-            dados.update(primeira_data=grupo[0].data, ultima_data=grupo[-1].data,
-                         total_ocorrencias=len(grupo),
+            serie = series[principal.recorrencia_id]
+            dados.update(primeira_data=serie['primeira'], ultima_data=serie['ultima'],
+                         total_ocorrencias=serie['total'],
                          ocorrencias=serializer_class(grupo, many=True).data)
         resultados.append(dados)
     resposta = paginator.get_paginated_response(resultados)

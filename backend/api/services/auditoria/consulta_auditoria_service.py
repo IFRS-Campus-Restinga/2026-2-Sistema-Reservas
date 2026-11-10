@@ -1,8 +1,7 @@
 from django.db.models import Q
-from django.utils.dateparse import parse_date
-from rest_framework.exceptions import ValidationError
 
 from api.models.log_auditoria_model import LogAuditoria
+from api.services.filtros_listagem import periodo_do_parametro
 
 
 def filtrar_logs_auditoria(parametros):
@@ -25,23 +24,10 @@ def filtrar_logs_auditoria(parametros):
     if parametros.get('entidade'):
         logs = logs.filter(entidade=parametros['entidade'])
 
-    data_inicio = _ler_data(parametros, 'data_inicio')
-    data_fim = _ler_data(parametros, 'data_fim')
-    if data_inicio and data_fim and data_inicio > data_fim:
-        raise ValidationError({'data_fim': 'A data final não pode ser anterior à data inicial.'})
+    data_inicio, data_fim = periodo_do_parametro(parametros)
     if data_inicio:
         logs = logs.filter(data__date__gte=data_inicio)
     if data_fim:
         logs = logs.filter(data__date__lte=data_fim)
 
     return logs
-
-
-def _ler_data(parametros, campo):
-    valor = parametros.get(campo, '').strip()
-    if not valor:
-        return None
-    data = parse_date(valor)
-    if not data:
-        raise ValidationError({campo: 'Informe uma data válida no formato AAAA-MM-DD.'})
-    return data

@@ -50,13 +50,13 @@
 }
 
 .input {
-  height: 38px;
-  padding: 0 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  height: var(--filtro-altura);
+  padding: 0 var(--filtro-espaco-x);
+  border: 1px solid var(--filtro-borda);
+  border-radius: var(--filtro-raio);
   background-color: #ffffff;
-  color: #374151;
-  font-size: 14px;
+  color: var(--filtro-texto);
+  font-size: var(--filtro-fonte);
   font-weight: 400;
 }
 
@@ -66,13 +66,13 @@
 }
 
 .limpar {
-  height: 38px;
+  height: var(--filtro-altura);
   padding: 0 16px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border: 1px solid var(--filtro-borda);
+  border-radius: var(--filtro-raio);
   background-color: #ffffff;
-  color: #374151;
-  font-size: 14px;
+  color: var(--filtro-texto);
+  font-size: var(--filtro-fonte);
   font-weight: 500;
   transition: background-color 150ms ease;
 }
@@ -150,15 +150,6 @@
 
 .verDetalhes:hover {
   text-decoration: underline;
-}
-
-.erro {
-  padding: 12px 16px;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  background-color: #fef2f2;
-  color: #b91c1c;
-  font-size: 14px;
 }
 
 .carregando {

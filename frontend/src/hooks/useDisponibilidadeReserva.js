@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { consultarOpcoesDisponibilidade } from '../services/disponibilidade';
+import { mensagemDeErro } from '../utils/erros';
 
 function chaveMes(mes) {
   return `${mes.getFullYear()}-${String(mes.getMonth() + 1).padStart(2, '0')}`;
@@ -31,7 +32,7 @@ export default function useDisponibilidadeReserva({ tipo, recurso, mes, quantida
     }, controle.signal)
       .then((dados) => setEstado({ chave, horarios: dados.horarios || {}, erro: '' }))
       .catch((falha) => {
-        if (!controle.signal.aborted) setEstado({ chave, horarios: {}, erro: falha.message });
+        if (!controle.signal.aborted) setEstado({ chave, horarios: {}, erro: mensagemDeErro(falha, 'Não foi possível consultar a disponibilidade.') });
       });
     return () => controle.abort();
   }, [ativo, tipo, recurso, mesConsulta, quantidade, excluirReserva, chave]);

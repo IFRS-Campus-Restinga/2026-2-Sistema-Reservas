@@ -15,7 +15,7 @@ from api.serializers.recurso_geral_serializer import RecursoGeralSerializer
 from api.serializers.veiculo_serializer import VeiculoSerializer
 from api.serializers.tipo_recurso_serializer import TipoRecursoSerializer
 from .view_helpers import listar, listar_agrupado_por_recorrencia
-from api.services.filtros_listagem import filtrar_listagem
+from api.services.filtros_listagem import BUSCA_MINHAS_RESERVAS, filtrar_listagem
 from api.services.situacao_reserva_service import filtro_situacao, situacao_reserva
 
 
@@ -65,9 +65,9 @@ class MinhasReservasListView(APIView):
             filtro = filtro_situacao(situacao)
             reservas = reservas.filter(filtro).distinct() if filtro is not None else reservas.none()
         if request.query_params.get('agrupar_recorrencias') != 'true':
-            return listar(request, reservas, MinhaReservaSerializer)
+            return listar(request, reservas, MinhaReservaSerializer, BUSCA_MINHAS_RESERVAS)
         return listar_agrupado_por_recorrencia(
-            request, filtrar_listagem(request, reservas), MinhaReservaSerializer,
+            request, filtrar_listagem(request, reservas, BUSCA_MINHAS_RESERVAS), MinhaReservaSerializer,
         )
 
 

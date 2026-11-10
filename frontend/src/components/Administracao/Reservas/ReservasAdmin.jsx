@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ChevronDown, ChevronRight, Pencil, Repeat, Trash2 } from 'lucide-react';
 import Paginacao from '../Paginacao/Paginacao';
+import { mensagemDeErro } from '../../../utils/erros';
 import styles from './ReservasAdmin.module.css';
 import RelatorioUso from '../RelatorioUso/RelatorioUso';
+import AlertBanner from '../../AlertBanner/AlertBanner';
+import SelectRemoto from '../../SelectRemoto/SelectRemoto';
 
 import {
   buscarAreas,
@@ -13,6 +16,8 @@ import {
 import { consultarTodasPaginas } from '../../../services/paginacao';
 
 import CampoBusca from '../CampoBusca/CampoBusca';
+import BarraFiltros from '../../BarraFiltros/BarraFiltros';
+import CampoPeriodo from '../../CampoPeriodo/CampoPeriodo';
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import ModalConfirmacao from '../ModalConfirmacao/ModalConfirmacao';
 import Select from '../../Select/Select';
@@ -62,6 +67,25 @@ function formatarHorario(horario) {
   return horario
     ? horario.slice(0, 5)
     : '—';
+}
+
+
+function periodoReserva(reserva) {
+  const inicio = formatarHorario(reserva.horario_inicio);
+  const fim = formatarHorario(reserva.horario_fim);
+  const devolucao = reserva.detalhes?.data_devolucao_prevista;
+
+  if (devolucao && devolucao !== reserva.data) {
+    return {
+      datas: `${formatarData(reserva.data)} até ${formatarData(devolucao)}`,
+      horarios: `Retirada ${inicio} · Devolução ${fim}`,
+    };
+  }
+
+  return {
+    datas: formatarData(reserva.data),
+    horarios: `${inicio}–${fim}`,
+  };
 }
 
 
@@ -210,6 +234,8 @@ function ReservasAdmin() {
 
   const [busca, setBusca] = useState('');
   const [modalidade, setModalidade] = useState('todas');
+  const [filtroTiposRecurso, setFiltroTiposRecurso] = useState([]);
+  const [periodo, setPeriodo] = useState({ inicio: '', fim: '' });
 
   const [pagina, setPagina] = useState(1);
   const [total, setTotal] = useState(0);
@@ -217,6 +243,7 @@ function ReservasAdmin() {
 
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
+  const [erroCatalogo, setErroCatalogo] = useState('');
   const [mensagemSucesso, setMensagemSucesso] =
     useState('');
 
@@ -256,7 +283,7 @@ function ReservasAdmin() {
         if (!ativo) return;
         setAreas(areas || []); setBlocos(blocos || []); setVeiculos(veiculos || []);
         setRecursos(recursos || []); setTiposRecurso(tipos || []);
-      }).catch((falha) => { if (ativo) setErro(falha.message); });
+      }).catch((falha) => { if (ativo) setErroCatalogo(mensagemDeErro(falha, 'Não foi possível carregar as áreas, veículos e recursos.')); });
     return () => { ativo = false; };
   }, []);
 
@@ -275,6 +302,9 @@ function ReservasAdmin() {
           {
             busca: busca.trim(),
             tipo,
+            tipo_recurso: modalidade === 'recurso_geral' ? filtroTiposRecurso.join(',') : '',
+            data_inicio: periodo.inicio,
+            data_fim: periodo.fim,
             page: pagina,
             page_size: TAMANHO_PAGINA,
             agrupar_recorrencias: true,
@@ -296,16 +326,13 @@ function ReservasAdmin() {
 
       console.error(falha);
 
-      setErro(
-        falha.message ||
-          'Não foi possível carregar as reservas.'
-      );
+      setErro(mensagemDeErro(falha, 'Não foi possível carregar as reservas.'));
     } finally {
       if (!signal?.aborted) {
         setCarregando(false);
       }
     }
-  }, [busca, modalidade, pagina]);
+  }, [busca, modalidade, filtroTiposRecurso, periodo, pagina]);
 
   useEffect(() => {
     const controle = new AbortController();
@@ -492,10 +519,7 @@ function ReservasAdmin() {
     } catch (falha) {
       console.error(falha);
 
-      setErroCancelamento(
-        falha.message ||
-        'Não foi possível cancelar a reserva.'
-      );
+      setErroCancelamento(mensagemDeErro(falha, 'Não foi possível cancelar a reserva.'));
     } finally {
       setCancelando(false);
     }
@@ -593,6 +617,20 @@ function ReservasAdmin() {
           </small>
         </div>
       ),
+    },
+    {
+      chave: 'data',
+      titulo: 'Data',
+      renderizar: (reserva) => {
+        const { datas, horarios } = periodoReserva(reserva);
+
+        return (
+          <div className={styles.dadoPrincipal}>
+            <span>{datas}</span>
+            <small>{horarios}</small>
+          </div>
+        );
+      },
     },
     {
       chave: 'status',
@@ -714,71 +752,84 @@ function ReservasAdmin() {
 
   return (
     <div className={styles.reservas}>
-      <div className={styles.cabecalhoSecao}>
-        <div className={styles.filtros}>
-          <CampoBusca
-            valor={busca}
+      <BarraFiltros
+        acoes={(
+          <div className={styles.acoesRelatorio}>
+            {!carregando && !erro && (
+              <span className={styles.contador} role="status">
+                {totalReservas} {totalReservas === 1 ? 'reserva' : 'reservas'}
+              </span>
+            )}
+            <RelatorioUso />
+          </div>
+        )}
+      >
+        <CampoBusca
+          valor={busca}
+          aoAlterar={(valor) => {
+            setBusca(valor);
+            setPagina(1);
+          }}
+          placeholder="Buscar reserva..."
+        />
+
+        <Select
+          valor={modalidade}
+          aoAlterar={(valor) => {
+            setModalidade(valor);
+            setFiltroTiposRecurso([]);
+            setPagina(1);
+          }}
+          valorTodos="todas"
+          rotuloTodos="Todos os tipos"
+          ariaLabel="Filtrar reservas por tipo"
+          opcoes={[
+            {
+              valor: 'area',
+              rotulo: 'Áreas',
+            },
+            {
+              valor: 'veiculo',
+              rotulo: 'Veículos',
+            },
+            {
+              valor: 'recurso_geral',
+              rotulo: 'Recursos gerais',
+            },
+          ]}
+        />
+        {modalidade === 'recurso_geral' && (
+          <SelectRemoto
+            url="/api/tipos-recurso/"
+            valor={filtroTiposRecurso}
             aoAlterar={(valor) => {
-              setBusca(valor);
+              setFiltroTiposRecurso(valor);
               setPagina(1);
             }}
-            placeholder="Buscar reserva..."
+            rotuloTodos="Todos os tipos de recurso"
+            ariaLabel="Filtrar reservas por tipo de recurso geral"
+            placeholderBusca="Buscar tipo..."
+            multiplo
           />
-
-          <Select
-            valor={modalidade}
-            aoAlterar={(valor) => {
-              setModalidade(valor);
-              setPagina(1);
-            }}
-            valorTodos="todas"
-            rotuloTodos="Todos os tipos"
-            ariaLabel="Filtrar reservas por tipo"
-            opcoes={[
-              {
-                valor: 'area',
-                rotulo: 'Áreas',
-              },
-              {
-                valor: 'veiculo',
-                rotulo: 'Veículos',
-              },
-              {
-                valor: 'recurso_geral',
-                rotulo: 'Recursos gerais',
-              },
-            ]}
-          />
-        </div>
-        <div className={styles.acoesRelatorio}>
-          {!carregando && !erro && (
-            <span className={styles.contador} role="status">
-              {totalReservas} {totalReservas === 1 ? 'reserva' : 'reservas'}
-            </span>
-          )}
-          <RelatorioUso />
-        </div>
-      </div>
+        )}
+        <CampoPeriodo
+          inicio={periodo.inicio}
+          fim={periodo.fim}
+          aoAlterar={(valor) => {
+            setPeriodo(valor);
+            setPagina(1);
+          }}
+          ariaLabel="Filtrar reservas por período"
+        />
+      </BarraFiltros>
 
 
-      {mensagemSucesso && (
-        <p
-          className={styles.sucesso}
-          role="status"
-        >
-          {mensagemSucesso}
-        </p>
-      )}
+      <AlertBanner mensagem={mensagemSucesso} aoFechar={() => setMensagemSucesso('')} />
 
 
-      {erro && (
-        <p
-          className={styles.erro}
-          role="alert"
-        >
-          {erro}
-        </p>
-      )}
+      <AlertBanner tipo="erro" mensagem={erroCatalogo} />
+
+      <AlertBanner tipo="erro" mensagem={erro} />
 
 
       {carregando ? (
@@ -796,7 +847,9 @@ function ReservasAdmin() {
             renderizarExpansao={renderizarOcorrencias}
             mensagemVazia={
               busca.trim() ||
-              modalidade !== 'todas'
+              modalidade !== 'todas' ||
+              periodo.inicio ||
+              periodo.fim
                 ? 'Nenhuma reserva encontrada para os filtros selecionados.'
                 : 'Nenhuma reserva cadastrada.'
             }

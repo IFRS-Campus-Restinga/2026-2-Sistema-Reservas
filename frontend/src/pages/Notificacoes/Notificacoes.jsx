@@ -9,6 +9,7 @@ import {
 import { Check } from "lucide-react";
 
 import ModalNotificacao from "../../components/Notificacoes/ModalNotificacao";
+import AlertBanner from "../../components/AlertBanner/AlertBanner";
 
 import styles from "./Notificacoes.module.css";
 
@@ -69,6 +70,18 @@ function Notificacoes() {
     paginacao,
   } = useNotificacoes();
 
+  const [erroMarcarTodas, setErroMarcarTodas] = useState('');
+
+  async function marcarTodas() {
+    try {
+      setErroMarcarTodas('');
+      await marcarTodasComoLidas();
+    } catch (falha) {
+      console.error(falha);
+      setErroMarcarTodas('Não foi possível marcar as notificações como lidas.');
+    }
+  }
+
   async function abrirNotificacao(notificacao) {
     let atualizada = notificacao;
 
@@ -126,7 +139,7 @@ function Notificacoes() {
             <button
               type="button"
               className={styles.marcarTodas}
-              onClick={marcarTodasComoLidas}
+              onClick={marcarTodas}
             >
               <Check size={15} />
 
@@ -135,12 +148,9 @@ function Notificacoes() {
           )}
         </header>
 
+        <AlertBanner tipo="erro" mensagem={erroMarcarTodas} aoFechar={() => setErroMarcarTodas('')} />
 
-        {erro && (
-          <p className={styles.erro}>
-            {erro}
-          </p>
-        )}
+        <AlertBanner tipo="erro" mensagem={erro} />
 
 
         {carregando ? (

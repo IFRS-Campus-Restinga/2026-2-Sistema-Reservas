@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useTimetableStore } from '../../../store/timetableStore';
+import Select from '../../Select/Select';
+import AlertBanner from '../../AlertBanner/AlertBanner';
 import styles from './TimetableAdmin.module.css';
 
 const PERIODOS_MATRIZ = [
@@ -32,7 +34,7 @@ function TimetableAdmin() {
   const { timetableData, ultimaSincronizacao, isLoading, error, fetchTimetable, syncTimetable } = useTimetableStore();
   const [salaSelecionada, setSalaSelecionada] = useState('');
   const [sincronizando, setSincronizando] = useState(false);
-  const [mensagemSucesso, setMensagemSucesso] = useState('');
+  const [aviso, setAviso] = useState(null);
 
   useEffect(() => {
     fetchTimetable();
@@ -45,15 +47,15 @@ function TimetableAdmin() {
   const handleSincronizar = async () => {
     try {
       setSincronizando(true);
-      setMensagemSucesso('');
+      setAviso(null);
       const resultado = await syncTimetable();
       const detalhe = resultado?.total_reservas
         ? ` (${resultado.total_aulas} aulas e ${resultado.total_reservas} reservas de área criadas)`
         : '';
-      setMensagemSucesso(`Grade horária sincronizada com sucesso com o EduPage!${detalhe}`);
-      setTimeout(() => setMensagemSucesso(''), 5000);
+      setAviso({ tipo: 'sucesso', mensagem: `Grade horária sincronizada com sucesso com o EduPage!${detalhe}` });
     } catch (err) {
       console.error(err);
+      setAviso({ tipo: 'erro', mensagem: 'Não foi possível sincronizar a grade horária.' });
     } finally {
       setSincronizando(false);
     }
@@ -73,13 +75,21 @@ function TimetableAdmin() {
     </p>
   );
 
+  const avisos = (
+    <>
+      <AlertBanner tipo={aviso?.tipo} mensagem={aviso?.mensagem} aoFechar={() => setAviso(null)} />
+      <AlertBanner tipo="erro" mensagem={aviso?.tipo === 'erro' ? '' : error} />
+    </>
+  );
+
   if (isLoading && !timetableData) return <div className={styles.loading}>Carregando grade horária...</div>;
   if (error && !timetableData) {
     return (
-      <div className={styles.errorContainer}>
+      <div className={styles.emptyContainer}>
         {informacaoSincronizacao}
-        <div className={styles.error}>Erro ao carregar grade: {error}</div>
-        <button 
+        {avisos}
+        <button
+          type="button"
           className={styles.botaoSincronizar} 
           onClick={handleSincronizar}
           disabled={sincronizando}
@@ -95,9 +105,10 @@ function TimetableAdmin() {
     return (
       <div className={styles.emptyContainer}>
         {informacaoSincronizacao}
-        {error && <div className={styles.error} role="alert">{error}</div>}
+        {avisos}
         <p className={styles.empty}>Nenhuma aula cadastrada no banco de dados.</p>
-        <button 
+        <button
+          type="button"
           className={styles.botaoSincronizar} 
           onClick={handleSincronizar}
           disabled={sincronizando}
@@ -187,10 +198,16 @@ function TimetableAdmin() {
           {informacaoSincronizacao}
         </div>
         <div className={styles.filtros}>
-          <label>Selecione a Sala: </label>
-          <select value={salaAtual} onChange={(e) => setSalaSelecionada(e.target.value)}>
-            {salas.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <label className={styles.campoSala}>
+            Sala
+            <Select
+              valor={salaAtual}
+              aoAlterar={setSalaSelecionada}
+              opcoes={salas.map((sala) => ({ valor: sala, rotulo: sala }))}
+              ariaLabel="Sala"
+              filtro
+            />
+          </label>
           <button 
             type="button"
             className={styles.botaoSincronizar} 
@@ -204,12 +221,7 @@ function TimetableAdmin() {
         </div>
       </div>
 
-      {error && <div className={styles.error} role="alert">{error}</div>}
-      {mensagemSucesso && (
-        <div className={styles.alertaSucesso}>
-          {mensagemSucesso}
-        </div>
-      )}
+      {avisos}
 
       <div className={styles.gridContainer}>
         {/* Cabeçalho da Grade */}

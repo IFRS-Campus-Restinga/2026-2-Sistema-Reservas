@@ -144,23 +144,6 @@
   color: #475569;
 }
 
-.aviso,
-.erro {
-  border-radius: 9px;
-  padding: 12px;
-  font-size: 13px;
-}
-
-.aviso {
-  background: #e9f8f0;
-  color: #08763b;
-}
-
-.erro {
-  background: #fef2f2;
-  color: #b91c1c;
-}
-
 .vazio {
   padding: 34px;
   text-align: center;

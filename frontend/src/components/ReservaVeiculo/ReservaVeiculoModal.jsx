@@ -19,6 +19,8 @@ import {
   ocorrenciasSobrepostas,
   validarRecorrencia,
 } from '../../utils/recorrencia';
+import AlertBanner from '../AlertBanner/AlertBanner';
+import { mensagemDeErro } from '../../utils/erros';
 import styles from './ReservaVeiculoModal.module.css';
 
 const HORARIOS = Array.from({ length: 48 }, (_, indice) => {
@@ -141,7 +143,7 @@ function ReservaVeiculoModal({
       } catch (falha) {
         if (numeroConsulta === consultaAtual.current) {
           setDisponivel(false);
-          setErro(falha.message);
+          setErro(mensagemDeErro(falha, 'Não foi possível consultar a disponibilidade.'));
         }
       } finally {
         if (numeroConsulta === consultaAtual.current) setVerificando(false);
@@ -283,7 +285,7 @@ function ReservaVeiculoModal({
         });
       } else {
         setDisponivel(false);
-        setErro(falha.message);
+        setErro(mensagemDeErro(falha, 'Não foi possível salvar a reserva.'));
       }
     } finally {
       setEnviando(false);
@@ -418,7 +420,7 @@ function ReservaVeiculoModal({
             onChange={(evento) => setDescricao(evento.target.value)} />
         </label>
 
-        {erro && <p className={styles.erro} role="alert">{erro}</p>}
+        <AlertBanner tipo="erro" mensagem={erro} />
 
         <div className={styles.acoes}>
           <Botao titulo="Cancelar" estilo="secundario" aoClicar={aoFechar} desabilitado={enviando} />

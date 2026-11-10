@@ -6,6 +6,7 @@ from api.models.reserva_model import Reserva
 from api.pagination import PaginacaoPadrao
 from api.permissions.regras_comuns import SomenteAdmin
 from api.serializers.reserva_serializer import ReservaSerializer
+from api.services.filtros_listagem import filtrar_periodo_reservas, ids_do_parametro
 from .view_helpers import listar_agrupado_por_recorrencia
 
 
@@ -44,6 +45,14 @@ class ReservasAdminListView(APIView):
             raise ValidationError({
                 'tipo': 'Tipo de reserva inválido.'
             })
+
+        tipos_recurso = ids_do_parametro(request.query_params, 'tipo_recurso')
+        if tipos_recurso:
+            reservas = reservas.filter(
+                reservarecursogeral__recurso_geral__tipo_recurso_id__in=tipos_recurso
+            )
+
+        reservas = filtrar_periodo_reservas(reservas, request.query_params)
 
         if busca:
             reservas = reservas.filter(

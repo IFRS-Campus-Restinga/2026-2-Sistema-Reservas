@@ -16,7 +16,13 @@ import GerenciarRecorrenciaModal from '../../components/RecorrenciaArea/Gerencia
 import GerenciarRecorrenciaVeiculoModal from '../../components/RecorrenciaVeiculo/GerenciarRecorrenciaVeiculoModal';
 import GerenciarRecorrenciaRecursoGeralModal from '../../components/RecorrenciaRecursoGeral/GerenciarRecorrenciaRecursoGeralModal';
 import TermoReserva from '../../components/TermoReserva/TermoReserva';
+import AlertBanner from '../../components/AlertBanner/AlertBanner';
+import { mensagemDeErro } from '../../utils/erros';
 import Select from '../../components/Select/Select';
+import BarraFiltros from '../../components/BarraFiltros/BarraFiltros';
+import CampoBusca from '../../components/Administracao/CampoBusca/CampoBusca';
+import CampoPeriodo from '../../components/CampoPeriodo/CampoPeriodo';
+import SelectRemoto from '../../components/SelectRemoto/SelectRemoto';
 import { buscarAreas, buscarBlocos, cancelarReservaArea, cancelarReservaVeiculo } from '../../services';
 import { cancelarReservaRecursoGeral } from '../../services/reservasRecursosGerais';
 import { statusReservaApresentado, SITUACAO_RESERVA_LABEL } from '../../utils/reserva';
@@ -40,7 +46,7 @@ const MODALIDADES = {
 const OPCOES_TIPO = [
   { valor: 'area', rotulo: 'Áreas' },
   { valor: 'veiculo', rotulo: 'Veículos' },
-  { valor: 'recurso_geral', rotulo: 'Recursos' },
+  { valor: 'recurso_geral', rotulo: 'Recursos gerais' },
 ];
 
 const OPCOES_STATUS = Object.entries(SITUACAO_RESERVA_LABEL).map(([valor, rotulo]) => ({
@@ -66,7 +72,10 @@ function MinhasReservas() {
   const [selecionada, setSelecionada] = useState(null);
   const [recorrenciasExpandidas, setRecorrenciasExpandidas] = useState({});
   const [filtroTipo, setFiltroTipo] = useState('todos');
+  const [filtroTiposRecurso, setFiltroTiposRecurso] = useState([]);
   const [filtroStatus, setFiltroStatus] = useState('todos');
+  const [busca, setBusca] = useState('');
+  const [periodo, setPeriodo] = useState({ inicio: '', fim: '' });
   const [aviso, setAviso] = useState(
     location.state?.criada
       ? location.state?.tipo === 'veiculo'
@@ -75,15 +84,28 @@ function MinhasReservas() {
       : ''
   );
 
-  const { itens: reservas, erro, setErro, carregando, recarregar, paginacao } = useListaPaginada('/api/reservas/minhas/', { modalidade: filtroTipo, situacao: filtroStatus, agrupar_recorrencias: true });
+  const { itens: reservas, erro, setErro, carregando, recarregar, paginacao } = useListaPaginada('/api/reservas/minhas/', {
+    busca: busca.trim(),
+    modalidade: filtroTipo,
+    tipo_recurso: filtroTipo === 'recurso_geral' ? filtroTiposRecurso.join(',') : '',
+    situacao: filtroStatus,
+    data_inicio: periodo.inicio,
+    data_fim: periodo.fim,
+    agrupar_recorrencias: true,
+  });
+  const filtrando = Boolean(busca.trim()) || filtroTipo !== 'todos' || filtroStatus !== 'todos'
+    || Boolean(periodo.inicio) || Boolean(periodo.fim);
   const recursos = reservas.map((item) => item.recurso_detalhe).filter(Boolean);
   const tipos = reservas.map((item) => item.tipo_detalhe).filter(Boolean);
   const veiculos = reservas.map((item) => item.veiculo_detalhe).filter(Boolean);
 
+  function selecionarFiltroTipo(tipo) {
+    setFiltroTipo(tipo);
+    setFiltroTiposRecurso([]);
+  }
+
   function recursoDaReserva(reserva) {
-    return recursos.find(
-      (recurso) => String(recurso.id) === String(reserva.recurso_geral)
-    );
+    return reserva.recurso_detalhe;
   }
 
   function nomeItem(reserva) {
@@ -295,7 +317,7 @@ function MinhasReservas() {
         const [areas, blocos] = await Promise.all([buscarAreas(), buscarBlocos()]);
         setLocaisRecorrencia({ areas: areas || [], blocos: blocos || [] });
       } catch (falha) {
-        setErro(falha.message || 'Não foi possível carregar as áreas.');
+        setErro(mensagemDeErro(falha, 'Não foi possível carregar as áreas.'));
         return;
       }
     }
@@ -353,27 +375,34 @@ function MinhasReservas() {
   return (
     <div className={styles.pagina}>
       {carregando && <p role="status">Carregando reservas...</p>}
-      {aviso && (
-        <p className={styles.aviso}>
-          {aviso}
-        </p>
-      )}
 
-      {erro && (
-        <p className={styles.erro} role="alert">
-          {erro}
-        </p>
-      )}
+      <BarraFiltros>
+        <CampoBusca
+          valor={busca}
+          aoAlterar={setBusca}
+          placeholder="Buscar por título ou item..."
+        />
 
-      <div className="d-flex flex-wrap gap-2">
         <Select
           valor={filtroTipo}
-          aoAlterar={setFiltroTipo}
+          aoAlterar={selecionarFiltroTipo}
           opcoes={OPCOES_TIPO}
           valorTodos="todos"
           rotuloTodos="Todos os tipos"
           ariaLabel="Filtrar por tipo"
         />
+
+        {filtroTipo === 'recurso_geral' && (
+          <SelectRemoto
+            url="/api/tipos-recurso/"
+            valor={filtroTiposRecurso}
+            aoAlterar={setFiltroTiposRecurso}
+            rotuloTodos="Todos os tipos de recurso"
+            ariaLabel="Filtrar por tipo de recurso geral"
+            placeholderBusca="Buscar tipo..."
+            multiplo
+          />
+        )}
 
         <Select
           valor={filtroStatus}
@@ -383,12 +412,24 @@ function MinhasReservas() {
           rotuloTodos="Todas as situações"
           ariaLabel="Filtrar por situação da reserva"
         />
-      </div>
+
+        <CampoPeriodo
+          inicio={periodo.inicio}
+          fim={periodo.fim}
+          aoAlterar={setPeriodo}
+          ariaLabel="Filtrar por período"
+        />
+      </BarraFiltros>
+
+      <AlertBanner mensagem={aviso} aoFechar={() => setAviso('')} />
+      <AlertBanner tipo="erro" mensagem={erro} />
 
       <section className={styles.lista} aria-label="Minhas reservas">
-        {ordenadas.length === 0 && (
+        {!carregando && ordenadas.length === 0 && (
           <p className={styles.vazio}>
-            Você ainda não possui reservas cadastradas.
+            {filtrando
+              ? 'Nenhuma reserva encontrada para os filtros aplicados.'
+              : 'Você ainda não possui reservas cadastradas.'}
           </p>
         )}
 

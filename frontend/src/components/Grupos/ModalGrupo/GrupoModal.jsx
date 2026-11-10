@@ -3,6 +3,7 @@ import { ChevronDown, Info } from 'lucide-react';
 import { listarTodosTiposRecurso } from '../../../services';
 import { TIPO_RECURSO_RESERVAVEL, TIPO_RECURSO_RESERVAVEL_LABEL } from '../../../utils/tipoRecursoReservavel';
 import Modal from '../../Administracao/Modal/Modal';
+import AlertBanner from '../../AlertBanner/AlertBanner';
 import styles from './GrupoModal.module.css';
 
 const formularioInicial = {
@@ -193,7 +194,7 @@ function GrupoModal({
                 onSubmit={enviarFormulario}
                 onInvalid={mostrarErro}
             >
-                {mensagemErro('geral')}
+                <AlertBanner tipo="erro" mensagem={erros.geral} />
 
                 {copiando && (
                     <div className={styles.campo}>
