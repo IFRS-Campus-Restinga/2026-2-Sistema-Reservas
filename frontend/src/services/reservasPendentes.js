@@ -1,4 +1,5 @@
 import { consultarPagina } from './paginacao';
+import { avisarAtualizacaoPendencias } from '../utils/pendencias';
 const URL = '/api/reservas/pendentes/';
 
 async function tratarResposta(resposta, mensagemPadrao) {
@@ -13,6 +14,7 @@ async function tratarResposta(resposta, mensagemPadrao) {
     throw new Error(dados.detail || mensagem);
   }
 
+  avisarAtualizacaoPendencias();
   return dados;
 }
 

@@ -199,6 +199,8 @@ class SolicitacoesTermoView(APIView):
                 raise ValidationError({'reserva': 'Identificador inválido.'})
         modalidade = request.query_params.get('tipo', 'todos')
         situacao = request.query_params.get('situacao', request.query_params.get('status', 'abertas')).upper()
+        if situacao in ('ABERTAS', 'AGUARDANDO_CONFIRMACAO', 'TERMO_EM_ANALISE'):
+            queryset = queryset.exclude(status=StatusReserva.CANCELADA)
         documento_parametro = request.query_params.get('documento', 'todos')
         documentos = {
             'todos': None,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Info } from 'lucide-react';
 import { listarTodosTiposRecurso } from '../../../services';
 import { TIPO_RECURSO_RESERVAVEL, TIPO_RECURSO_RESERVAVEL_LABEL } from '../../../utils/tipoRecursoReservavel';
 import Modal from '../../Administracao/Modal/Modal';
@@ -46,12 +46,18 @@ function montarFormulario(grupo, tipoInicial) {
 
 function GrupoModal({
     grupo,
+    copiando = false,
     ehAdmin,
     tipoInicial = 'aluno',
     aoFechar,
     aoSalvar,
 }) {
-    const [formulario, setFormulario] = useState(() => montarFormulario(grupo, ehAdmin ? tipoInicial : 'aluno'));
+    const [formulario, setFormulario] = useState(() => {
+        const dados = montarFormulario(grupo, ehAdmin ? tipoInicial : 'aluno');
+        if (copiando) dados.nome = `Cópia de ${dados.nome}`.slice(0, 100);
+        return dados;
+    });
+    const [incluirMembros, setIncluirMembros] = useState(true);
     const [salvando, setSalvando] = useState(false);
     const [erros, setErros] = useState({});
     const [tiposRecurso, setTiposRecurso] = useState(null);
@@ -105,6 +111,7 @@ function GrupoModal({
 
     async function enviarFormulario(evento) {
         evento.preventDefault();
+        if (salvando) return;
 
         const autorizaRecursoGeral = formulario.tipos_recurso_autorizados.includes(TIPO_RECURSO_RESERVAVEL.RECURSO_GERAL);
 
@@ -129,6 +136,7 @@ function GrupoModal({
                 tipos_recurso: autorizaRecursoGeral ? formulario.tipos_recurso.map(Number) : [],
                 data_inicio_validade: formulario.data_inicio_validade,
                 data_fim_validade: formulario.data_fim_validade || null,
+                ...(copiando ? { incluir_membros: incluirMembros } : {}),
             });
         } catch (erro) {
             const errosApi = erro.response?.data;
@@ -136,7 +144,7 @@ function GrupoModal({
 
             if (erro.response?.status === 400 && errosApi && typeof errosApi === 'object') {
                 for (const [campo, mensagens] of Object.entries(errosApi)) {
-                    const chave = Object.hasOwn(formularioInicial, campo) ? campo : 'geral';
+                    const chave = Object.hasOwn(formularioInicial, campo) || campo === 'incluir_membros' ? campo : 'geral';
                     novosErros[chave] = Array.isArray(mensagens)
                         ? mensagens.join(' ')
                         : String(mensagens);
@@ -145,7 +153,7 @@ function GrupoModal({
 
             setErros(Object.keys(novosErros).length > 0
                 ? novosErros
-                : { geral: 'Não foi possível salvar o grupo. Tente novamente.' });
+                : { geral: errosApi?.detail || 'Não foi possível salvar o grupo. Tente novamente.' });
         } finally {
             setSalvando(false);
         }
@@ -161,11 +169,12 @@ function GrupoModal({
     return (
         <Modal
             aberto
-            titulo={grupo ? 'Editar grupo' : 'Novo grupo'}
+            titulo={copiando ? 'Copiar grupo' : grupo ? 'Editar grupo' : 'Novo grupo'}
             aoFechar={aoFechar}
+            processando={salvando}
             rodape={
                 <>
-                    <button type="button" className={styles.cancelar} onClick={aoFechar}>
+                    <button type="button" className={styles.cancelar} onClick={aoFechar} disabled={salvando}>
                         Cancelar
                     </button>
                     <button
@@ -174,7 +183,7 @@ function GrupoModal({
                         form="formulario-grupo"
                         disabled={salvando}
                     >
-                        {salvando ? 'Salvando...' : 'Salvar'}
+                        {salvando ? 'Salvando...' : copiando ? 'Criar cópia' : 'Salvar'}
                     </button>
                 </>
             }
@@ -186,6 +195,28 @@ function GrupoModal({
                 onInvalid={mostrarErro}
             >
                 <AlertBanner tipo="erro" mensagem={erros.geral} />
+
+                {copiando && (
+                    <div className={styles.campo}>
+                        <div className={styles.avisoCopia} role="note" aria-label="Grupo original da cópia">
+                            <Info size={16} aria-hidden="true" />
+                            <div>
+                                <span className={styles.rotuloOrigem}>Você está copiando o grupo</span>
+                                <strong className={styles.nomeOrigem}>{grupo.nome}</strong>
+                                <p>Revise os dados abaixo. Os membros incluídos manterão suas datas de validade.</p>
+                            </div>
+                        </div>
+                        <div className={styles.checkboxItem}>
+                            <input id="incluir-membros" type="checkbox" checked={incluirMembros}
+                                onChange={(evento) => {
+                                    setIncluirMembros(evento.target.checked);
+                                    setErros((anteriores) => ({ ...anteriores, incluir_membros: '' }));
+                                }} />
+                            <label htmlFor="incluir-membros">Incluir membros do grupo</label>
+                        </div>
+                        {mensagemErro('incluir_membros')}
+                    </div>
+                )}
 
                 <div className={styles.campo}>
                     <label htmlFor="nome">Nome *</label>

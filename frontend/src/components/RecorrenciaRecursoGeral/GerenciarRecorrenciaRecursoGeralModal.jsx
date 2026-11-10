@@ -99,7 +99,7 @@ function GerenciarRecorrenciaRecursoGeralModal({
       .then((dados) => {
         if (descartada) return;
 
-        
+
         const lista = dados.reservas.filter((reserva) => dados.alteraveis.includes(reserva.id));
         const primeira = lista[0];
 

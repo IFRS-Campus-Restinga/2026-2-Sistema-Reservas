@@ -44,4 +44,3 @@ class BaseRevisaoTests(TestCase):
         request = APIRequestFactory().get('/', parametros)
         force_authenticate(request, user=self.usuario)
         return view.as_view()(request)
-

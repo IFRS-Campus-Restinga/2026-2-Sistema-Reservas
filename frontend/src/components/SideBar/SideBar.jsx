@@ -52,22 +52,27 @@ export default function Sidebar({
                 <div className={styles.itensNavegacao}>
                     {itens.map(({ id, path, menu: { titulo, icone: Icon } }) => {
                         const ativo = paginaAtual == titulo;
+                        const quantidade = id === "notificacoes" ? naoLidas : 0;
+                        const descricao = quantidade > 0
+                            ? `${titulo}: ${quantidade} não lidas`
+                            : titulo;
 
                         return (
                             <button
                                 key={id}
                                 type="button"
                                 onClick={() => navigate(path)}
-                                title={menuRecolhido ? titulo : undefined}
+                                title={menuRecolhido || quantidade > 0 ? descricao : undefined}
+                                aria-label={descricao}
                                 className={`${styles.item} ${menuRecolhido ? styles.itemRecolhido : ""
                                     } ${ativo ? styles.itemAtivo : ""}`}
                             >
                                 <span className={styles.iconeItem}>
                                     <Icon size={18} />
 
-                                    {id === "notificacoes" && naoLidas > 0 && (
-                                        <span className={styles.contadorNotificacoes}>
-                                        {naoLidas > 9 ? "9+" : naoLidas}
+                                    {quantidade > 0 && (
+                                        <span className={styles.contadorNotificacoes} aria-hidden="true">
+                                        {quantidade > 9 ? "9+" : quantidade}
                                         </span>
                                     )}
                                 </span>
