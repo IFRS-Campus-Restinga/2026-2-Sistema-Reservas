@@ -1,3 +1,5 @@
+import { avisarAtualizacaoPendencias } from '../utils/pendencias';
+
 async function requisitar(url, opcoes = {}) {
   const resposta = await fetch(url, { credentials: 'include', ...opcoes });
   const dados = await resposta.json().catch(() => ({}));
@@ -5,6 +7,7 @@ async function requisitar(url, opcoes = {}) {
     const mensagens = Object.values(dados).flat();
     throw new Error(dados.detail || mensagens.find((valor) => typeof valor === 'string') || 'Não foi possível processar o termo.');
   }
+  if (opcoes.method === 'POST') avisarAtualizacaoPendencias();
   return dados;
 }
 

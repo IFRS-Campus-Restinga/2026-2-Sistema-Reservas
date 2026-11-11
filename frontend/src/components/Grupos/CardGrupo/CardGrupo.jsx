@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { CalendarDays, Pencil, Trash2, Users } from 'lucide-react';
+import { CalendarDays, Copy, Pencil, Trash2, Users } from 'lucide-react';
 import Botao from '../../Botao/Botao';
 import ModalMembros from '../ModalMembros/ModalMembros';
 import { formatarVigenciaGrupo, rotulosRecursos } from '../gruposUtils';
 import styles from './CardGrupo.module.css';
 
-function CardGrupo({ grupo, aoEditar, aoExcluir, aoAtualizar }) {
+function CardGrupo({ grupo, aoEditar, aoExcluir, aoCopiar, aoAtualizar }) {
     const [modalMembrosAberto, setModalMembrosAberto] = useState(false);
 
     const rotuloTipoMembro = grupo.tipo_membro_permitido === 'servidor' ? 'Servidores' : 'Alunos';
@@ -21,6 +21,17 @@ function CardGrupo({ grupo, aoEditar, aoExcluir, aoAtualizar }) {
             <div className={styles.cabecalho}>
                 <h3 className={styles.nome}>{grupo.nome}</h3>
                 <div className={styles.acoesCabecalho}>
+                    {aoCopiar && (
+                        <button
+                            type="button"
+                            className={styles.editar}
+                            onClick={() => aoCopiar(grupo)}
+                            title="Copiar grupo"
+                            aria-label={`Copiar grupo ${grupo.nome}`}
+                        >
+                            <Copy size={14} />
+                        </button>
+                    )}
                     <button
                         type="button"
                         className={styles.editar}

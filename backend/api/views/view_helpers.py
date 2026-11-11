@@ -44,6 +44,7 @@ def listar_agrupado_por_recorrencia(request, reservas, serializer_class):
     for reserva in reservas:
         chave = ('serie', reserva.recorrencia_id) if reserva.recorrencia_id else ('reserva', reserva.pk)
         grupos.setdefault(chave, []).append(reserva)
+    total_reservas = sum(len(grupo) for grupo in grupos.values())
     paginator = PaginacaoPadrao()
     pagina = paginator.paginate_queryset(list(grupos.values()), request)
     ids_series = {grupo[0].recorrencia_id for grupo in pagina if grupo[0].recorrencia_id}
@@ -66,7 +67,9 @@ def listar_agrupado_por_recorrencia(request, reservas, serializer_class):
                          total_ocorrencias=serie['total'],
                          ocorrencias=serializer_class(grupo, many=True).data)
         resultados.append(dados)
-    return paginator.get_paginated_response(resultados)
+    resposta = paginator.get_paginated_response(resultados)
+    resposta.data['total_reservas'] = total_reservas
+    return resposta
 
 
 def detalhar(instance, serializer_class):

@@ -239,6 +239,7 @@ function ReservasAdmin() {
 
   const [pagina, setPagina] = useState(1);
   const [total, setTotal] = useState(0);
+  const [totalReservas, setTotalReservas] = useState(0);
 
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
@@ -317,6 +318,7 @@ function ReservasAdmin() {
 
       setReservas(resultado.results || []);
       setTotal(resultado.count || 0);
+      setTotalReservas(resultado.total_reservas ?? resultado.count ?? 0);
     } catch (falha) {
       if (falha.name === 'AbortError') {
         return;
@@ -750,25 +752,18 @@ function ReservasAdmin() {
 
   return (
     <div className={styles.reservas}>
-      <div className={styles.cabecalhoSecao}>
-        <div>
-          <h2>Reservas</h2>
-
-          <p>
-            Consulte e gerencie todas as reservas
-            do sistema.
-          </p>
-        </div>
-
-        <span className={styles.contador}>
-          {total}{' '}
-          {total === 1
-            ? 'reserva'
-            : 'reservas'}
-        </span>
-      </div>
-
-      <BarraFiltros acoes={<RelatorioUso />}>
+      <BarraFiltros
+        acoes={(
+          <div className={styles.acoesRelatorio}>
+            {!carregando && !erro && (
+              <span className={styles.contador} role="status">
+                {totalReservas} {totalReservas === 1 ? 'reserva' : 'reservas'}
+              </span>
+            )}
+            <RelatorioUso />
+          </div>
+        )}
+      >
         <CampoBusca
           valor={busca}
           aoAlterar={(valor) => {

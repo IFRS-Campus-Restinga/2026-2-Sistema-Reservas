@@ -683,16 +683,26 @@ GRUPOS_DEMONSTRACAO = [
         'tipos_recurso': ['Bolas', 'Redes de vôlei'],
         'membros': ['pedro.souza@aluno.ifrs.edu.br', 'julia.martins@aluno.ifrs.edu.br'],
     },
+    {
+        'nome': 'Clube de leitura',
+        'criador': 'servidor',
+        'tipos': [TipoRecursoReservavel.AREA],
+        'tipos_recurso': [],
+        'membros': [USUARIOS_DEMONSTRACAO['aluno-grupo-vencido']['email']],
+        'vigencia': (-200, -15),
+    },
 ]
 
 RESERVAS_AREA_DEMONSTRACAO = [
     ('admin', 'Reunião de coordenação', '301', '3', 1, time(9), time(11), StatusReserva.CONFIRMADA),
+    ('admin-2', 'Planejamento do semestre', '303', '3', 7, time(14), time(16), StatusReserva.CONFIRMADA),
     ('servidor', 'Aula de reforço de Algoritmos', '402', '4', 2, time(14), time(16), StatusReserva.CONFIRMADA),
     ('servidor', 'Banca de TCC', '502', '5', 5, time(19), time(21), StatusReserva.CONFIRMADA),
     ('aluno', 'Estudo em grupo de Programação', '401', '4', 3, time(10), time(12), StatusReserva.CONFIRMADA),
     ('aluno', 'Treino da equipe de robótica', '701', '7', 6, time(13), time(17), StatusReserva.CONFIRMADA),
     ('aluno', 'Revisão para a prova de Cálculo', '301', '3', -4, time(15), time(17), StatusReserva.CONFIRMADA),
     ('aluno', 'Ensaio da apresentação do projeto', '302', '3', 2, time(8), time(10), StatusReserva.CONFIRMADA),
+    ('aluno-grupo-vencido', 'Encontro do clube de leitura', '302', '3', -30, time(16), time(17), StatusReserva.CONFIRMADA),
 ]
 
 RESERVAS_RECURSO_DEMONSTRACAO = [
@@ -711,13 +721,14 @@ def _tipos_recurso(descricoes):
 
 def _criar_grupo_demonstracao(dados, usuarios, hoje):
     criador = usuarios[dados['criador']]
+    inicio, fim = dados.get('vigencia', (-30, 180))
     grupo, criado = Grupo.objects.get_or_create(
         nome=dados['nome'],
         criador=criador,
         defaults={
             'tipo_membro_permitido': Papel.ALUNO,
-            'data_inicio_validade': hoje - timedelta(days=30),
-            'data_fim_validade': hoje + timedelta(days=180),
+            'data_inicio_validade': hoje + timedelta(days=inicio),
+            'data_fim_validade': hoje + timedelta(days=fim),
         },
     )
     if not criado:
@@ -758,7 +769,7 @@ def _finalizar_reserva_demonstracao(reserva, status, usuarios):
     if reserva.status != status:
         reserva.status = status
         reserva.save(update_fields=['status'])
-    if status == StatusReserva.CONFIRMADA and reserva.usuario != usuarios['admin']:
+    if status == StatusReserva.CONFIRMADA and reserva.usuario.papel != Papel.ADMIN:
         criar_notificacao_confirmacao(reserva)
     if reserva.nome == RESERVA_CANCELADA_PELA_ADMIN:
         antes = foto(reserva)

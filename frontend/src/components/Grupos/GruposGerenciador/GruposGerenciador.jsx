@@ -4,9 +4,9 @@ import SelectRemoto from '../../SelectRemoto/SelectRemoto';
 import { useState } from 'react';
 import { useUsuario } from '../../../hooks/useUsuario';
 import { Plus } from 'lucide-react';
-import { criarGrupo, atualizarGrupo, excluirGrupo } from '../../../services';
+import { criarGrupo, atualizarGrupo, excluirGrupo, copiarGrupo } from '../../../services';
 
-import { ehAdministrador, podeGerenciarGrupos } from '../../../utils/permissoes';
+import { ehAdministrador, podeGerenciarGrupos, podeCriarGrupo as podeCriarTipoGrupo } from '../../../utils/permissoes';
 import Botao from '../../Botao/Botao';
 import BarraFiltros from '../../BarraFiltros/BarraFiltros';
 import CampoBusca from '../../Administracao/CampoBusca/CampoBusca';
@@ -35,6 +35,7 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
 
     const [modalAberto, setModalAberto] = useState(false);
     const [grupoEditando, setGrupoEditando] = useState(null);
+    const [grupoCopiando, setGrupoCopiando] = useState(null);
     const [grupoExcluindo, setGrupoExcluindo] = useState(null);
     const [aviso, setAviso] = useState(null);
 
@@ -47,30 +48,52 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
     }
 
     function abrirCadastro() {
+        setAviso(null);
+        setGrupoCopiando(null);
         setGrupoEditando(null);
         setModalAberto(true);
     }
 
     function abrirEdicao(grupo) {
+        setAviso(null);
+        setGrupoCopiando(null);
         setGrupoEditando(grupo);
+        setModalAberto(true);
+    }
+
+    function abrirCopia(grupo) {
+        setAviso(null);
+        setGrupoEditando(null);
+        setGrupoCopiando(grupo);
         setModalAberto(true);
     }
 
     function fecharModal() {
         setModalAberto(false);
         setGrupoEditando(null);
+        setGrupoCopiando(null);
     }
 
     async function salvarGrupo(dados) {
         setErro('');
+        setAviso(null);
+        let mensagemSucesso;
 
-        if (grupoEditando) {
+        if (grupoCopiando) {
+            const copia = await copiarGrupo(grupoCopiando.id, dados);
+            mensagemSucesso = `Grupo “${copia.nome}” criado com sucesso.`;
+            setBusca(copia.nome);
+            setFiltroRecurso(FILTRO_TODOS);
+            setFiltroTiposRecurso([]);
+        } else if (grupoEditando) {
             await atualizarGrupo(grupoEditando.id, dados);
+            mensagemSucesso = 'Grupo atualizado com sucesso.';
         } else {
             await criarGrupo(dados);
+            mensagemSucesso = 'Grupo cadastrado com sucesso.';
         }
         fecharModal();
-        setAviso({ tipo: 'sucesso', mensagem: grupoEditando ? 'Grupo atualizado com sucesso.' : 'Grupo cadastrado com sucesso.' });
+        setAviso({ tipo: 'sucesso', mensagem: mensagemSucesso });
 
         await carregarGrupos();
     }
@@ -85,6 +108,7 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
         }
         try {
             setErro('');
+            setAviso(null);
 
             await excluirGrupo(grupoExcluindo.id);
 
@@ -182,6 +206,7 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
                             grupo={grupo}
                             aoEditar={abrirEdicao}
                             aoExcluir={solicitarExclusao}
+                            aoCopiar={podeCriarTipoGrupo(usuario, grupo.tipo_membro_permitido) ? abrirCopia : undefined}
                             aoAtualizar={carregarGrupos}
                         />
                     ))}
@@ -191,7 +216,8 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
             <Paginacao {...paginacao} />
             {modalAberto && (
                 <GrupoModal
-                    grupo={grupoEditando}
+                    grupo={grupoCopiando || grupoEditando}
+                    copiando={Boolean(grupoCopiando)}
                     ehAdmin={ehAdmin}
                     tipoInicial={tipoAtivo}
                     aoFechar={fecharModal}

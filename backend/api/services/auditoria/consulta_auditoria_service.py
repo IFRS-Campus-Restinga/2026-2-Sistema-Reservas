@@ -31,4 +31,3 @@ def filtrar_logs_auditoria(parametros):
         logs = logs.filter(data__date__lte=data_fim)
 
     return logs
-

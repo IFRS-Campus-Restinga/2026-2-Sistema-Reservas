@@ -1,5 +1,5 @@
 export { buscarUsuarioLogado } from './sessao'
-export { entrarComoPerfilDemonstracao } from './demonstracao'
+export { entrarComoUsuarioDemonstracao, listarUsuariosDemonstracao } from './demonstracao'
 export {
   listarRecursosGerais,
   criarRecursoGeral,
@@ -33,6 +33,7 @@ export {
 export {
     buscarGrupos,
     criarGrupo,
+    copiarGrupo,
     atualizarGrupo,
     excluirGrupo,
     buscarMembros,

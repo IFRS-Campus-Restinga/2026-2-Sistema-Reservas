@@ -4,6 +4,19 @@
   gap: 12px;
 }
 
+.contador {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background-color: var(--cor-marca-clara);
+  color: var(--cor-marca);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
 .lista {
   display: flex;
   flex-direction: column;
@@ -76,11 +89,6 @@
 .origemReserva {
   color: #7c3aed;
   background: #ede9fe;
-}
-
-.origemTermo {
-  color: #c2410c;
-  background: #ffedd5;
 }
 
 .situacao[data-status="AGUARDANDO_ENVIO_TERMO"],

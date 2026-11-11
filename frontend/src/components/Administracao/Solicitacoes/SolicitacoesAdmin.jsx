@@ -83,6 +83,7 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
   const [lista, setLista] = useState({ results: [], count: 0 });
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
+  const [mensagemSucesso, setMensagemSucesso] = useState('');
   const [revisao, setRevisao] = useState(0);
   const [selecionada, setSelecionada] = useState(null);
   useEffect(() => {
@@ -123,8 +124,10 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
     try {
       setConfirmandoId(reserva.id);
       setErro('');
+      setMensagemSucesso('');
       await confirmarReservaPendente(reserva.id);
       setSelecionada(null);
+      setMensagemSucesso('Reserva confirmada com sucesso.');
       recarregar();
     } catch (falha) {
       setErro(mensagemDeErro(falha, 'Não foi possível confirmar a reserva.'));
@@ -176,10 +179,12 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
     try {
       setConfirmandoId(reserva.id);
       setErroReserva('');
+      setMensagemSucesso('');
 
       await confirmarReservaPendente(reserva.id);
 
       setSelecionada(null);
+      setMensagemSucesso('Reserva confirmada com sucesso.');
       setPagina(1);
       recarregar();
     } catch (falha) {
@@ -195,10 +200,12 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
     try {
       setCancelandoId(reserva.id);
       setErroReserva('');
+      setMensagemSucesso('');
 
       await cancelarReservaAdmin(reserva.id, motivo);
 
       setSelecionada(null);
+      setMensagemSucesso('Reserva cancelada com sucesso.');
       setPagina(1);
       recarregar();
     } catch (falha) {
@@ -227,9 +234,9 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
                 <header className={styles.titulo}>
                   <h3>{reserva.nome}</h3>
                   <span className={styles.etiqueta}>{modalidade(reserva)}</span>
-                  <span className={`${styles.origem} ${ reserva.origem_solicitacao === 'TERMO' ? styles.origemTermo : styles.origemReserva}`}>
-                    {reserva.origem_solicitacao === 'TERMO' ? 'Termo' : 'Reserva'}
-                  </span>
+                  {reserva.origem_solicitacao === 'RESERVA' && (
+                    <span className={`${styles.origem} ${styles.origemReserva}`}>Reserva</span>
+                  )}
                   {reserva.tipo_reserva === 'EXTERNA' && <span className={styles.externo}>Externo</span>}
                   <span className={styles.situacao} data-status={statusApresentado}>
                     {['AGUARDANDO_ENVIO_TERMO', 'AGUARDANDO_ENVIO_TERMO_RETIRADA', 'TERMO_EM_ANALISE', 'AGUARDANDO_TERMO_DEVOLUCAO'].includes(statusApresentado) && <FileWarning size={10} />}{rotuloSituacao}
@@ -298,7 +305,13 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
 
   return (
     <section className={styles.pagina} aria-label="Solicitações">
-      <BarraFiltros>
+      <BarraFiltros
+        acoes={!carregando && !erro && (
+          <span className={styles.contador} role="status">
+            {lista.count} {lista.count === 1 ? 'solicitação' : 'solicitações'}
+          </span>
+        )}
+      >
         <Select valor={documento} aoAlterar={(valor) => filtrar(setDocumento, valor)} opcoes={DOCUMENTOS}
           valorTodos="todos" rotuloTodos="Termos e reservas" ariaLabel="Tipo de documento" />
         <Select valor={tipo} aoAlterar={filtrarTipo} opcoes={TIPOS}
@@ -312,6 +325,7 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
         <Select valor={situacao} aoAlterar={(valor) => filtrar(setSituacao, valor)} opcoes={SITUACOES}
           valorTodos="todos" rotuloTodos="Todas as situações" ariaLabel="Situação da reserva" />
       </BarraFiltros>
+      <AlertBanner mensagem={mensagemSucesso} aoFechar={() => setMensagemSucesso('')} />
       {conteudoLista}
       {modal}
     </section>

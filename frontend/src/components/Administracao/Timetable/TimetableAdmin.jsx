@@ -31,7 +31,7 @@ const DIAS_ROTULOS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex']; // Exatamente como na 
 const getGridRowStart = (id) => id + 1;
 
 function TimetableAdmin() {
-  const { timetableData, isLoading, error, fetchTimetable, syncTimetable } = useTimetableStore();
+  const { timetableData, ultimaSincronizacao, isLoading, error, fetchTimetable, syncTimetable } = useTimetableStore();
   const [salaSelecionada, setSalaSelecionada] = useState('');
   const [sincronizando, setSincronizando] = useState(false);
   const [aviso, setAviso] = useState(null);
@@ -61,22 +61,54 @@ function TimetableAdmin() {
     }
   };
 
+  const informacaoSincronizacao = (
+    <p className={styles.ultimaSincronizacao} role="status">
+      {ultimaSincronizacao ? <>
+        Última sincronização: <time dateTime={ultimaSincronizacao}>
+          {new Date(ultimaSincronizacao).toLocaleString('pt-BR', {
+            timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short',
+          })}
+        </time> (horário de Brasília)
+      </> : timetableData
+        ? 'Nenhuma sincronização realizada.'
+        : 'Última sincronização indisponível.'}
+    </p>
+  );
+
+  const avisos = (
+    <>
+      <AlertBanner tipo={aviso?.tipo} mensagem={aviso?.mensagem} aoFechar={() => setAviso(null)} />
+      <AlertBanner tipo="erro" mensagem={aviso?.tipo === 'erro' ? '' : error} />
+    </>
+  );
+
   if (isLoading && !timetableData) return <div className={styles.loading}>Carregando grade horária...</div>;
   if (error && !timetableData) {
     return (
-      <AlertBanner
-        tipo="erro"
-        mensagem={aviso?.mensagem || 'Não foi possível carregar a grade horária.'}
-        acao={{ rotulo: 'Tentar sincronizar novamente', aoClicar: handleSincronizar }}
-      />
+      <div className={styles.emptyContainer}>
+        {informacaoSincronizacao}
+        {avisos}
+        <button
+          type="button"
+          className={styles.botaoSincronizar} 
+          onClick={handleSincronizar}
+          disabled={sincronizando}
+        >
+          <RefreshCw size={16} className={sincronizando ? styles.girando : ''} />
+          {sincronizando ? 'Tentando sincronizar...' : 'Tentar sincronizar agora'}
+        </button>
+      </div>
     );
   }
 
   if (!timetableData || Object.keys(timetableData).length === 0) {
     return (
       <div className={styles.emptyContainer}>
+        {informacaoSincronizacao}
+        {avisos}
         <p className={styles.empty}>Nenhuma aula cadastrada no banco de dados.</p>
-        <button 
+        <button
+          type="button"
           className={styles.botaoSincronizar} 
           onClick={handleSincronizar}
           disabled={sincronizando}
@@ -161,7 +193,10 @@ function TimetableAdmin() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h2>Grade Horária do EduPage</h2>
+        <div>
+          <h2>Grade Horária do EduPage</h2>
+          {informacaoSincronizacao}
+        </div>
         <div className={styles.filtros}>
           <label className={styles.campoSala}>
             Sala
@@ -186,7 +221,7 @@ function TimetableAdmin() {
         </div>
       </div>
 
-      <AlertBanner tipo={aviso?.tipo} mensagem={aviso?.mensagem} aoFechar={() => setAviso(null)} />
+      {avisos}
 
       <div className={styles.gridContainer}>
         {/* Cabeçalho da Grade */}
