@@ -1,0 +1,147 @@
+.cadastro {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.adicionar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 8px;
+  background-color: var(--cor-marca);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  transition: background-color 150ms ease;
+}
+
+.adicionar:hover {
+  background-color: var(--cor-marca-escura);
+}
+
+.acoes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.editar,
+.excluir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #9ca3af;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.editar:hover {
+  background-color: var(--cor-marca-clara);
+  color: var(--cor-marca);
+}
+
+.excluir:hover {
+  background-color: #fef2f2;
+  color: #ef4444;
+}
+
+.carregando {
+  padding: 40px 16px;
+  border: 1px solid #f3f4f6;
+  border-radius: 12px;
+  background-color: #ffffff;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.campo {
+  min-width: 0;
+}
+
+.campo label {
+  display: block;
+  margin-bottom: 4px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.campo input,
+.campo select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #374151;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.campo input:focus,
+.campo select:focus {
+  border-color: var(--cor-marca);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--cor-marca);
+}
+
+.campo [aria-invalid='true'] {
+  border-color: #dc2626;
+}
+
+.erro {
+  margin-top: 4px;
+  color: #dc2626;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.cancelar,
+.salvar {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 20px;
+  transition: background-color 150ms ease;
+}
+
+.cancelar {
+  border-color: #e5e7eb;
+  background-color: #ffffff;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.cancelar:hover {
+  background-color: #f9fafb;
+}
+
+.salvar {
+  background-color: var(--cor-marca);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.salvar:hover:not(:disabled) {
+  background-color: var(--cor-marca-escura);
+}

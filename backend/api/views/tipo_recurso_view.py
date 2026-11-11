@@ -2,6 +2,8 @@ from .view_helpers import listar
 from django.db.models import Count, Sum, Q
 from api.services.catalogo_recursos import categorias_catalogo
 from django.db import transaction
+from django.db.models import ProtectedError
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -35,3 +37,42 @@ class TipoRecursoCreateView(APIView):
                 registrar_auditoria(request.user, AcaoAuditoria.CRIAR, tipo, depois=foto(tipo))
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TipoRecursoDetailView(APIView):
+    permission_classes = [EscritaAdmin]
+
+    def get(self, request, pk):
+        tipo = get_object_or_404(TipoRecurso, pk=pk)
+        return Response(TipoRecursoSerializer(tipo).data, status=status.HTTP_200_OK)
+
+    def put(self, request, pk):
+        return self._salvar(request, pk, parcial=False)
+
+    def patch(self, request, pk):
+        return self._salvar(request, pk, parcial=True)
+
+    def _salvar(self, request, pk, parcial):
+        tipo = get_object_or_404(TipoRecurso, pk=pk)
+        antes = foto(tipo)
+        serializer = TipoRecursoSerializer(tipo, data=request.data, partial=parcial)
+        if serializer.is_valid():
+            with transaction.atomic():
+                serializer.save()
+                registrar_auditoria(request.user, AcaoAuditoria.EDITAR, tipo, antes=antes, depois=foto(tipo))
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        tipo = get_object_or_404(TipoRecurso, pk=pk)
+        try:
+            with transaction.atomic():
+                registrar_auditoria(request.user, AcaoAuditoria.EXCLUIR, tipo, antes=foto(tipo))
+                tipo.delete()
+        except ProtectedError:
+            # RecursoGeral e AutorizacaoGrupo usam on_delete=PROTECT
+            return Response(
+                {'detail': 'Este tipo está vinculado a recursos ou grupos e não pode ser excluído.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
