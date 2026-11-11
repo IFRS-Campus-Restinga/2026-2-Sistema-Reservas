@@ -24,6 +24,7 @@ class ReservaAreaSerializer(serializers.ModelSerializer):
     usuario_detalhe = UsuarioResumoSerializer(source="usuario", read_only=True)
     area_detalhe = AreaResumoSerializer(source="area", read_only=True)
     recorrencia = RecorrenciaSerializer(required=False, allow_null=True)
+    professor = serializers.SerializerMethodField()
 
     class Meta:
         model = ReservaArea
@@ -43,9 +44,15 @@ class ReservaAreaSerializer(serializers.ModelSerializer):
             "area_detalhe",
             "aula",
             "celula_timetable",
+            "professor",
             "recorrencia",
         ]
         read_only_fields = ["id", "status", "duracao", "usuario", "celula_timetable"]
+
+    def get_professor(self, obj):
+        if getattr(obj, "celula_timetable", None):
+            return obj.celula_timetable.professor or None
+        return None
 
     def validate(self, dados):
         def valor(campo):

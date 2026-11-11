@@ -385,6 +385,18 @@ function Calendario() {
                       ? "aula"
                       : String(reserva.tipo_reserva).toLowerCase();
 
+                    const ehTimetable = Boolean(reserva.celula_timetable);
+                    const nomeResponsavel = ehTimetable
+                      ? (reserva.professor ? `Prof. ${reserva.professor}` : "Aula Regular")
+                      : reserva.usuario_detalhe?.nome;
+
+                    const textoTooltip = [
+                      reserva.nome,
+                      `${reserva.horario_inicio.slice(0, 5)}–${reserva.horario_fim.slice(0, 5)}`,
+                      nomeResponsavel,
+                      ehTimetable ? "Timetable" : null,
+                    ].filter(Boolean).join("\n");
+
                     return (
                       <button
                         key={`${reserva.id}-${reserva.data}`}
@@ -392,6 +404,7 @@ function Calendario() {
                         className={`${styles.reserva} ${reserva.recorrencia ? styles.recorrente : ""}`}
                         data-tipo={tipoCor}
                         style={{ top: posicaoY(reserva.horario_inicio) + 1, height: altura - 2 }}
+                        title={textoTooltip}
                         onClick={() => setReservaDetalhe(reserva)}
                       >
                         {reserva.recorrencia && (
@@ -407,14 +420,21 @@ function Calendario() {
                         <span className={styles.reservaTitulo}>
                           {reserva.nome}
                         </span>
-                        {altura > 40 && (
-                          <span className={styles.reservaDetalhe}>
-                            {reserva.horario_inicio.slice(0, 5)}–{reserva.horario_fim.slice(0, 5)}
-                          </span>
+                        {altura > 28 && (
+                          <div className={styles.linhaHorarioChip}>
+                            <span className={styles.reservaDetalhe} style={{ width: 'auto' }}>
+                              {reserva.horario_inicio.slice(0, 5)}–{reserva.horario_fim.slice(0, 5)}
+                            </span>
+                            {ehTimetable && (
+                              <span className={styles.chipTimetable}>
+                                Timetable
+                              </span>
+                            )}
+                          </div>
                         )}
-                        {altura > 58 && (
+                        {altura > 42 && nomeResponsavel && (
                           <span className={styles.reservaDetalhe} style={{ textTransform: 'capitalize' }}>
-                            {reserva.usuario_detalhe?.nome}
+                            {nomeResponsavel}
                           </span>
                         )}
                       </button>
@@ -432,7 +452,11 @@ function Calendario() {
           reserva={reservaDetalhe}
           modalidade="Área"
           item={reservaDetalhe.area_detalhe?.nome || `Área #${reservaDetalhe.area}`}
-          responsavel={reservaDetalhe.usuario_detalhe?.nome || "Não informado"}
+          responsavel={
+            reservaDetalhe.celula_timetable
+              ? (reservaDetalhe.professor ? `Prof. ${reservaDetalhe.professor}` : "Aula regular")
+              : (reservaDetalhe.usuario_detalhe?.nome || "Não informado")
+          }
           detalhes={[
             {
               rotulo: "Finalidade",
