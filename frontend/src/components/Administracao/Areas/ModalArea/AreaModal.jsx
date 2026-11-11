@@ -1,5 +1,5 @@
 import SelectRemoto from '../../../SelectRemoto/SelectRemoto';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Modal from '../../Modal/Modal';
 import AlertBanner from '../../../AlertBanner/AlertBanner';
 import styles from './AreaModal.module.css';
@@ -21,6 +21,7 @@ function AreaModal({
     aoFechar,
     aoSalvar,
 }) {
+    const controleModal = useRef(null);
     const [formulario, setFormulario] = useState(formularioInicial);
     const [salvando, setSalvando] = useState(false);
     const [erros, setErros] = useState({});
@@ -113,6 +114,8 @@ function AreaModal({
 
     return (
         <Modal
+            ref={controleModal}
+            confirmarDescarte
             aberto={aberto}
             titulo={area ? 'Editar área' : 'Adicionar área'}
             aoFechar={aoFechar}
@@ -121,7 +124,7 @@ function AreaModal({
                     <button
                         type="button"
                         className={styles.cancelar}
-                        onClick={aoFechar}
+                        onClick={() => controleModal.current?.fechar()}
                     >
                         Cancelar
                     </button>
