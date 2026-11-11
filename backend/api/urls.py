@@ -2,6 +2,7 @@ from django.urls import path
 from api.views.minhas_reservas_view import MinhasReservasListView, ResumoReservasView
 from api.views.recurso_geral_view import RecursoGeralListCreateView, RecursoGeralDetailView
 from api.views.tipo_recurso_view import TipoRecursoCreateView, TipoRecursoDetailView
+from api.views.categoria_recurso_view import CategoriaRecursoListCreateView, CategoriaRecursoDetailView
 from api.views.bloco_view import BlocoListCreateView, BlocoDetailView
 from api.views.area_view import AreaDetailView, AreaListCreateView
 from api.views.grupo_view import GrupoListCreateView, GrupoDetailView, GrupoCopiarView
@@ -57,6 +58,8 @@ urlpatterns = [
     path('recursos-gerais/<int:pk>/', RecursoGeralDetailView.as_view(), name='recurso-geral-detail'),
     path('tipos-recurso/', TipoRecursoCreateView.as_view(), name='tipo-recurso-create'),
     path('tipos-recurso/<int:pk>/', TipoRecursoDetailView.as_view(), name='tipo-recurso-detail'),
+    path('categorias-recurso/', CategoriaRecursoListCreateView.as_view(), name='categoria-recurso-list-create'),
+    path('categorias-recurso/<int:pk>/', CategoriaRecursoDetailView.as_view(), name='categoria-recurso-detail'),
     path('blocos/', BlocoListCreateView.as_view(), name='bloco-list-create'),
     path('blocos/<int:pk>/', BlocoDetailView.as_view(), name='bloco-detail'),
     path('areas/', AreaListCreateView.as_view(), name='area-list-create'),

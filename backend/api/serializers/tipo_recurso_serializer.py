@@ -3,6 +3,9 @@ from api.models.tipo_recurso_model import TipoRecurso
 
 
 class TipoRecursoSerializer(serializers.ModelSerializer):
+    categoria_nome = serializers.CharField(source='categoria.nome', read_only=True, allow_null=True)
+    categoria_icone = serializers.CharField(source='categoria.icone', read_only=True, allow_null=True)
+
     class Meta:
         model = TipoRecurso
         fields = "__all__"
@@ -20,7 +23,6 @@ class TipoRecursoSerializer(serializers.ModelSerializer):
 
 
 class TipoRecursoCatalogoSerializer(TipoRecursoSerializer):
-    categoria = serializers.CharField(source='categoria_catalogo', read_only=True)
     total_itens = serializers.IntegerField(read_only=True)
     total_unidades = serializers.IntegerField(read_only=True)
     total_termos = serializers.IntegerField(read_only=True)

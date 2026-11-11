@@ -7,8 +7,7 @@ import CampoBusca from '../../components/Administracao/CampoBusca/CampoBusca';
 import BarraFiltros from '../../components/BarraFiltros/BarraFiltros';
 import CardRecurso from '../../components/CardRecurso/CardRecurso';
 import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/ReservaRecursoGeralModal';
-import Select from '../../components/Select/Select';
-import { CATEGORIA_RECURSO_LABEL } from '../../utils/categoriaRecurso';
+import SelectRemoto from '../../components/SelectRemoto/SelectRemoto';
 import AlertBanner from '../../components/AlertBanner/AlertBanner';
 import styles from './Recursos.module.css';
 
@@ -20,7 +19,6 @@ function Recursos() {
   const [reserva, setReserva] = useState(null);
 
   const { itens: tiposExibidos, total, carregando, erro, paginacao } = useListaPaginada('/api/tipos-recurso/', { catalogo: true, busca, categoria });
-  const opcoesCategoria = Object.entries(CATEGORIA_RECURSO_LABEL).map(([valor, rotulo]) => ({ valor, rotulo }));
   function abrirReserva(tipo) { setReserva({ tipo }); }
 
   return (
@@ -32,10 +30,12 @@ function Recursos() {
           placeholder="Buscar tipo de recurso"
         />
       
-        <Select
+        <SelectRemoto
+          url="/api/categorias-recurso/"
+          filtros={{ page_size: 100 }}
+          mostrarBusca={false}
           valor={categoria}
           aoAlterar={setCategoria}
-          opcoes={opcoesCategoria}
           valorTodos="todos"
           rotuloTodos="Todas as categorias"
           ariaLabel="Filtrar por categoria"
@@ -74,7 +74,8 @@ function Recursos() {
                 }}
               >
                 <CardRecurso
-                  categoria={tipo.categoria}
+                  categoria={tipo.categoria_icone}
+                  nomeCategoria={tipo.categoria_nome}
                   titulo={tipo.descricao}
                   resumo={tipo}
                   aoClicar={() => abrirReserva(tipo)}

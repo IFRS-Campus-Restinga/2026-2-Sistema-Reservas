@@ -1,4 +1,5 @@
 from .base_model import *
+from .categoria_recurso_model import CategoriaRecurso
 from .tipo_recurso_model import *
 from .recurso_geral_model import *
 from .veiculo_model import Veiculo

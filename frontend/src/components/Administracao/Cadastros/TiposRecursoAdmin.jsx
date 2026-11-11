@@ -1,27 +1,14 @@
 import CadastroSimples from './CadastroSimples/CadastroSimples';
 import { criarTipoRecurso, atualizarTipoRecurso, excluirTipoRecurso } from '../../../services';
 
-// Valores do enum CategoriaRecurso do backend
-const CATEGORIAS = [
-    { valor: 'TECNOLOGIA', rotulo: 'Tecnologia e audiovisual' },
-    { valor: 'ESPORTES', rotulo: 'Materiais esportivos' },
-    { valor: 'MANUTENCAO', rotulo: 'Manutenção' },
-    { valor: 'APOIO', rotulo: 'Materiais de apoio' },
-    { valor: 'OUTROS', rotulo: 'Outros' },
-];
-
 const CAMPOS = [
     { nome: 'descricao', rotulo: 'Descrição', tipo: 'texto', obrigatorio: true, maxLength: 50, placeholder: 'Ex.: Notebooks' },
-    { nome: 'categoria', rotulo: 'Categoria', tipo: 'select', obrigatorio: true, opcoes: CATEGORIAS, padrao: 'OUTROS' },
+    { nome: 'categoria', rotulo: 'Categoria', tipo: 'remoto', url: '/api/categorias-recurso/' },
 ];
 
 const COLUNAS = [
     { chave: 'descricao', titulo: 'Descrição', campo: 'descricao' },
-    {
-        chave: 'categoria',
-        titulo: 'Categoria',
-        renderizar: (tipo) => CATEGORIAS.find((c) => c.valor === tipo.categoria)?.rotulo ?? tipo.categoria,
-    },
+    { chave: 'categoria', titulo: 'Categoria', renderizar: (tipo) => tipo.categoria_nome ?? 'Sem categoria' },
 ];
 
 function TiposRecursoAdmin() {

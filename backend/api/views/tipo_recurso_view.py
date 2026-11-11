@@ -1,6 +1,5 @@
 from .view_helpers import listar
 from django.db.models import Count, Sum, Q
-from api.services.catalogo_recursos import categorias_catalogo
 from django.db import transaction
 from django.db.models import ProtectedError
 from django.shortcuts import get_object_or_404
@@ -18,11 +17,11 @@ class TipoRecursoCreateView(APIView):
     permission_classes = [EscritaAdmin]
 
     def get(self, request):
-        tipos = TipoRecurso.objects.all()
+        tipos = TipoRecurso.objects.select_related('categoria')
         if request.query_params.get('catalogo') == 'true':
             from api.serializers.tipo_recurso_serializer import TipoRecursoCatalogoSerializer
             permitidos = ids_tipos_recurso_reservaveis(request.user, tipos.values_list('pk', flat=True))
-            tipos = categorias_catalogo(tipos.filter(pk__in=permitidos)).filter(recursos__status='ATIVO', recursos__quantidade_total__gt=0).annotate(
+            tipos = tipos.filter(pk__in=permitidos).filter(recursos__status='ATIVO', recursos__quantidade_total__gt=0).annotate(
                 total_itens=Count('recursos'), total_unidades=Sum('recursos__quantidade_total'),
                 total_termos=Count('recursos', filter=Q(recursos__tem_termo_de_responsabilidade=True)),
             ).order_by('descricao')

@@ -29,6 +29,11 @@ export {
     excluirTipoRecurso,
 } from './tiposRecurso';
 export {
+    criarCategoriaRecurso,
+    atualizarCategoriaRecurso,
+    excluirCategoriaRecurso,
+} from './categoriasRecurso';
+export {
     buscarAreas,
     buscarArea,
     criarArea,
