@@ -28,6 +28,7 @@ FILTROS = {
     'veiculo': {'status': 'status'},
     'recursogeral': {'tipo_recurso': 'tipo_recurso_id', 'status': 'status', 'tipo_prazo': 'tipo_prazo'},
     'tiporecurso': {'categoria': 'categoria'},
+    'notificacao': {'lida': 'lida'},
     'grupo': {'tipo_membro': 'tipo_membro_permitido',
               'recurso': 'autorizacoes__tipo_recurso_autorizado',
               'tipo_recurso': 'autorizacoes__tipo_recurso_id'},
@@ -139,6 +140,10 @@ def filtrar_listagem(request, queryset, campos_busca=None):
             continue
         valor = parametros.get(parametro)
         if valor and valor not in ('todos', 'todas'):
+            if campo == 'lida':
+                if valor not in ('true', 'false'):
+                    raise ValidationError({parametro: 'Informe true ou false.'})
+                valor = valor == 'true'
             if campo == 'capacidade__gte':
                 try:
                     valor = int(valor)

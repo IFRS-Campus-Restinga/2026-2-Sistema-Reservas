@@ -46,6 +46,12 @@
   text-decoration: underline;
 }
 
+.filtros {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
 .lista {
   display: flex;
   flex-direction: column;
