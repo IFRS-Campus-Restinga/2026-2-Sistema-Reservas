@@ -4,6 +4,7 @@ from .tipo_recurso_model import *
 from .recurso_geral_model import *
 from .veiculo_model import Veiculo
 from .bloco_model import *
+from .equipamento_area_model import EquipamentoArea
 from .area_model import *
 from .timetable import *
 from .grupo_model import Grupo

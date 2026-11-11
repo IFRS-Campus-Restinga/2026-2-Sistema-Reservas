@@ -11,7 +11,7 @@ from api.enumerations import StatusReserva, TipoReserva
 from api.enumerations.status_recurso import StatusRecurso
 from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
 from api.enumerations.tipo_prazo import TipoPrazo
-from api.enumerations.area_enumerations.area_enums import TipoArea, EquipamentoArea
+from api.enumerations.area_enumerations.area_enums import TipoArea
 from api.enumerations.bloco_enumerations.acessibilidade import Acessibilidade
 from api.models.area_model import Area
 from api.models.bloco_model import Bloco
@@ -645,7 +645,6 @@ def popular_areas_padrao_timetable():
                 'disponibilidade': True,
                 'status': StatusRecurso.ATIVO,
                 'tipo': dados['tipo'],
-                'equipamento': [],
             }
         )
         criados += criado

@@ -22,6 +22,7 @@ class EntidadeAuditoria(models.TextChoices):
     TIPO_RECURSO = "TIPO_RECURSO", "Tipo de recurso"
     CATEGORIA_RECURSO = "CATEGORIA_RECURSO", "Categoria de recurso"
     AREA = "AREA", "Área"
+    EQUIPAMENTO_AREA = "EQUIPAMENTO_AREA", "Equipamento de área"
     BLOCO = "BLOCO", "Bloco"
     VEICULO = "VEICULO", "Veículo"
     TIMETABLE = "TIMETABLE", "Timetable"

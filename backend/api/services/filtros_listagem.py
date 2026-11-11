@@ -16,6 +16,7 @@ BUSCA = {
     'recursogeral': ('nome', 'codigo', 'tipo_recurso__descricao'),
     'tiporecurso': ('descricao',),
     'categoriarecurso': ('nome',),
+    'equipamentoarea': ('nome',),
     'grupo': ('nome',),
     'membrogrupo': ('usuario__nome', 'usuario__email'),
     'reserva': ('nome', 'usuario__nome', 'usuario__email',

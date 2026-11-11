@@ -2,6 +2,7 @@ import SelectRemoto from '../../../SelectRemoto/SelectRemoto';
 import { useEffect, useRef, useState } from 'react';
 import Modal from '../../Modal/Modal';
 import AlertBanner from '../../../AlertBanner/AlertBanner';
+import useListaPaginada from '../../../../hooks/useListaPaginada';
 import styles from './AreaModal.module.css';
 
 const formularioInicial = {
@@ -11,7 +12,7 @@ const formularioInicial = {
     disponibilidade: true,
     status: 'ATIVO',
     tipo: 'CONVENCIONAL',
-    equipamento: [],
+    equipamentos: [], // IDs dos equipamentos cadastrados em Administração > Cadastros
     bloco: '', // ID do bloco
 };
 
@@ -25,6 +26,9 @@ function AreaModal({
     const [formulario, setFormulario] = useState(formularioInicial);
     const [salvando, setSalvando] = useState(false);
     const [erros, setErros] = useState({});
+    const { itens: equipamentosDisponiveis, carregando: carregandoEquipamentos } = useListaPaginada(
+        '/api/equipamentos-area/', { page_size: 100 }, aberto,
+    );
 
     useEffect(() => {
         if (area) {
@@ -35,7 +39,7 @@ function AreaModal({
                 disponibilidade: area.disponibilidade !== undefined ? area.disponibilidade : true,
                 status: area.status || 'ATIVO',
                 tipo: area.tipo || 'CONVENCIONAL',
-                equipamento: area.equipamento || [],
+                equipamentos: area.equipamentos || [],
                 bloco: typeof area.bloco === 'object' ? area.bloco?.id || '' : area.bloco || '',
             });
         } else {
@@ -56,13 +60,14 @@ function AreaModal({
 
     function alterarEquipamento(evento) {
         const { value, checked } = evento.target;
-        const novoEquipamento = checked 
-            ? [...formulario.equipamento, value]
-            : formulario.equipamento.filter(item => item !== value);
+        const id = Number(value);
+        const novosEquipamentos = checked
+            ? [...formulario.equipamentos, id]
+            : formulario.equipamentos.filter(item => item !== id);
 
         setFormulario({
             ...formulario,
-            equipamento: novoEquipamento,
+            equipamentos: novosEquipamentos,
         });
     }
 
@@ -261,34 +266,27 @@ function AreaModal({
                 <div className={styles.campo}>
                     <label>Equipamentos</label>
                     <div className={styles.checkboxContainer}>
+                        {carregandoEquipamentos && <small role="status">Carregando equipamentos...</small>}
+                        {!carregandoEquipamentos && equipamentosDisponiveis.length === 0 && (
+                            <small>Nenhum equipamento cadastrado.</small>
+                        )}
                         <div className={styles.linhaTripla}>
-                            <div className={styles.checkboxItem}>
-                                <input id="eq-projetor" name="equipamento" type="checkbox" value="PROJETOR" checked={formulario.equipamento.includes('PROJETOR')} onChange={alterarEquipamento} />
-                                <label htmlFor="eq-projetor">Projetor</label>
-                            </div>
-                            <div className={styles.checkboxItem}>
-                                <input id="eq-ar" name="equipamento" type="checkbox" value="AR_CONDICIONADO" checked={formulario.equipamento.includes('AR_CONDICIONADO')} onChange={alterarEquipamento} />
-                                <label htmlFor="eq-ar">Ar Condicionado</label>
-                            </div>
-                            <div className={styles.checkboxItem}>
-                                <input id="eq-quadro" name="equipamento" type="checkbox" value="QUADRO_BRANCO" checked={formulario.equipamento.includes('QUADRO_BRANCO')} onChange={alterarEquipamento} />
-                                <label htmlFor="eq-quadro">Quadro Branco</label>
-                            </div>
-                            <div className={styles.checkboxItem}>
-                                <input id="eq-comp" name="equipamento" type="checkbox" value="COMPUTADOR" checked={formulario.equipamento.includes('COMPUTADOR')} onChange={alterarEquipamento} />
-                                <label htmlFor="eq-comp">Computador</label>
-                            </div>
-                            <div className={styles.checkboxItem}>
-                                <input id="eq-som" name="equipamento" type="checkbox" value="SISTEMA_DE_SOM" checked={formulario.equipamento.includes('SISTEMA_DE_SOM')} onChange={alterarEquipamento} />
-                                <label htmlFor="eq-som">Sistema de Som</label>
-                            </div>
-                            <div className={styles.checkboxItem}>
-                                <input id="eq-tv" name="equipamento" type="checkbox" value="TV" checked={formulario.equipamento.includes('TV')} onChange={alterarEquipamento} />
-                                <label htmlFor="eq-tv">TV</label>
-                            </div>
+                            {equipamentosDisponiveis.map((equipamento) => (
+                                <div key={equipamento.id} className={styles.checkboxItem}>
+                                    <input
+                                        id={`eq-${equipamento.id}`}
+                                        name="equipamentos"
+                                        type="checkbox"
+                                        value={equipamento.id}
+                                        checked={formulario.equipamentos.includes(equipamento.id)}
+                                        onChange={alterarEquipamento}
+                                    />
+                                    <label htmlFor={`eq-${equipamento.id}`}>{equipamento.nome}</label>
+                                </div>
+                            ))}
                         </div>
                     </div>
-                    {mensagemErro('equipamento')}
+                    {mensagemErro('equipamentos')}
                 </div>
 
                 <div className={styles.campo}>

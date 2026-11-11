@@ -3,6 +3,7 @@ from api.enumerations.auditoria_enumerations import EntidadeAuditoria
 from api.models.area_model import Area
 from api.models.bloco_model import Bloco
 from api.models.categoria_recurso_model import CategoriaRecurso
+from api.models.equipamento_area_model import EquipamentoArea
 from api.models.grupo_model import Grupo
 from api.models.log_auditoria_model import LogAuditoria
 from api.models.membro_grupo_model import MembroGrupo
@@ -27,6 +28,7 @@ ENTIDADE_POR_MODEL = {
     TipoRecurso: EntidadeAuditoria.TIPO_RECURSO,
     CategoriaRecurso: EntidadeAuditoria.CATEGORIA_RECURSO,
     Area: EntidadeAuditoria.AREA,
+    EquipamentoArea: EntidadeAuditoria.EQUIPAMENTO_AREA,
     Bloco: EntidadeAuditoria.BLOCO,
     Veiculo: EntidadeAuditoria.VEICULO,
 }

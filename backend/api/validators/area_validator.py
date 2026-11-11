@@ -1,5 +1,8 @@
 from django.core.exceptions import ValidationError
-from api.enumerations.area_enumerations.area_enums import EquipamentoArea
+
+# Não é mais usado pelo model (equipamentos viraram tabela, migration 0030), mas precisa
+# continuar existindo porque a migration 0001_initial importa esta função.
+EQUIPAMENTOS_ANTIGOS = {'PROJETOR', 'AR_CONDICIONADO', 'QUADRO_BRANCO', 'COMPUTADOR', 'SISTEMA_DE_SOM', 'TV'}
 
 
 def validar_equipamentos_area(value):
@@ -7,7 +10,7 @@ def validar_equipamentos_area(value):
     if not isinstance(value, list):
         raise ValidationError("O campo equipamento deve ser uma lista.")
 
-    opcoes_validas = set(EquipamentoArea.values)
+    opcoes_validas = EQUIPAMENTOS_ANTIGOS
     for item in value:
         if item not in opcoes_validas:
             raise ValidationError(

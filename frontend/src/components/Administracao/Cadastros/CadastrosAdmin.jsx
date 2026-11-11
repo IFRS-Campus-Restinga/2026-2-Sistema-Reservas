@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import TiposRecursoAdmin from './TiposRecursoAdmin';
 import CategoriasRecursoAdmin from './CategoriasRecursoAdmin';
+import EquipamentosAreaAdmin from './EquipamentosAreaAdmin';
 import styles from './CadastrosAdmin.module.css';
 
 // Cadastros auxiliares usados pelos outros módulos (recursos, áreas...)
 const SECOES = [
     { id: 'tipos-recurso', rotulo: 'Tipos de recurso', Componente: TiposRecursoAdmin },
     { id: 'categorias-recurso', rotulo: 'Categorias de recurso', Componente: CategoriasRecursoAdmin },
+    { id: 'equipamentos-area', rotulo: 'Equipamentos de sala', Componente: EquipamentosAreaAdmin },
 ];
 
 function CadastrosAdmin() {

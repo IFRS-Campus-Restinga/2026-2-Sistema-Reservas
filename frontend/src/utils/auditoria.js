@@ -19,6 +19,7 @@ export const ENTIDADE_AUDITORIA_LABEL = {
   TIPO_RECURSO: "Tipo de recurso",
   CATEGORIA_RECURSO: "Categoria de recurso",
   AREA: "Área",
+  EQUIPAMENTO_AREA: "Equipamento de área",
   BLOCO: "Bloco",
   VEICULO: "Veículo",
   TIMETABLE: "Timetable",

@@ -34,6 +34,11 @@ export {
     excluirCategoriaRecurso,
 } from './categoriasRecurso';
 export {
+    criarEquipamentoArea,
+    atualizarEquipamentoArea,
+    excluirEquipamentoArea,
+} from './equipamentosArea';
+export {
     buscarAreas,
     buscarArea,
     criarArea,

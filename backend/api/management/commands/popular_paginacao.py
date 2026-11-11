@@ -172,7 +172,7 @@ def popular():
                 Area.objects.create(
                     nome=nome, bloco=blocos[indice - 1], capacidade=24 + indice,
                     caracteristica='Ambiente reservado para atividades acadêmicas e encontros.',
-                    disponibilidade=True, status='ATIVO', equipamento=[],
+                    disponibilidade=True, status='ATIVO',
                 )
                 for indice, nome in enumerate(NOMES_AREAS, start=1)
             ]

@@ -5,7 +5,6 @@ import { ArrowLeft, CheckCircle, Users } from "lucide-react";
 import { buscarAgendaArea, buscarArea, buscarBloco } from "../../services";
 import ReservaAreaModal from "../../components/ReservaArea/ReservaAreaModal";
 import { ICONE_AREA_PADRAO, TIPO_AREA_ICONE, TIPO_AREA_LABEL } from "../../utils/tipoArea";
-import { EQUIPAMENTO_LABELS } from "../../utils/equipamentoArea";
 import { ACESSIBILIDADE_LABELS } from "../../utils/acessibilidadeBloco";
 import AlertBanner from "../../components/AlertBanner/AlertBanner";
 import styles from "./AreaDetalhe.module.css";
@@ -115,12 +114,12 @@ function AreaDetalhe() {
 
             <h4 className="text-uppercase text-muted small fw-semibold mb-2">Equipamentos</h4>
             <div className="d-flex flex-wrap gap-2">
-              {area.equipamento.length === 0 && (
+              {area.equipamentos_detalhe.length === 0 && (
                 <span className="small text-muted">Nenhum equipamento cadastrado.</span>
               )}
-              {area.equipamento.map((item) => (
-                <span key={item} className="badge rounded-pill bg-light text-secondary fw-normal">
-                  {EQUIPAMENTO_LABELS[item] || item}
+              {area.equipamentos_detalhe.map((equipamento) => (
+                <span key={equipamento.id} className="badge rounded-pill bg-light text-secondary fw-normal">
+                  {equipamento.nome}
                 </span>
               ))}
             </div>
