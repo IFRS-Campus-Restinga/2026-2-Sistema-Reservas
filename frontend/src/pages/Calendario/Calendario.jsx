@@ -421,20 +421,29 @@ function Calendario() {
                           {reserva.nome}
                         </span>
                         {altura > 28 && (
-                          <div className={styles.linhaHorarioChip}>
-                            <span className={styles.reservaDetalhe} style={{ width: 'auto' }}>
-                              {reserva.horario_inicio.slice(0, 5)}–{reserva.horario_fim.slice(0, 5)}
-                            </span>
-                            {ehTimetable && (
+                          altura <= 60 && ehTimetable ? (
+                            <div className={styles.linhaHorarioChip}>
+                              <span className={styles.reservaDetalhe} style={{ width: 'auto' }}>
+                                {reserva.horario_inicio.slice(0, 5)}–{reserva.horario_fim.slice(0, 5)}
+                              </span>
                               <span className={styles.chipTimetable}>
                                 Timetable
                               </span>
-                            )}
-                          </div>
+                            </div>
+                          ) : (
+                            <span className={styles.reservaDetalhe}>
+                              {reserva.horario_inicio.slice(0, 5)}–{reserva.horario_fim.slice(0, 5)}
+                            </span>
+                          )
                         )}
                         {altura > 42 && nomeResponsavel && (
                           <span className={styles.reservaDetalhe} style={{ textTransform: 'capitalize' }}>
                             {nomeResponsavel}
+                          </span>
+                        )}
+                        {altura > 60 && ehTimetable && (
+                          <span className={styles.chipTimetable}>
+                            Timetable
                           </span>
                         )}
                       </button>
