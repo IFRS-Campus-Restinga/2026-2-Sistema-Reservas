@@ -14,6 +14,7 @@ import AlertBanner from "../../components/AlertBanner/AlertBanner";
 import styles from "./Notificacoes.module.css";
 
 import { useNotificacoes } from "../../hooks/useNotificacoes";
+import SkeletonListaItens from "../../components/Skeleton/SkeletonListaItens";
 
 function formatarTempo(dataHora) {
   if (!dataHora) return "";
@@ -156,9 +157,7 @@ function Notificacoes() {
 
 
         {carregando ? (
-          <p className={styles.estado}>
-            Carregando notificações...
-          </p>
+          <SkeletonListaItens variante="notificacao" espaco={9} rotulo="Carregando notificações..." />
         ) : notificacoes.length === 0 ? (
           <p className={styles.estado}>
             Nenhuma notificação por enquanto.

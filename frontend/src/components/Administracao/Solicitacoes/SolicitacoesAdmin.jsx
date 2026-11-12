@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle, Eye, FileText, FileWarning, Info, LoaderCircle, MapPin, Package, UserRound, XCircle } from 'lucide-react';
+import { CheckCircle, Eye, FileText, FileWarning, Info, MapPin, Package, UserRound, XCircle } from 'lucide-react';
 import { listarSolicitacoes } from '../../../services/termos';
 import { SITUACAO_RESERVA_LABEL, statusReservaApresentado } from '../../../utils/reserva';
 import Select from '../../Select/Select';
@@ -13,6 +13,7 @@ import AlertBanner from '../../AlertBanner/AlertBanner';
 import styles from './SolicitacoesAdmin.module.css';
 import {confirmarReservaPendente, cancelarReservaAdmin} from '../../../services';
 import ModalReservaPendente from '../Reservas/ModalReservaPendente/ModalReservaPendente';
+import SkeletonListaItens from '../../Skeleton/SkeletonListaItens';
 
 const TIPOS = [{ valor: 'area', rotulo: 'Áreas' }, { valor: 'veiculo', rotulo: 'Veículos' }, { valor: 'recurso_geral', rotulo: 'Recursos gerais' }];
 const DOCUMENTOS = [
@@ -217,7 +218,7 @@ export default function SolicitacoesAdmin({solicitacaoInicial = null}) {
 
   let conteudoLista;
   if (carregando) {
-    conteudoLista = <div className={styles.estado} role="status"><LoaderCircle size={28} className={styles.girando} /><p>Carregando solicitações…</p></div>;
+    conteudoLista = <SkeletonListaItens variante="solicitacao" espaco={12} rotulo="Carregando solicitações..." />;
   } else if (erro) {
     conteudoLista = <AlertBanner tipo="erro" mensagem={erro} acao={{ rotulo: 'Tentar novamente', aoClicar: recarregar }} />;
   } else if (!lista.results.length) {

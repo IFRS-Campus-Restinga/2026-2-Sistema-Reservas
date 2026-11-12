@@ -8,6 +8,9 @@ import AlertBanner from "../../components/AlertBanner/AlertBanner";
 import styles from "./Home.module.css";
 import Banner from "../../components/Banner/Banner";
 import CartaoReserva from "../../components/CartaoReserva/CartaoReserva";
+import SkeletonBase from "../../components/Skeleton/SkeletonBase";
+import SkeletonListaItens from "../../components/Skeleton/SkeletonListaItens";
+import { Bloco, Linha } from "../../components/Skeleton/Bloco";
 import { dataParaISO, formatarDataCurta, somarDias } from "../../utils/data";
 import { PAPEL_USUARIO_LABEL } from "../../utils/usuario";
 import { buscarDataAtual } from "../../services";
@@ -76,6 +79,7 @@ function Home() {
   }
 
   const hoje = agora ? dataDeISO(agora.data) : null;
+  const carregando = !agora && !erro;
 
   const proximasReservas = resumo.proximas;
   const atividadeRecente = resumo.recentes;
@@ -110,7 +114,9 @@ function Home() {
 
       <AlertBanner tipo="erro" mensagem={erro} />
 
-      <div className={styles.grade}>
+      {carregando && <span role="status" className="visually-hidden">Carregando suas reservas...</span>}
+
+      <div className={styles.grade} aria-busy={carregando}>
         <section className={styles.painelReservas}>
           <div className={styles.cabecalhoPainel}>
             <h3 className={styles.tituloPainel}>Minhas próximas reservas</h3>
@@ -124,6 +130,8 @@ function Home() {
           </div>
 
           <div className={styles.listaReservas}>
+            {carregando && <SkeletonListaItens variante="reserva" quantidade={4} espaco={15} />}
+
             {proximasReservas.map((reserva) => (
               <CartaoReserva
                 key={`${reserva.modalidade}-${reserva.id}`}
@@ -150,6 +158,17 @@ function Home() {
         <aside className={styles.painelLateral}>
           <div className={styles.cartaoCalendario}>
             <h3 className={styles.tituloSecundario}>Esta semana</h3>
+            {carregando && (
+              <SkeletonBase classeVisual={styles.semana}>
+                {Array.from({ length: 7 }, (_, indice) => (
+                  <div key={indice} className={styles.diaSemana}>
+                    <Linha altura={15}><Bloco largura={22} altura={8} /></Linha>
+                    <Bloco largura={28} altura={28} raio={999} />
+                  </div>
+                ))}
+              </SkeletonBase>
+            )}
+
             <div className={styles.semana}>
               {diasDaSemana.map((dia) => (
                 <div key={dia.data} className={styles.diaSemana}>
@@ -166,6 +185,8 @@ function Home() {
           <div className={styles.cartaoAtividade}>
             <h3 className={styles.tituloSecundario}>Atividade recente</h3>
             <div className={styles.listaAtividade}>
+              {carregando && <SkeletonListaItens variante="reserva" quantidade={3} />}
+
               {atividadeRecente.map((reserva) => (
                 <CartaoReserva
                   key={`${reserva.modalidade}-${reserva.id}`}

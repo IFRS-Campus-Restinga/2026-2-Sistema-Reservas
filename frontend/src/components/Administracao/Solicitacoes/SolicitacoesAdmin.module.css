@@ -233,16 +233,6 @@
   font-size: 14px;
 }
 
-.girando {
-  animation: girar 1s linear infinite;
-}
-
-@keyframes girar {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (max-width: 639px) {
   .cartao {
     padding: 16px;
