@@ -33,7 +33,15 @@ ENTIDADE_POR_MODEL = {
     Veiculo: EntidadeAuditoria.VEICULO,
 }
 
-MODELS_AUDITADOS_PARA_SERVIDOR = (Grupo, MembroGrupo)
+MODELS_AUDITADOS_PARA_SERVIDOR = (
+    Grupo,
+    MembroGrupo,
+    Reserva,
+    ReservaArea,
+    ReservaRecursoGeral,
+    ReservaVeiculo,
+    Recorrencia,
+)
 
 
 def _dono(objeto):
@@ -58,6 +66,8 @@ def _perfil_auditado(ator, objeto):
             return None
         return Papel.ADMIN
     if getattr(ator, 'papel', None) == Papel.SERVIDOR and isinstance(objeto, MODELS_AUDITADOS_PARA_SERVIDOR):
+        if isinstance(objeto, (Reserva, Recorrencia)) and objeto.usuario_id == ator.pk:
+            return None
         return Papel.SERVIDOR
     return None
 

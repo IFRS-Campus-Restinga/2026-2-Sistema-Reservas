@@ -3,11 +3,13 @@ import { CalendarDays, Copy, Pencil, Trash2, Users } from 'lucide-react';
 import Botao from '../../Botao/Botao';
 import Tooltip from '../../Tooltip/Tooltip';
 import ModalMembros from '../ModalMembros/ModalMembros';
+import ModalReservasGrupo from '../ModalReservasGrupo/ModalReservasGrupo';
 import { formatarVigenciaGrupo, rotulosRecursos } from '../gruposUtils';
 import styles from './CardGrupo.module.css';
 
 function CardGrupo({ grupo, aoEditar, aoExcluir, aoCopiar, aoAtualizar }) {
     const [modalMembrosAberto, setModalMembrosAberto] = useState(false);
+    const [modalReservasAberto, setModalReservasAberto] = useState(false);
 
     const rotuloTipoMembro = grupo.tipo_membro_permitido === 'servidor' ? 'Servidores' : 'Alunos';
     const membros = grupo.quantidade_membros === 1 ? '1 membro' : `${grupo.quantidade_membros} membros`;
@@ -70,17 +72,34 @@ function CardGrupo({ grupo, aoEditar, aoExcluir, aoCopiar, aoAtualizar }) {
                 <span><Users size={14} aria-hidden="true" />{membros}</span>
             </div>
 
-            <Botao
-                titulo="Gerenciar membros"
-                icone={Users}
-                estilo="secundario"
-                aoClicar={() => setModalMembrosAberto(true)}
-            />
+            <div className={styles.botoesAcoes}>
+                <Botao
+                    titulo="Gerenciar membros"
+                    icone={Users}
+                    estilo="secundario"
+                    aoClicar={() => setModalMembrosAberto(true)}
+                />
+                {grupo.tipo_membro_permitido === 'aluno' && (
+                    <Botao
+                        titulo="Ver reservas do grupo"
+                        icone={CalendarDays}
+                        estilo="secundario"
+                        aoClicar={() => setModalReservasAberto(true)}
+                    />
+                )}
+            </div>
 
             {modalMembrosAberto && (
                 <ModalMembros
                     grupo={grupo}
                     aoFechar={fecharMembros}
+                />
+            )}
+
+            {modalReservasAberto && (
+                <ModalReservasGrupo
+                    grupo={grupo}
+                    aoFechar={() => setModalReservasAberto(false)}
                 />
             )}
         </div>

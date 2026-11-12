@@ -1,0 +1,48 @@
+.modalCorpo {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 380px;
+}
+
+.cabecalhoInfo {
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.barraFiltros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vazio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  text-align: center;
+  color: #6b7280;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border: 1px dashed #e5e7eb;
+}
+
+.vazio p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.rodape {
+  display: flex;
+  justify-content: flex-end;
+}

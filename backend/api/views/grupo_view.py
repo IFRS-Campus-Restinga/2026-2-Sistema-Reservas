@@ -1,4 +1,5 @@
-from django.db.models import Count, Q
+from django.db.models import Count, Prefetch, Q
+from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -6,14 +7,28 @@ from rest_framework.response import Response
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 
+from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
 from api.models.grupo_model import Grupo
+from api.models.reserva_model import Reserva
+from api.models.termo_responsabilidade_model import TermoResponsabilidade
 from api.permissions.grupo_permissions import PodeCriarGrupo, PodeGerenciarGrupo, tipos_grupo_que_pode_criar
 from api.permissions.regras_comuns import usuario_e_admin
 from api.serializers.grupo_serializer import GrupoSerializer, CopiaGrupoSerializer
 from api.models.membro_grupo_model import MembroGrupo
 from api.enumerations.auditoria_enumerations import AcaoAuditoria
 from api.services.auditoria import foto, registrar_auditoria
-from .view_helpers import BuscarObjetoComPermissaoMixin, listar, detalhar, criar, atualizar, remover
+from api.services.filtros_listagem import BUSCA, filtrar_listagem
+from api.services.situacao_reserva_service import filtro_situacao
+from api.views.minhas_reservas_view import MinhaReservaSerializer
+from .view_helpers import (
+    BuscarObjetoComPermissaoMixin,
+    detalhar,
+    criar,
+    atualizar,
+    listar,
+    listar_agrupado_por_recorrencia,
+    remover,
+)
 
 class GrupoListCreateView(APIView):
     permission_classes = [PodeCriarGrupo]
@@ -96,3 +111,78 @@ class GrupoCopiarView(BuscarObjetoComPermissaoMixin, APIView):
         except DjangoValidationError as exc:
             raise ValidationError(exc.message_dict if hasattr(exc, 'message_dict') else exc.messages) from exc
         return Response(GrupoSerializer(copia).data, status=status.HTTP_201_CREATED)
+
+
+class ReservasGrupoListView(APIView):
+    permission_classes = [PodeGerenciarGrupo]
+
+    def get(self, request, pk):
+        grupo = get_object_or_404(Grupo, pk=pk)
+        self.check_object_permissions(request, grupo)
+
+        membros_ids = list(
+            MembroGrupo.objects.filter(grupo_id=pk).values_list("usuario_id", flat=True)
+        )
+        if not membros_ids:
+            return listar(request, Reserva.objects.none(), MinhaReservaSerializer, BUSCA["reserva"])
+
+        tipos_autorizados = set(
+            grupo.autorizacoes.values_list("tipo_recurso_autorizado", flat=True)
+        )
+        tipos_especificos = list(
+            grupo.autorizacoes.filter(
+                tipo_recurso_autorizado=TipoRecursoReservavel.RECURSO_GERAL,
+                tipo_recurso__isnull=False,
+            ).values_list("tipo_recurso_id", flat=True)
+        )
+
+        condicoes_recursos = Q(pk__in=[])
+        if TipoRecursoReservavel.AREA in tipos_autorizados:
+            condicoes_recursos |= Q(reservaarea__isnull=False)
+
+        if TipoRecursoReservavel.RECURSO_GERAL in tipos_autorizados:
+            if tipos_especificos:
+                condicoes_recursos |= Q(
+                    reservarecursogeral__recurso_geral__tipo_recurso_id__in=tipos_especificos
+                )
+            else:
+                condicoes_recursos |= Q(reservarecursogeral__isnull=False)
+
+        reservas = (
+            Reserva.objects.filter(usuario_id__in=membros_ids)
+            .filter(condicoes_recursos)
+            .select_related(
+                "reservaarea__area__bloco",
+                "reservaarea__recorrencia",
+                "reservaveiculo__recorrencia",
+                "reservarecursogeral__recorrencia",
+                "usuario",
+                "reservaveiculo__veiculo",
+                "reservarecursogeral__recurso_geral__tipo_recurso",
+            )
+            .prefetch_related(
+                Prefetch(
+                    "termos",
+                    queryset=TermoResponsabilidade.objects.filter(atual=True),
+                    to_attr="termos_atuais",
+                )
+            )
+            .order_by("-data", "-horario_inicio", "-pk")
+        )
+
+        reservas = reservas.filter(data__gte=grupo.data_inicio_validade)
+        if grupo.data_fim_validade:
+            reservas = reservas.filter(data__lte=grupo.data_fim_validade)
+
+        situacao = request.query_params.get("situacao", "todos").upper()
+        if situacao == "TODOS":
+            reservas = reservas.exclude(status="CANCELADA")
+        elif situacao != "TODOS":
+            filtro = filtro_situacao(situacao)
+            reservas = reservas.filter(filtro).distinct() if filtro is not None else reservas.none()
+
+        if request.query_params.get("agrupar_recorrencias") != "true":
+            return listar(request, reservas, MinhaReservaSerializer, BUSCA["reserva"])
+        return listar_agrupado_por_recorrencia(
+            request, filtrar_listagem(request, reservas, BUSCA["reserva"]), MinhaReservaSerializer
+        )

@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from api.permissions.regras_comuns import filtro_usuario_admin
+from api.permissions.regras_comuns import filtro_usuario_admin, usuario_e_admin
 from api.enumerations.status_termo import StatusTermo
 from api.enumerations.tipo_notificacao import TipoNotificacao
 from api.enumerations.tipo_termo import TipoTermo
@@ -73,6 +73,40 @@ def criar_notificacao_cancelamento(reserva):
     )
 
     return notificacao
+
+
+def criar_notificacao_cancelamento_por_terceiro(reserva, ator):
+    """Notifica o dono da reserva quando ela é cancelada por um administrador ou pelo criador do grupo."""
+    nome_ator = getattr(ator, 'nome', None) or getattr(ator, 'email', None) or 'administrador'
+    if usuario_e_admin(ator):
+        mensagem = f'Sua reserva "{reserva.nome}" foi cancelada pela administração ({nome_ator}).'
+    else:
+        mensagem = f'Sua reserva "{reserva.nome}" foi cancelada pelo responsável do grupo ({nome_ator}).'
+
+    return _registrar_notificacao(
+        usuario=reserva.usuario,
+        reserva=reserva,
+        tipo=TipoNotificacao.CANCELAMENTO_RESERVA,
+        titulo="Reserva cancelada",
+        mensagem=mensagem,
+    )
+
+
+def criar_notificacao_alteracao_por_terceiro(reserva, ator):
+    """Notifica o dono da reserva quando ela é alterada por um administrador ou pelo criador do grupo."""
+    nome_ator = getattr(ator, 'nome', None) or getattr(ator, 'email', None) or 'administrador'
+    if usuario_e_admin(ator):
+        mensagem = f'Sua reserva "{reserva.nome}" foi alterada pela administração ({nome_ator}).'
+    else:
+        mensagem = f'Sua reserva "{reserva.nome}" foi alterada pelo responsável do grupo ({nome_ator}).'
+
+    return _registrar_notificacao(
+        usuario=reserva.usuario,
+        reserva=reserva,
+        tipo=TipoNotificacao.ALTERACAO_RESERVA,
+        titulo="Reserva alterada",
+        mensagem=mensagem,
+    )
 
 def _registrar_notificacao(usuario, reserva, tipo, titulo, mensagem):
     notificacao, _ = Notificacao.objects.update_or_create(

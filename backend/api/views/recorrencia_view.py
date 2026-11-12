@@ -10,6 +10,10 @@ from api.enumerations.status_reserva import StatusReserva
 from api.models.recorrencia_model import Recorrencia
 from api.permissions.reserva_permissions import PodeGerenciarReserva
 from api.services.auditoria import foto, foto_agrupada, registrar_auditoria
+from api.services.notificacao_service import (
+    criar_notificacao_alteracao_por_terceiro,
+    criar_notificacao_cancelamento_por_terceiro,
+)
 from api.services.recorrencia_service import (
     RECORRENCIA_AREA,
     RECORRENCIA_RECURSO_GERAL,
@@ -87,6 +91,8 @@ class RecorrenciaReservaDetailView(BuscarObjetoComPermissaoMixin, APIView):
                 registrar_auditoria_recorrencia(
                     request.user, AcaoAuditoria.CANCELAR, recorrencia, canceladas, modalidade.entidade_auditoria
                 )
+                if request.user.pk != recorrencia.usuario_id and canceladas:
+                    criar_notificacao_cancelamento_por_terceiro(canceladas[0][0], ator=request.user)
 
                 return Response(serializar_recorrencia(modalidade, recorrencia, request.user))
 
@@ -100,6 +106,8 @@ class RecorrenciaReservaDetailView(BuscarObjetoComPermissaoMixin, APIView):
             registrar_auditoria_recorrencia(
                 request.user, AcaoAuditoria.EDITAR, recorrencia, alteradas, modalidade.entidade_auditoria
             )
+            if request.user.pk != recorrencia.usuario_id and alteradas:
+                criar_notificacao_alteracao_por_terceiro(alteradas[0][0], ator=request.user)
 
         return Response(serializar_recorrencia(modalidade, recorrencia, request.user))
 

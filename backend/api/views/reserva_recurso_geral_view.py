@@ -1,6 +1,7 @@
 from .view_helpers import listar
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -15,6 +16,10 @@ from api.serializers.reserva_recurso_geral_serializer import ReservaRecursoGeral
 from api.validators.reserva_recurso_geral_validator import STATUS_RESERVAS_ATIVAS, validar_autorizacao, validar_disponibilidade, quantidade_disponivel
 from api.enumerations.auditoria_enumerations import AcaoAuditoria
 from api.services.auditoria import foto, registrar_auditoria
+from api.services.notificacao_service import (
+    criar_notificacao_alteracao_por_terceiro,
+    criar_notificacao_cancelamento_por_terceiro,
+)
 from api.services.termo_service import invalidar_termo_apos_edicao
 from api.services.recorrencia_service import (
     RECORRENCIA_RECURSO_GERAL,
@@ -157,9 +162,16 @@ class ReservaRecursoGeralDetailView(BuscarObjetoComPermissaoMixin, APIView):
                     })
 
                 reserva.status = novo_status
-                reserva.save(update_fields=["status"])
+                if novo_status == StatusReserva.CANCELADA:
+                    reserva.cancelada_em = timezone.now()
+                    reserva.cancelada_por = request.user
+                    reserva.save(update_fields=["status", "cancelada_em", "cancelada_por"])
+                else:
+                    reserva.save(update_fields=["status"])
                 acao = AcaoAuditoria.CANCELAR if novo_status == StatusReserva.CANCELADA else AcaoAuditoria.EDITAR
                 registrar_auditoria(request.user, acao, reserva, antes=antes, depois=foto(reserva))
+                if novo_status == StatusReserva.CANCELADA and request.user.pk != reserva.usuario_id:
+                    criar_notificacao_cancelamento_por_terceiro(reserva, ator=request.user)
 
                 return Response(ReservaRecursoGeralSerializer(reserva).data)
 
@@ -206,5 +218,7 @@ class ReservaRecursoGeralDetailView(BuscarObjetoComPermissaoMixin, APIView):
             invalidar_termo_apos_edicao(reserva, serializer.validated_data)
             serializer.save()
             registrar_auditoria(request.user, AcaoAuditoria.EDITAR, reserva, antes=antes, depois=foto(reserva))
+            if request.user.pk != reserva.usuario_id:
+                criar_notificacao_alteracao_por_terceiro(reserva, ator=request.user)
 
         return Response(serializer.data)
