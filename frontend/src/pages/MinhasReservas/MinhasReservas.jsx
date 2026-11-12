@@ -320,7 +320,7 @@ function MinhasReservas() {
   }
 
   function podeGerenciarRecorrencia(reserva) {
-    return Boolean(reserva?.recorrencia && !reserva.celula_timetable && podeEditarPorPermissao(reserva));
+    return Boolean(reserva?.recorrencia && !reserva.celula_timetable && podeAlterar(reserva));
   }
 
   async function abrirRecorrencia(reserva) {

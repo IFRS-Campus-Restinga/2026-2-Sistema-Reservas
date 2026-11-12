@@ -120,6 +120,19 @@ class NotificacaoVencimentoGrupoTests(BaseRevisaoTests):
         self.assertEqual(segunda.data['count'], 0)
         self.assertEqual(segunda.data['nao_lidas'], 0)
 
+    def test_remove_notificacao_quando_grupo_e_renovado_para_fora_da_janela(self):
+        grupo = self._criar_grupo(self.servidor, 'Grupo Renovado', 2)
+
+        primeira = self._listar_notificacoes(self.servidor)
+        self.assertEqual(primeira.data['count'], 1)
+
+        grupo.data_fim_validade = self.hoje + timedelta(days=60)
+        grupo.save()
+
+        segunda = self._listar_notificacoes(self.servidor)
+        self.assertEqual(segunda.data['count'], 0)
+        self.assertEqual(segunda.data['nao_lidas'], 0)
+
     def test_notificacao_exige_exclusivamente_reserva_ou_grupo(self):
         invalida = Notificacao(
             usuario=self.servidor,

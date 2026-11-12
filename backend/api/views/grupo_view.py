@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 
+from accounts.enumerations import Papel
 from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
 from api.models.grupo_model import Grupo
 from api.models.reserva_model import Reserva
@@ -120,11 +121,40 @@ class ReservasGrupoListView(APIView):
         grupo = get_object_or_404(Grupo, pk=pk)
         self.check_object_permissions(request, grupo)
 
-        membros_ids = list(
-            MembroGrupo.objects.filter(grupo_id=pk).values_list("usuario_id", flat=True)
-        )
-        if not membros_ids:
+        if grupo.tipo_membro_permitido != Papel.ALUNO:
             return listar(request, Reserva.objects.none(), MinhaReservaSerializer, BUSCA["reserva"])
+
+        membros = list(
+            MembroGrupo.objects.filter(
+                grupo_id=pk,
+                usuario__papel=Papel.ALUNO,
+            ).values("usuario_id", "data_fim_validade")
+        )
+        if not membros:
+            return listar(request, Reserva.objects.none(), MinhaReservaSerializer, BUSCA["reserva"])
+
+        usuarios_por_limite = {}
+        for membro in membros:
+            limites = [
+                data
+                for data in (grupo.data_fim_validade, membro["data_fim_validade"])
+                if data is not None
+            ]
+            limite = min(limites) if limites else None
+            usuarios_por_limite.setdefault(limite, []).append(membro["usuario_id"])
+
+        condicoes_membros = Q(pk__in=[])
+        for limite, ids_usuarios in usuarios_por_limite.items():
+            filtro_membro = Q(
+                usuario_id__in=ids_usuarios,
+                data__gte=grupo.data_inicio_validade,
+            )
+            if limite is not None:
+                filtro_membro &= Q(data__lte=limite) & (
+                    Q(reservarecursogeral__isnull=True)
+                    | Q(reservarecursogeral__data_devolucao_prevista__lte=limite)
+                )
+            condicoes_membros |= filtro_membro
 
         tipos_autorizados = set(
             grupo.autorizacoes.values_list("tipo_recurso_autorizado", flat=True)
@@ -138,7 +168,10 @@ class ReservasGrupoListView(APIView):
 
         condicoes_recursos = Q(pk__in=[])
         if TipoRecursoReservavel.AREA in tipos_autorizados:
-            condicoes_recursos |= Q(reservaarea__isnull=False)
+            condicoes_recursos |= Q(
+                reservaarea__isnull=False,
+                reservaarea__celula_timetable__isnull=True,
+            )
 
         if TipoRecursoReservavel.RECURSO_GERAL in tipos_autorizados:
             if tipos_especificos:
@@ -149,7 +182,7 @@ class ReservasGrupoListView(APIView):
                 condicoes_recursos |= Q(reservarecursogeral__isnull=False)
 
         reservas = (
-            Reserva.objects.filter(usuario_id__in=membros_ids)
+            Reserva.objects.filter(condicoes_membros)
             .filter(condicoes_recursos)
             .select_related(
                 "reservaarea__area__bloco",
@@ -169,10 +202,6 @@ class ReservasGrupoListView(APIView):
             )
             .order_by("-data", "-horario_inicio", "-pk")
         )
-
-        reservas = reservas.filter(data__gte=grupo.data_inicio_validade)
-        if grupo.data_fim_validade:
-            reservas = reservas.filter(data__lte=grupo.data_fim_validade)
 
         situacao = request.query_params.get("situacao", "todos").upper()
         if situacao == "TODOS":

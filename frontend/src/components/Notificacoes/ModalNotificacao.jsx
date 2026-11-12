@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, Bell, CalendarClock, CheckCircle2, Clock3, X, UserRound, Users, XCircle, FileText } from "lucide-react";
+import { AlertTriangle, Bell, CalendarClock, CheckCircle2, Clock3, Pencil, X, UserRound, Users, XCircle, FileText } from "lucide-react";
 import { STATUS_RESERVA_LABEL } from "../../utils/reserva";
 import { PAPEL_USUARIO_LABEL } from "../../utils/usuario";
 import { notificacaoTermoEnviado, notificacaoTermoRejeitado } from "../../utils/notificacoes";
@@ -43,11 +43,15 @@ function ModalNotificacao({ notificacao, aoFechar }) {
   const grupo = notificacao.grupo;
   const status = String(reserva?.status || "").toLowerCase();
   const cancelamento = notificacao.tipo === "CANCELAMENTO_RESERVA";
+  const rejeicao = notificacao.tipo === "REJEICAO_RESERVA";
+  const alteracao = notificacao.tipo === "ALTERACAO_RESERVA";
   const termoRejeitado = notificacaoTermoRejeitado(notificacao.tipo);
   const termoEnviado = notificacaoTermoEnviado(notificacao.tipo);
   const grupoVencendo = notificacao.tipo === "GRUPO_PROXIMO_VENCIMENTO";
-  const IconeStatus = cancelamento || termoRejeitado
+  const IconeStatus = cancelamento || rejeicao || termoRejeitado
     ? XCircle
+    : alteracao
+    ? Pencil
     : termoEnviado
     ? FileText
     : grupoVencendo

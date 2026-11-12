@@ -263,6 +263,12 @@ def notificar_grupos_proximos_vencimento(usuario, dias_antecedencia=DIAS_AVISO_V
             data_fim_validade__lte=limite,
         )
     )
+    ids_grupos_vencendo = [grupo.id for grupo in grupos]
+    Notificacao.objects.filter(
+        usuario=usuario,
+        tipo=TipoNotificacao.GRUPO_PROXIMO_VENCIMENTO,
+    ).exclude(grupo_id__in=ids_grupos_vencendo).delete()
+
     if not grupos:
         return []
 

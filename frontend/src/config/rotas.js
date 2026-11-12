@@ -88,14 +88,14 @@ export const ROTAS = [
     menu: { titulo: "Minhas Reservas", icone: ClipboardList },
   },
   {
-  id: "notificacoes",
-  path: "/notificacoes",
-  componente: Notificacoes,
-  permissao: podeReservarAlgo,
-  menu: {
-    titulo: "Notificações",
-    icone: Bell,
-  },
+    id: "notificacoes",
+    path: "/notificacoes",
+    componente: Notificacoes,
+    permissao: podeVerMinhasReservas,
+    menu: {
+      titulo: "Notificações",
+      icone: Bell,
+    },
   },
   {
     id: "grupos",

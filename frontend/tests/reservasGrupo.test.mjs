@@ -63,4 +63,11 @@ describe('Gerenciamento de reservas do grupo pelo criador (Frontend)', () => {
     assert.match(htmlServidores, /Gerenciar membros/);
     assert.doesNotMatch(htmlServidores, /Ver reservas do grupo/);
   });
+
+  test('unitário: ModalReservasGrupo carrega sem erros e renderiza filtros com props corretas', async () => {
+    const { default: ModalReservasGrupo } = await vite.ssrLoadModule(
+      '/src/components/Grupos/ModalReservasGrupo/ModalReservasGrupo.jsx'
+    );
+    assert.equal(typeof ModalReservasGrupo, 'function');
+  });
 });

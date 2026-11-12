@@ -7,6 +7,7 @@ from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from api.enumerations import StatusRecurso, StatusReserva, TipoRecorrencia
 from api.enumerations.auditoria_enumerations import EntidadeAuditoria
+from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
 from api.models.area_model import Area
 from api.models.recorrencia_model import Recorrencia
 from api.models.recurso_geral_model import RecursoGeral
@@ -15,6 +16,7 @@ from api.models.reserva_recurso_geral_model import ReservaRecursoGeral
 from api.models.reserva_veiculo_model import ReservaVeiculo
 from api.models.veiculo_model import Veiculo
 from api.permissions.regras_comuns import usuario_e_admin
+from api.permissions.reserva_permissions import validar_autorizacao_gerenciamento_grupo
 from api.serializers.recorrencia_serializer import RecorrenciaSerializer
 from api.serializers.reserva_area_serializer import ReservaAreaSerializer
 from api.serializers.reserva_recurso_geral_serializer import ReservaRecursoGeralSerializer
@@ -61,7 +63,17 @@ class ModalidadeRecorrencia:
 
 
 def _validar_ocorrencia_area(ator, dados, reserva=None, excluir_ids=()):
-    validar_autorizacao(reserva.usuario if reserva is not None else ator, dados)
+    dono = reserva.usuario if reserva is not None else ator
+    validar_autorizacao(dono, dados)
+    if reserva is not None:
+        validar_autorizacao_gerenciamento_grupo(
+            ator,
+            dono,
+            TipoRecursoReservavel.AREA,
+            None,
+            dados["data"],
+            dados["data"],
+        )
     validar_disponibilidade_area(dados, excluir_reserva=reserva.pk if reserva is not None else None)
 
 
@@ -127,7 +139,17 @@ def _validar_previa_recurso_geral(dados):
 
 
 def _validar_ocorrencia_recurso_geral(ator, dados, reserva=None, excluir_ids=()):
-    validador_recurso.validar_autorizacao(reserva.usuario if reserva is not None else ator, dados)
+    dono = reserva.usuario if reserva is not None else ator
+    validador_recurso.validar_autorizacao(dono, dados)
+    if reserva is not None:
+        validar_autorizacao_gerenciamento_grupo(
+            ator,
+            dono,
+            TipoRecursoReservavel.RECURSO_GERAL,
+            dados["recurso_geral"].tipo_recurso_id,
+            dados["data"],
+            dados.get("data_devolucao_prevista") or dados["data"],
+        )
     validador_recurso.validar_disponibilidade(
         dados, excluir_reserva=reserva.pk if reserva is not None else None
     )
@@ -419,12 +441,15 @@ def cancelar_recorrencia(modalidade, recorrencia, usuario):
             "detail": "Não há reservas futuras alteráveis nesta recorrência."
         })
 
+    agora = timezone.now()
     canceladas = []
 
     for reserva in reservas:
         antes = foto(reserva)
         reserva.status = StatusReserva.CANCELADA
-        reserva.save(update_fields=["status"])
+        reserva.cancelada_em = agora
+        reserva.cancelada_por = usuario
+        reserva.save(update_fields=["status", "cancelada_em", "cancelada_por"])
         canceladas.append((reserva, antes))
 
     return canceladas

@@ -8,10 +8,14 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from api.enumerations.status_reserva import StatusReserva
+from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
 from api.models.recurso_geral_model import RecursoGeral
 from api.models.reserva_recurso_geral_model import ReservaRecursoGeral
 from api.permissions.regras_comuns import UsuarioAutenticado, usuario_e_admin
-from api.permissions.reserva_permissions import PodeGerenciarReserva
+from api.permissions.reserva_permissions import (
+    PodeGerenciarReserva,
+    validar_autorizacao_gerenciamento_grupo,
+)
 from api.serializers.reserva_recurso_geral_serializer import ReservaRecursoGeralSerializer
 from api.validators.reserva_recurso_geral_validator import STATUS_RESERVAS_ATIVAS, validar_autorizacao, validar_disponibilidade, quantidade_disponivel
 from api.enumerations.auditoria_enumerations import AcaoAuditoria
@@ -212,6 +216,14 @@ class ReservaRecursoGeralDetailView(BuscarObjetoComPermissaoMixin, APIView):
 
             dados["recurso_geral"] = recurso
             validar_autorizacao(reserva.usuario, dados)
+            validar_autorizacao_gerenciamento_grupo(
+                request.user,
+                reserva.usuario,
+                TipoRecursoReservavel.RECURSO_GERAL,
+                recurso.tipo_recurso_id,
+                dados["data"],
+                dados.get("data_devolucao_prevista") or dados["data"],
+            )
             validar_disponibilidade(dados, excluir_reserva=reserva.pk)
 
             serializer.validated_data["recurso_geral"] = recurso

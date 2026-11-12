@@ -14,19 +14,16 @@ import GerenciarRecorrenciaRecursoGeralModal from '../../RecorrenciaRecursoGeral
 import AlertBanner from '../../AlertBanner/AlertBanner';
 import SkeletonListaItens from '../../Skeleton/SkeletonListaItens';
 import Botao from '../../Botao/Botao';
-import { cancelarReservaArea } from '../../../services';
+import { buscarAreas, buscarBlocos, cancelarReservaArea } from '../../../services';
 import { cancelarReservaRecursoGeral } from '../../../services/reservasRecursosGerais';
 import { SITUACAO_RESERVA_LABEL } from '../../../utils/reserva';
 import { mensagemDeErro } from '../../../utils/erros';
 import styles from './ModalReservasGrupo.module.css';
 
-const OPCOES_SITUACAO = [
-  { valor: 'todos', rotulo: 'Todas as situações' },
-  ...Object.entries(SITUACAO_RESERVA_LABEL).map(([valor, rotulo]) => ({
-    valor,
-    rotulo,
-  })),
-];
+const OPCOES_SITUACAO = Object.entries(SITUACAO_RESERVA_LABEL).map(([valor, rotulo]) => ({
+  valor,
+  rotulo,
+}));
 
 const MODALIDADES_LABEL = {
   area: 'Área',
@@ -105,6 +102,7 @@ function ModalReservasGrupo({ grupo, aoFechar }) {
   const [editandoArea, setEditandoArea] = useState(null);
   const [editandoRecurso, setEditandoRecurso] = useState(null);
   const [recorrenciaGerenciada, setRecorrenciaGerenciada] = useState(null);
+  const [locaisRecorrencia, setLocaisRecorrencia] = useState(null);
 
   const {
     itens: reservas,
@@ -113,7 +111,7 @@ function ModalReservasGrupo({ grupo, aoFechar }) {
     recarregar,
     paginacao,
   } = useListaPaginada(`/api/grupos/${grupo.id}/reservas/`, {
-    busca,
+    busca: busca.trim(),
     situacao: situacao === 'todos' ? undefined : situacao,
     page_size: 10,
   });
@@ -127,8 +125,17 @@ function ModalReservasGrupo({ grupo, aoFechar }) {
     }
   }
 
-  function abrirRecorrencia(reserva) {
+  async function abrirRecorrencia(reserva) {
     setSelecionada(null);
+    if (reserva.modalidade === 'area' && !locaisRecorrencia) {
+      try {
+        const [areas, blocos] = await Promise.all([buscarAreas(), buscarBlocos()]);
+        setLocaisRecorrencia({ areas: areas || [], blocos: blocos || [] });
+      } catch (falha) {
+        setErro(mensagemDeErro(falha, 'Não foi possível carregar as áreas.'));
+        return;
+      }
+    }
     setRecorrenciaGerenciada(reserva);
   }
 
@@ -197,14 +204,16 @@ function ModalReservasGrupo({ grupo, aoFechar }) {
         <div className={styles.barraFiltros}>
           <CampoBusca
             valor={busca}
-            aoMudar={setBusca}
+            aoAlterar={setBusca}
             placeholder="Buscar por reserva ou aluno..."
           />
           <Select
             opcoes={OPCOES_SITUACAO}
             valor={situacao}
-            aoMudar={setSituacao}
-            aria-label="Filtrar por situação da reserva"
+            aoAlterar={setSituacao}
+            valorTodos="todos"
+            rotuloTodos="Todas as situações"
+            ariaLabel="Filtrar por situação da reserva"
           />
         </div>
 
@@ -219,7 +228,10 @@ function ModalReservasGrupo({ grupo, aoFechar }) {
             {reservas.map((reserva) => (
               <CartaoReserva
                 key={`${reserva.modalidade}-${reserva.id}`}
-                reserva={reserva}
+                reserva={{
+                  ...reserva,
+                  descricao: `${nomeItem(reserva)} · ${reserva.usuario_detalhe?.nome || 'Aluno'}`,
+                }}
                 modalidade={MODALIDADES_LABEL[reserva.modalidade] || reserva.modalidade}
                 aoClicar={() => setSelecionada(reserva)}
               />
@@ -269,6 +281,8 @@ function ModalReservasGrupo({ grupo, aoFechar }) {
       {editandoRecurso && (
         <ReservaRecursoGeralModal
           aberto
+          tipo={editandoRecurso.tipo_detalhe}
+          recursoInicial={editandoRecurso.recurso_detalhe}
           reservaEdicao={editandoRecurso}
           aoFechar={() => setEditandoRecurso(null)}
           aoReservar={salvarEdicaoRecurso}
@@ -279,6 +293,8 @@ function ModalReservasGrupo({ grupo, aoFechar }) {
         <GerenciarRecorrenciaModal
           aberto
           recorrenciaId={recorrenciaGerenciada.recorrencia?.id || recorrenciaGerenciada.recorrencia}
+          areas={locaisRecorrencia?.areas}
+          blocos={locaisRecorrencia?.blocos}
           aoFechar={() => setRecorrenciaGerenciada(null)}
           aoSalvar={salvarRecorrencia}
           aoCancelarRecorrencia={cancelarRecorrenciaConcluida}

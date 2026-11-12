@@ -19,12 +19,14 @@ from api.models.grupo_model import Grupo
 from api.models.log_auditoria_model import LogAuditoria
 from api.models.membro_grupo_model import MembroGrupo
 from api.models.notificacao_model import Notificacao
+from api.models.recorrencia_model import Recorrencia
 from api.models.recurso_geral_model import RecursoGeral
 from api.models.reserva_area_model import ReservaArea
 from api.models.reserva_recurso_geral_model import ReservaRecursoGeral
 from api.models.tipo_recurso_model import TipoRecurso
 from api.permissions.reserva_permissions import autor_grupo_gerencia_reserva, usuario_pode_gerenciar_reserva
 from api.views.grupo_view import ReservasGrupoListView
+from api.views.recorrencia_view import RecorrenciaReservaAreaDetailView
 from api.views.reserva_area_view import ReservaAreaDetailView
 from api.views.reserva_recurso_geral_view import ReservaRecursoGeralDetailView
 
@@ -212,3 +214,111 @@ class DonoGrupoGerenciaReservasTests(TestCase):
         force_authenticate(request_outro, user=self.outro_professor)
         response_outro = ReservasGrupoListView.as_view()(request_outro, pk=self.grupo.pk)
         self.assertEqual(response_outro.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Verifica que usuario_detalhe com nome do aluno vem em todas as modalidades
+        for item in response.data["results"]:
+            self.assertEqual(item["usuario_detalhe"]["nome"], "João Aluno")
+
+    def test_professor_nao_gerencia_modalidade_ou_tipo_recurso_nao_autorizado_pelo_seu_grupo(self):
+        outro_tipo = TipoRecurso.objects.create(descricao="Esportes")
+        bola = RecursoGeral.objects.create(
+            nome="Bola de Vôlei",
+            tipo_recurso=outro_tipo,
+            tipo_prazo="CURTO",
+            quantidade_total=3,
+            status="ATIVO",
+        )
+        # Outro professor autoriza "Esportes" para o mesmo aluno
+        grupo_outro_prof = Grupo.objects.create(
+            nome="Atletismo",
+            tipo_membro_permitido=Papel.ALUNO,
+            data_inicio_validade=self.hoje - timedelta(days=5),
+            data_fim_validade=self.hoje + timedelta(days=30),
+            criador=self.outro_professor,
+        )
+        AutorizacaoGrupo.objects.create(
+            grupo=grupo_outro_prof,
+            tipo_recurso_autorizado=TipoRecursoReservavel.RECURSO_GERAL,
+            tipo_recurso=outro_tipo,
+        )
+        MembroGrupo.objects.create(grupo=grupo_outro_prof, usuario=self.aluno)
+
+        reserva_bola = ReservaRecursoGeral.objects.create(
+            nome="Treino de Vôlei",
+            descricao="Quadra",
+            status=StatusReserva.CONFIRMADA,
+            data=self.dia,
+            horario_inicio=time(16, 0),
+            horario_fim=time(18, 0),
+            data_devolucao_prevista=self.dia,
+            tipo_reserva="INTERNA",
+            usuario=self.aluno,
+            recurso_geral=bola,
+            quantidades=1,
+        )
+
+        # self.professor autorizou apenas Área e Projetores, NÃO Esportes
+        self.assertFalse(autor_grupo_gerencia_reserva(self.professor, reserva_bola))
+        # self.outro_professor autorizou Esportes, mas NÃO Área
+        self.assertTrue(autor_grupo_gerencia_reserva(self.outro_professor, reserva_bola))
+        self.assertFalse(autor_grupo_gerencia_reserva(self.outro_professor, self.reserva_area))
+
+        # self.professor não pode editar sua reserva de Projetor trocando para Bola (outro tipo)
+        factory = APIRequestFactory()
+        request = factory.patch(
+            f"/api/reservas/recursos-gerais/{self.reserva_recurso.pk}/",
+            {"recurso_geral": bola.pk},
+            format="json",
+        )
+        force_authenticate(request, user=self.professor)
+        response = ReservaRecursoGeralDetailView.as_view()(request, pk=self.reserva_recurso.pk)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_professor_cancela_recorrencia_aluno_grava_cancelada_por(self):
+        recorrencia = Recorrencia.objects.create(
+            tipo="SEMANAL",
+            data_inicio=self.dia,
+            data_fim=self.dia + timedelta(days=7),
+            usuario=self.aluno,
+        )
+        r1 = ReservaArea.objects.create(
+            nome="Série Estudo",
+            descricao="Grupo",
+            status=StatusReserva.CONFIRMADA,
+            data=self.dia,
+            horario_inicio=time(8, 0),
+            horario_fim=time(10, 0),
+            tipo_reserva="INTERNA",
+            usuario=self.aluno,
+            area=self.area,
+            recorrencia=recorrencia,
+        )
+        r2 = ReservaArea.objects.create(
+            nome="Série Estudo",
+            descricao="Grupo",
+            status=StatusReserva.CONFIRMADA,
+            data=self.dia + timedelta(days=7),
+            horario_inicio=time(8, 0),
+            horario_fim=time(10, 0),
+            tipo_reserva="INTERNA",
+            usuario=self.aluno,
+            area=self.area,
+            recorrencia=recorrencia,
+        )
+
+        factory = APIRequestFactory()
+        request = factory.patch(
+            f"/api/reservas/areas/recorrencias/{recorrencia.pk}/",
+            {"status": StatusReserva.CANCELADA},
+            format="json",
+        )
+        force_authenticate(request, user=self.professor)
+        response = RecorrenciaReservaAreaDetailView.as_view()(request, pk=recorrencia.pk)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        r1.refresh_from_db()
+        r2.refresh_from_db()
+        self.assertEqual(r1.status, StatusReserva.CANCELADA)
+        self.assertEqual(r1.cancelada_por, self.professor)
+        self.assertIsNotNone(r1.cancelada_em)
+        self.assertEqual(r2.cancelada_por, self.professor)

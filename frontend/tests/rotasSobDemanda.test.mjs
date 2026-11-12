@@ -37,7 +37,9 @@ describe('Carregamento de rotas sob demanda', () => {
         tipoLazy,
         `A rota "${rota.id}" (${rota.path}) deveria usar React.lazy`,
       );
-      const moduloCarregado = await rota.componente._payload._result();
+      const payload = rota.componente._payload;
+      const moduloCarregado =
+        typeof payload._result === 'function' ? await payload._result() : await payload._result;
       assert.equal(
         typeof moduloCarregado.default,
         'function',

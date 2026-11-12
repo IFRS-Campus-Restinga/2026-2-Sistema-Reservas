@@ -8,10 +8,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from api.enumerations.status_reserva import StatusReserva
+from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
 from api.models.area_model import Area
 from api.models.reserva_area_model import ReservaArea
 from api.permissions.regras_comuns import LeituraPublica, UsuarioAutenticado
-from api.permissions.reserva_permissions import PodeGerenciarReserva
+from api.permissions.reserva_permissions import (
+    PodeGerenciarReserva,
+    validar_autorizacao_gerenciamento_grupo,
+)
 from api.serializers.reserva_area_serializer import ReservaAreaSerializer
 from api.services.recorrencia_service import RECORRENCIA_AREA, criar_reservas_recorrentes, serializar_recorrencia
 from api.services.notificacao_service import (
@@ -219,6 +223,14 @@ class ReservaAreaDetailView(APIView):
             dados["area"] = areas[dados["area"].pk]
 
             validar_autorizacao(reserva.usuario, dados)
+            validar_autorizacao_gerenciamento_grupo(
+                request.user,
+                reserva.usuario,
+                TipoRecursoReservavel.AREA,
+                None,
+                dados["data"],
+                dados["data"],
+            )
             validar_disponibilidade_area(dados, excluir_reserva=reserva.pk)
 
             serializer.validated_data["area"] = dados["area"]

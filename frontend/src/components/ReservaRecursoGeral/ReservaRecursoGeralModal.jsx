@@ -64,10 +64,20 @@ function ReservaRecursoGeralModal({
   useEffect(() => {
     if (!aberto) return;
 
-    const tipoInicialId = tipo?.id || recursoInicial?.tipo_recurso || '';
+    const tipoInicialId =
+      tipo?.id ||
+      recursoInicial?.tipo_recurso ||
+      reservaEdicao?.tipo_detalhe?.id ||
+      reservaEdicao?.recurso_detalhe?.tipo_recurso ||
+      '';
+    const recursoInicialId =
+      recursoInicial?.id ||
+      reservaEdicao?.recurso_detalhe?.id ||
+      reservaEdicao?.recurso_geral ||
+      '';
 
     setTipoId(String(tipoInicialId));
-    setRecursoId(String(recursoInicial?.id || ''));
+    setRecursoId(String(recursoInicialId));
     setTitulo(reservaEdicao?.nome || '');
     setDescricao(reservaEdicao?.descricao || '');
     setData(reservaEdicao?.data || '');

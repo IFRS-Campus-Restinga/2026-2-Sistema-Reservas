@@ -3,7 +3,7 @@
 **Regra:** toda view que cria, edita, cancela ou exclui algo precisa chamar `registrar_auditoria`. Chame sempre, sem checar papel: a função decide o que vai para o log.
 
 - **Admin:** registra todas as ações, inclusive nos próprios grupos. Só não registra quando o admin mexe na própria reserva ou recorrência.
-- **Servidor:** registra apenas as ações em grupos e membros de grupo (criar, editar e excluir grupo; adicionar, alterar e remover membro).
+- **Servidor:** registra as ações em grupos e membros de grupo (criar, editar e excluir grupo; adicionar, alterar e remover membro) e quando edita ou cancela reservas/recorrências de alunos vinculados aos seus grupos.
 - **Aluno e convidado:** não registra.
 
 Cada log guarda o responsável e o perfil dele no momento da ação (`perfil_responsavel`). Os logs aparecem na tela de Administração, na aba de auditoria, que só o admin acessa.
