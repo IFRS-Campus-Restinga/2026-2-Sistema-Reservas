@@ -4,8 +4,7 @@ from django.db import models
 from api.enumerations.area_enumerations.area_enums import StatusRecurso, TipoArea
 from .base_model import BaseModel
 from .bloco_model import Bloco
-from api.enumerations.area_enumerations.area_enums import EquipamentoArea
-from api.validators.area_validator import validar_equipamentos_area
+from .equipamento_area_model import EquipamentoArea
 
 class Area(BaseModel):
 
@@ -60,11 +59,10 @@ class Area(BaseModel):
         blank=False,
         help_text="Tipo de área"
     )
-    equipamento = models.JSONField(
-        models.CharField(max_length=50),
-        default=list,
+    equipamentos = models.ManyToManyField(
+        EquipamentoArea,
         blank=True,
-        validators=[validar_equipamentos_area],
+        related_name='areas',
         help_text="Equipamentos encontrados na área"
     )
     edupage_id = models.CharField(

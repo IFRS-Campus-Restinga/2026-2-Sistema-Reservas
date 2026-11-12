@@ -10,8 +10,10 @@ async function tratarResposta(resposta, mensagemPadrao) {
   return dados;
 }
 
-export async function listarNotificacoes(pagina = 1, signal) {
-  const resposta = await fetch(`${URL}?page=${pagina}&page_size=20`, {
+// lida: 'true' | 'false' | '' (vazio = todas)
+export async function listarNotificacoes(pagina = 1, signal, lida = '') {
+  const filtro = lida ? `&lida=${lida}` : '';
+  const resposta = await fetch(`${URL}?page=${pagina}&page_size=20${filtro}`, {
     signal,
     credentials: 'include',
   });

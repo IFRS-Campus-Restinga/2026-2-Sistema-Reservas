@@ -19,7 +19,7 @@ class AreaListCreateView(APIView):
     permission_classes = [LeituraPublica | EscritaAdmin]
 
     def get(self, request):
-        areas = Area.objects.all().select_related('bloco')
+        areas = Area.objects.all().select_related('bloco').prefetch_related('equipamentos')
         return listar(request, areas, AreaSerializer)
 
     def post(self, request):
@@ -36,7 +36,7 @@ class AreaDetailView(APIView):
     permission_classes = [EscritaAdmin]
 
     def get(self, request, pk):
-        area = get_object_or_404(Area.objects.select_related('bloco'), pk=pk)
+        area = get_object_or_404(Area.objects.select_related('bloco').prefetch_related('equipamentos'), pk=pk)
         serializer = AreaSerializer(area)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

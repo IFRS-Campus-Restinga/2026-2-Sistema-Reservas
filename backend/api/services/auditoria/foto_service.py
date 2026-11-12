@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 
+from api.models.area_model import Area
 from api.models.grupo_model import Grupo
 
 CAMPOS_IGNORADOS_NA_FOTO = {'excluido_em', 'duracao'}
@@ -13,6 +14,8 @@ def foto(objeto):
     }
     if isinstance(objeto, Grupo):
         dados['recursos_autorizados'] = [str(autorizacao) for autorizacao in objeto.autorizacoes.all()]
+    if isinstance(objeto, Area) and objeto.pk:
+        dados['equipamentos'] = sorted(str(equipamento) for equipamento in objeto.equipamentos.all())
     return dados
 
 

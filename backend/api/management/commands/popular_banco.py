@@ -8,14 +8,14 @@ from django.utils import timezone
 from accounts.enumerations import Papel
 from accounts.models.hub_user import HubUser
 from api.enumerations import StatusReserva, TipoReserva
-from api.enumerations.categoria_recurso import CategoriaRecurso
 from api.enumerations.status_recurso import StatusRecurso
 from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
 from api.enumerations.tipo_prazo import TipoPrazo
-from api.enumerations.area_enumerations.area_enums import TipoArea, EquipamentoArea
+from api.enumerations.area_enumerations.area_enums import TipoArea
 from api.enumerations.bloco_enumerations.acessibilidade import Acessibilidade
 from api.models.area_model import Area
 from api.models.bloco_model import Bloco
+from api.models.categoria_recurso_model import CategoriaRecurso
 from api.models.grupo_model import Grupo
 from api.models.membro_grupo_model import MembroGrupo
 from api.models.recorrencia_model import Recorrencia
@@ -167,21 +167,31 @@ VEICULOS = [
     },
 ]
 
+# Nome da categoria -> ícone (IconeCategoria)
+CATEGORIAS_RECURSO = {
+    'Informática': 'INFORMATICA',
+    'Audiovisual': 'AUDIOVISUAL',
+    'Material esportivo': 'MATERIAL_ESPORTIVO',
+    'Ferramentas': 'FERRAMENTAS',
+    'Material de apoio': 'MATERIAL_APOIO',
+    'Outros': 'OUTROS',
+}
+
 TIPOS_RECURSO = {
-    'Notebooks': CategoriaRecurso.TECNOLOGIA,
-    'Mouses': CategoriaRecurso.TECNOLOGIA,
-    'Teclados': CategoriaRecurso.TECNOLOGIA,
-    'Projetores': CategoriaRecurso.TECNOLOGIA,
-    'Caixas de som': CategoriaRecurso.TECNOLOGIA,
-    'Microfones': CategoriaRecurso.TECNOLOGIA,
-    'Câmeras fotográficas': CategoriaRecurso.TECNOLOGIA,
-    'Bolas': CategoriaRecurso.ESPORTES,
-    'Redes de vôlei': CategoriaRecurso.ESPORTES,
-    'Cones': CategoriaRecurso.ESPORTES,
-    'Furadeiras': CategoriaRecurso.MANUTENCAO,
-    'Caixas de ferramentas': CategoriaRecurso.MANUTENCAO,
-    'Extensões elétricas': CategoriaRecurso.APOIO,
-    'Suportes para projetor': CategoriaRecurso.TECNOLOGIA,
+    'Notebooks': 'Informática',
+    'Mouses': 'Informática',
+    'Teclados': 'Informática',
+    'Projetores': 'Audiovisual',
+    'Caixas de som': 'Audiovisual',
+    'Microfones': 'Audiovisual',
+    'Câmeras fotográficas': 'Audiovisual',
+    'Bolas': 'Material esportivo',
+    'Redes de vôlei': 'Material esportivo',
+    'Cones': 'Material esportivo',
+    'Furadeiras': 'Ferramentas',
+    'Caixas de ferramentas': 'Ferramentas',
+    'Extensões elétricas': 'Material de apoio',
+    'Suportes para projetor': 'Audiovisual',
 }
 
 
@@ -431,16 +441,24 @@ def popular_veiculos():
         criados += 1
     return criados
 
+def categoria_recurso(nome):
+    categoria, _ = CategoriaRecurso.objects.get_or_create(
+        nome=nome, defaults={'icone': CATEGORIAS_RECURSO.get(nome, 'OUTROS')},
+    )
+    return categoria
+
+
 def popular_tipos_recurso():
     criados = 0
-    for descricao, categoria in TIPOS_RECURSO.items():
+    for descricao, nome_categoria in TIPOS_RECURSO.items():
+        categoria = categoria_recurso(nome_categoria)
         tipo, criado = TipoRecurso.objects.get_or_create(
             descricao=descricao,
             defaults={'categoria': categoria},
         )
         if criado:
             criados += 1
-        elif tipo.categoria != categoria:
+        elif tipo.categoria_id != categoria.pk:
             tipo.categoria = categoria
             tipo.save(update_fields=['categoria'])
     return criados
@@ -627,7 +645,6 @@ def popular_areas_padrao_timetable():
                 'disponibilidade': True,
                 'status': StatusRecurso.ATIVO,
                 'tipo': dados['tipo'],
-                'equipamento': [],
             }
         )
         criados += criado

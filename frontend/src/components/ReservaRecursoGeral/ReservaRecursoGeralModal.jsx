@@ -2,7 +2,7 @@ import SelectRemoto from '../SelectRemoto/SelectRemoto';
 import useListaPaginada from '../../hooks/useListaPaginada';
 import useDisponibilidadeReserva, { intervaloDisponivel } from '../../hooks/useDisponibilidadeReserva';
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 
 import Modal from '../Administracao/Modal/Modal';
@@ -39,6 +39,7 @@ function ReservaRecursoGeralModal({
   aoFechar,
   aoReservar,
 }) {
+  const controleModal = useRef(null);
   const [tipoId, setTipoId] = useState('');
   const [recursoId, setRecursoId] = useState('');
   const [titulo, setTitulo] = useState('');
@@ -296,6 +297,8 @@ function ReservaRecursoGeralModal({
 
   return (
     <Modal
+      ref={controleModal}
+      confirmarDescarte
       aberto={aberto}
       titulo={reservaEdicao ? 'Editar reserva' : 'Reservar recurso'}
       aoFechar={enviando ? undefined : aoFechar}
@@ -468,7 +471,7 @@ function ReservaRecursoGeralModal({
           <Botao
             titulo="Cancelar"
             estilo="secundario"
-            aoClicar={aoFechar}
+            aoClicar={() => controleModal.current?.fechar()}
             desabilitado={enviando}
           />
 

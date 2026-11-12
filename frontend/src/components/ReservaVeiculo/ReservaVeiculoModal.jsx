@@ -60,6 +60,7 @@ function ReservaVeiculoModal({
   aoFechar,
   aoReservar,
 }) {
+  const controleModal = useRef(null);
   const [veiculoId, setVeiculoId] = useState('');
   const consultaVeiculo = useListaPaginada('/api/veiculos/', { id: veiculoId }, aberto && Boolean(veiculoId));
   const [titulo, setTitulo] = useState('');
@@ -295,6 +296,8 @@ function ReservaVeiculoModal({
 
   return (
     <Modal
+      ref={controleModal}
+      confirmarDescarte
       aberto={aberto}
       titulo={reservaEdicao ? 'Editar reserva de veículo' : 'Reservar veículo'}
       aoFechar={enviando ? undefined : aoFechar}
@@ -423,7 +426,7 @@ function ReservaVeiculoModal({
         <AlertBanner tipo="erro" mensagem={erro} />
 
         <div className={styles.acoes}>
-          <Botao titulo="Cancelar" estilo="secundario" aoClicar={aoFechar} desabilitado={enviando} />
+          <Botao titulo="Cancelar" estilo="secundario" aoClicar={() => controleModal.current?.fechar()} desabilitado={enviando} />
           <Botao tipo="submit" desabilitado={enviando || verificando}
             titulo={
               enviando

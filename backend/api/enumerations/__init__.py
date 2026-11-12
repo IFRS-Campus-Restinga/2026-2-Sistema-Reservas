@@ -1,5 +1,5 @@
 from .status_recurso import StatusRecurso
-from .categoria_recurso import CategoriaRecurso
+from .icone_categoria import IconeCategoria
 from .status_reserva import StatusReserva
 from .tipo_reserva import TipoReserva
 from .tipo_notificacao import TipoNotificacao

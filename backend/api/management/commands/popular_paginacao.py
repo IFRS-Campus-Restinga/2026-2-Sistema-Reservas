@@ -17,7 +17,6 @@ from accounts.enumerations import Papel
 from accounts.models.hub_user import HubUser
 from api.enumerations import StatusReserva, TipoReserva
 from api.enumerations.auditoria_enumerations import AcaoAuditoria, EntidadeAuditoria
-from api.enumerations.categoria_recurso import CategoriaRecurso
 from api.enumerations.status_termo import StatusTermo
 from api.enumerations.tipo_notificacao import TipoNotificacao
 from api.enumerations.tipo_prazo import TipoPrazo
@@ -25,6 +24,7 @@ from api.enumerations.tipo_termo import TipoTermo
 from api.models.area_model import Area
 from api.models.autorizacao_grupo_model import AutorizacaoGrupo
 from api.models.bloco_model import Bloco
+from api.models.categoria_recurso_model import CategoriaRecurso
 from api.models.grupo_model import Grupo
 from api.models.log_auditoria_model import LogAuditoria
 from api.models.membro_grupo_model import MembroGrupo
@@ -89,12 +89,13 @@ NOMES_TIPOS = [
     'Cones Vale Verde', 'Colchonete Lago Azul', 'Chave Serra Dourada',
     'Alicate Monte Azul', 'Kit Primeiros Socorros Ipê',
 ]
+# (nome da categoria, ícone, sigla)
 CATEGORIAS = [
-    (CategoriaRecurso.TECNOLOGIA, 'TEC'),
-    (CategoriaRecurso.ESPORTES, 'ESP'),
-    (CategoriaRecurso.MANUTENCAO, 'MAN'),
-    (CategoriaRecurso.APOIO, 'APO'),
-    (CategoriaRecurso.OUTROS, 'OUT'),
+    ('Informática', 'INFORMATICA', 'TEC'),
+    ('Material esportivo', 'MATERIAL_ESPORTIVO', 'ESP'),
+    ('Ferramentas', 'FERRAMENTAS', 'MAN'),
+    ('Material de apoio', 'MATERIAL_APOIO', 'APO'),
+    ('Outros', 'OUTROS', 'OUT'),
 ]
 
 
@@ -171,7 +172,7 @@ def popular():
                 Area.objects.create(
                     nome=nome, bloco=blocos[indice - 1], capacidade=24 + indice,
                     caracteristica='Ambiente reservado para atividades acadêmicas e encontros.',
-                    disponibilidade=True, status='ATIVO', equipamento=[],
+                    disponibilidade=True, status='ATIVO',
                 )
                 for indice, nome in enumerate(NOMES_AREAS, start=1)
             ]
@@ -188,7 +189,8 @@ def popular():
 
             tipos = []
             recursos = []
-            for categoria, sigla in CATEGORIAS:
+            for nome_categoria, icone, sigla in CATEGORIAS:
+                categoria, _ = CategoriaRecurso.objects.get_or_create(nome=nome_categoria, defaults={'icone': icone})
                 for indice, nome in enumerate(NOMES_TIPOS, start=1):
                     tipo = TipoRecurso.objects.create(
                         descricao=f'{nome} {sigla}{indice:02d}', categoria=categoria,

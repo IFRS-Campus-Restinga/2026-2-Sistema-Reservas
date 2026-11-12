@@ -1,5 +1,5 @@
 import SelectRemoto from '../../../SelectRemoto/SelectRemoto';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Modal from '../../Modal/Modal';
 import AlertBanner from '../../../AlertBanner/AlertBanner';
 import { mensagemDeErro } from '../../../../utils/erros';
@@ -22,6 +22,7 @@ function RecursoModal({
     aoFechar,
     aoSalvar,
 }) {
+    const controleModal = useRef(null);
     const [formulario, setFormulario] = useState(formularioInicial);
     const [salvando, setSalvando] = useState(false);
     const [erros, setErros] = useState({});
@@ -107,6 +108,8 @@ function RecursoModal({
 
     return (
         <Modal
+            ref={controleModal}
+            confirmarDescarte
             aberto={aberto}
             titulo={recurso ? 'Editar recurso' : 'Adicionar recurso'}
             aoFechar={aoFechar}
@@ -115,7 +118,7 @@ function RecursoModal({
                     <button
                         type="button"
                         className={styles.cancelar}
-                        onClick={aoFechar}
+                        onClick={() => controleModal.current?.fechar()}
                     >
                         Cancelar
                     </button>

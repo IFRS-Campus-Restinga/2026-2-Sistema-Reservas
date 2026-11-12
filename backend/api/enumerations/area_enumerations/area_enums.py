@@ -15,18 +15,6 @@ class TipoArea(models.TextChoices):
     SALA = 'SALA', 'Sala'
 
 
-class EquipamentoArea(models.TextChoices):
-    """
-    Define a lista de equipamentos disponíveis em uma Área.
-    """
-    PROJETOR = 'PROJETOR', 'Projetor'
-    AR_CONDICIONADO = 'AR_CONDICIONADO', 'Ar Condicionado'
-    QUADRO_BRANCO = 'QUADRO_BRANCO', 'Quadro Branco'
-    COMPUTADOR = 'COMPUTADOR', 'Computador'
-    SISTEMA_DE_SOM = 'SISTEMA_DE_SOM', 'Sistema de Som'
-    TV = 'TV', 'TV'
-
-
 class StatusRecurso(models.TextChoices):
     """
     Define o estado operacional de uma Área ou recurso.

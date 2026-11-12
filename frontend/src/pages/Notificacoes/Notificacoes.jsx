@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Paginacao from '../../components/Administracao/Paginacao/Paginacao';
 import { useNavigate } from "react-router-dom";
 import { useUsuario } from "../../hooks/useUsuario";
@@ -10,11 +10,17 @@ import { Check } from "lucide-react";
 
 import ModalNotificacao from "../../components/Notificacoes/ModalNotificacao";
 import AlertBanner from "../../components/AlertBanner/AlertBanner";
+import Select from "../../components/Select/Select";
 
 import styles from "./Notificacoes.module.css";
 
 import { useNotificacoes } from "../../hooks/useNotificacoes";
 import SkeletonListaItens from "../../components/Skeleton/SkeletonListaItens";
+
+const OPCOES_LEITURA = [
+  { valor: "false", rotulo: "Não lidas" },
+  { valor: "true", rotulo: "Lidas" },
+];
 
 function formatarTempo(dataHora) {
   if (!dataHora) return "";
@@ -68,8 +74,13 @@ function Notificacoes() {
     erro,
     marcarComoLida,
     marcarTodasComoLidas,
+    filtroLida,
+    mudarFiltroLida,
+    limparFiltroLida,
     paginacao,
   } = useNotificacoes();
+
+  useEffect(() => limparFiltroLida, [limparFiltroLida]);
 
   const [erroMarcarTodas, setErroMarcarTodas] = useState('');
 
@@ -151,6 +162,17 @@ function Notificacoes() {
           )}
         </header>
 
+        <div className={styles.filtros}>
+          <Select
+            valor={filtroLida}
+            aoAlterar={mudarFiltroLida}
+            opcoes={OPCOES_LEITURA}
+            valorTodos=""
+            rotuloTodos="Todas"
+            ariaLabel="Filtrar notificações por leitura"
+          />
+        </div>
+
         <AlertBanner tipo="erro" mensagem={erroMarcarTodas} aoFechar={() => setErroMarcarTodas('')} />
 
         <AlertBanner tipo="erro" mensagem={erro} />
@@ -160,7 +182,9 @@ function Notificacoes() {
           <SkeletonListaItens variante="notificacao" espaco={9} rotulo="Carregando notificações..." />
         ) : notificacoes.length === 0 ? (
           <p className={styles.estado}>
-            Nenhuma notificação por enquanto.
+            {filtroLida
+              ? "Nenhuma notificação encontrada para o filtro selecionado."
+              : "Nenhuma notificação por enquanto."}
           </p>
         ) : (
           <div className={styles.lista}>
