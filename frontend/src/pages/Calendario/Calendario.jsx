@@ -17,6 +17,7 @@ import { diasDaSemana, horarioParaMinutos } from "../../utils/data";
 import { ehAdministrador, podeReservarArea } from "../../utils/permissoes";
 import { mensagemDeErro } from "../../utils/erros";
 import styles from "./Calendario.module.css";
+import SkeletonGrade from "../../components/Skeleton/SkeletonGrade";
 
 const ALTURA_HORA = 56; // Altura das horas em pixels
 const HORA_INICIO = 7;
@@ -237,7 +238,14 @@ function Calendario() {
   }
 
   if (carregando) {
-    return <p className="text-muted p-4" role="status">Carregando calendário...</p>;
+    return (
+      <SkeletonGrade
+        comBarra
+        linhas={10}
+        rotulo="Carregando calendário..."
+        className={`${styles.pagina} overflow-hidden`}
+      />
+    );
   }
 
   if (!agora) {

@@ -4,6 +4,7 @@ import { useTimetableStore } from '../../../store/timetableStore';
 import Select from '../../Select/Select';
 import AlertBanner from '../../AlertBanner/AlertBanner';
 import styles from './TimetableAdmin.module.css';
+import SkeletonGrade from '../../Skeleton/SkeletonGrade';
 
 const PERIODOS_MATRIZ = [
   { id: 1, rotulo: '1', tempo: '7:30 - 8:20' },
@@ -82,7 +83,17 @@ function TimetableAdmin() {
     </>
   );
 
-  if (isLoading && !timetableData) return <div className={styles.loading}>Carregando grade horária...</div>;
+  if (isLoading && !timetableData) {
+    return (
+      <SkeletonGrade
+        variante="cartoes"
+        comBarra
+        linhas={5}
+        rotulo="Carregando grade horária..."
+        className={styles.container}
+      />
+    );
+  }
   if (error && !timetableData) {
     return (
       <div className={styles.emptyContainer}>
