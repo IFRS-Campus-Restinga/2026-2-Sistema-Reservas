@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { ClipboardList, Columns, LayoutGrid, Repeat } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList,
+  Columns,
+  LayoutGrid,
+  Repeat,
+} from "lucide-react";
 import { useUsuario } from "../../hooks/useUsuario";
 import {
   buscarAreas,
@@ -13,7 +20,7 @@ import ReservaAreaModal from "../../components/ReservaArea/ReservaAreaModal";
 import GerenciarRecorrenciaModal from "../../components/RecorrenciaArea/GerenciarRecorrenciaModal";
 import Select from "../../components/Select/Select";
 import AlertBanner from "../../components/AlertBanner/AlertBanner";
-import { diasDaSemana, horarioParaMinutos } from "../../utils/data";
+import { diasDaSemana, horarioParaMinutos, somarDias } from "../../utils/data";
 import { ehAdministrador, podeReservarArea } from "../../utils/permissoes";
 import { mensagemDeErro } from "../../utils/erros";
 import styles from "./Calendario.module.css";
@@ -164,6 +171,16 @@ function Calendario() {
     if (novaVisao === "semana") setModo("area");
   }
 
+  function alterarModo(novoModo) {
+    setModo(novoModo);
+    if (novoModo === "bloco") setVisao("dia");
+  }
+
+  // Avança/volta um dia na visão diária e uma semana na visão semanal.
+  function navegarData(direcao) {
+    setData((atual) => somarDias(atual, direcao * (visao === "semana" ? 7 : 1)));
+  }
+
   const areasExibidas = areas.filter(areaDisponivel);
 
   const gruposAreas = [...blocos]
@@ -255,20 +272,42 @@ function Calendario() {
   return (
     <div className={styles.pagina}>
       <div className="d-flex flex-wrap align-items-center gap-2 bg-white border-bottom px-3 px-md-4 py-3 flex-shrink-0">
-        <input
-          type="date"
-          className={styles.campoData}
-          aria-label="Data"
-          value={data}
-          onChange={(evento) => evento.target.value && setData(evento.target.value)}
-        />
+        <div className="d-flex align-items-center gap-1">
+          <button
+            type="button"
+            className={styles.botaoNavData}
+            aria-label={visao === "semana" ? "Semana anterior" : "Dia anterior"}
+            title={visao === "semana" ? "Semana anterior" : "Dia anterior"}
+            onClick={() => navegarData(-1)}
+          >
+            <ChevronLeft size={16} />
+          </button>
+
+          <input
+            type="date"
+            className={styles.campoData}
+            aria-label="Data"
+            value={data}
+            onChange={(evento) => evento.target.value && setData(evento.target.value)}
+          />
+
+          <button
+            type="button"
+            className={styles.botaoNavData}
+            aria-label={visao === "semana" ? "Próxima semana" : "Próximo dia"}
+            title={visao === "semana" ? "Próxima semana" : "Próximo dia"}
+            onClick={() => navegarData(1)}
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
 
         <div className="flex-grow-1" />
 
         <Toggle
           opcoes={OPCOES_MODO}
           valor={modo}
-          aoAlterar={setModo}
+          aoAlterar={alterarModo}
           ariaLabel="Modo de visualização"
         />
 
