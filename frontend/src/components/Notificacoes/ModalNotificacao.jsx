@@ -1,6 +1,8 @@
 import { useEffect } from "react";
-import { Bell, CalendarClock, CheckCircle2, Clock3, X, UserRound, XCircle, FileText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { AlertTriangle, Bell, CalendarClock, CheckCircle2, Clock3, X, UserRound, Users, XCircle, FileText } from "lucide-react";
 import { STATUS_RESERVA_LABEL } from "../../utils/reserva";
+import { PAPEL_USUARIO_LABEL } from "../../utils/usuario";
 import { notificacaoTermoEnviado, notificacaoTermoRejeitado } from "../../utils/notificacoes";
 import styles from "./ModalNotificacao.module.css";
 
@@ -24,6 +26,8 @@ function formatarDataHora(dataHora) {
 }
 
 function ModalNotificacao({ notificacao, aoFechar }) {
+  const navigate = useNavigate();
+
   useEffect(() => {
     function fecharComEsc(evento) {
       if (evento.key === "Escape") aoFechar();
@@ -36,15 +40,24 @@ function ModalNotificacao({ notificacao, aoFechar }) {
   if (!notificacao) return null;
 
   const reserva = notificacao.reserva;
+  const grupo = notificacao.grupo;
   const status = String(reserva?.status || "").toLowerCase();
   const cancelamento = notificacao.tipo === "CANCELAMENTO_RESERVA";
   const termoRejeitado = notificacaoTermoRejeitado(notificacao.tipo);
   const termoEnviado = notificacaoTermoEnviado(notificacao.tipo);
+  const grupoVencendo = notificacao.tipo === "GRUPO_PROXIMO_VENCIMENTO";
   const IconeStatus = cancelamento || termoRejeitado
     ? XCircle
     : termoEnviado
     ? FileText
+    : grupoVencendo
+    ? AlertTriangle
     : CheckCircle2;
+
+  function irParaGrupos() {
+    aoFechar();
+    navigate("/grupos");
+  }
 
   return (
     <div className={styles.fundo} onMouseDown={aoFechar}>
@@ -154,7 +167,49 @@ function ModalNotificacao({ notificacao, aoFechar }) {
             </div>
           )}
 
+          {grupo && (
+            <>
+              <div className={styles.detalhes}>
+                <div className={styles.linha}>
+                  <span className={styles.icone}><Users size={17} /></span>
+                  <div>
+                    <span className={styles.rotulo}>Grupo</span>
+                    <strong>{grupo.nome}</strong>
+                  </div>
+                </div>
 
+                <div className={styles.linha}>
+                  <span className={styles.icone}><CalendarClock size={17} /></span>
+                  <div>
+                    <span className={styles.rotulo}>Vigência</span>
+                    <strong>
+                      {formatarData(grupo.data_inicio_validade)} até {formatarData(grupo.data_fim_validade)}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className={styles.linha}>
+                  <span className={styles.icone}><UserRound size={17} /></span>
+                  <div>
+                    <span className={styles.rotulo}>Tipo de membro</span>
+                    <strong>
+                      {PAPEL_USUARIO_LABEL[grupo.tipo_membro_permitido] || grupo.tipo_membro_permitido}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.acoes}>
+                <button
+                  type="button"
+                  className={styles.botaoPrimario}
+                  onClick={irParaGrupos}
+                >
+                  Gerenciar em Meus Grupos
+                </button>
+              </div>
+            </>
+          )}
 
           <div className={styles.criadaEm}>
             <Clock3 size={15} />

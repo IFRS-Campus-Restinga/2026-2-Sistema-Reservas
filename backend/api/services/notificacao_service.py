@@ -1,10 +1,15 @@
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from api.permissions.regras_comuns import filtro_usuario_admin
 from api.enumerations.status_termo import StatusTermo
 from api.enumerations.tipo_notificacao import TipoNotificacao
 from api.enumerations.tipo_termo import TipoTermo
+from api.models.grupo_model import Grupo
 from api.models.notificacao_model import Notificacao
+
+DIAS_AVISO_VENCIMENTO_GRUPO = 7
 
 NOTIFICACOES_TERMO_OPERACIONAL = {
     TipoTermo.RETIRADA_VEICULO: {
@@ -198,3 +203,64 @@ def criar_notificacao_termo_operacional_analisado(reserva, tipo_termo, decisao, 
         f'Termo de {nome} recusado',
         f'O termo de {nome} da reserva "{reserva.nome}" foi recusado. Motivo: {motivo}',
     )
+
+
+def _mensagem_vencimento_grupo(grupo, hoje):
+    data_formatada = grupo.data_fim_validade.strftime("%d/%m/%Y")
+    dias_restantes = (grupo.data_fim_validade - hoje).days
+    if dias_restantes == 0:
+        return f'A vigência do grupo "{grupo.nome}" vence hoje ({data_formatada}).'
+    if dias_restantes == 1:
+        return f'A vigência do grupo "{grupo.nome}" vence amanhã ({data_formatada}).'
+    return f'A vigência do grupo "{grupo.nome}" vence em {dias_restantes} dias ({data_formatada}).'
+
+
+def notificar_grupos_proximos_vencimento(usuario, dias_antecedencia=DIAS_AVISO_VENCIMENTO_GRUPO):
+    """Garante notificação ao criador para grupos ativos que vencem dentro da janela configurada."""
+    if not getattr(usuario, "is_authenticated", False) or usuario.pk is None:
+        return []
+
+    hoje = timezone.localdate()
+    limite = hoje + timedelta(days=dias_antecedencia)
+    grupos = list(
+        Grupo.objects.filter(
+            criador=usuario,
+            data_fim_validade__gte=hoje,
+            data_fim_validade__lte=limite,
+        )
+    )
+    if not grupos:
+        return []
+
+    existentes = {
+        notificacao.grupo_id: notificacao
+        for notificacao in Notificacao.objects.filter(
+            usuario=usuario,
+            tipo=TipoNotificacao.GRUPO_PROXIMO_VENCIMENTO,
+            grupo_id__in=[grupo.id for grupo in grupos],
+        )
+    }
+
+    criadas_ou_atualizadas = []
+    agora = timezone.now()
+    for grupo in grupos:
+        existente = existentes.get(grupo.id)
+        if existente and existente.data_referencia == grupo.data_fim_validade:
+            continue
+
+        notificacao, _ = Notificacao.objects.update_or_create(
+            usuario=usuario,
+            grupo=grupo,
+            tipo=TipoNotificacao.GRUPO_PROXIMO_VENCIMENTO,
+            defaults={
+                "titulo": "Vigência de grupo próxima do vencimento",
+                "mensagem": _mensagem_vencimento_grupo(grupo, hoje)[:255],
+                "data_referencia": grupo.data_fim_validade,
+                "lida": False,
+                "lida_em": None,
+                "criada_em": agora,
+            },
+        )
+        criadas_ou_atualizadas.append(notificacao)
+
+    return criadas_ou_atualizadas

@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   Bell,
   CheckCircle2,
   FileText,
@@ -56,6 +57,13 @@ export function configuracaoNotificacao(tipo) {
   if (notificacaoTermoEnviado(tipo)) {
     return {
       Icone: FileText,
+      classe: 'iconeTermo',
+    };
+  }
+
+  if (tipo === 'GRUPO_PROXIMO_VENCIMENTO') {
+    return {
+      Icone: AlertTriangle,
       classe: 'iconeTermo',
     };
   }

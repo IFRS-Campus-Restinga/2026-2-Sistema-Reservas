@@ -160,3 +160,25 @@
   font-weight: 600;
   line-height: 1.5;
 }
+
+.acoes {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.botaoPrimario {
+  padding: 9px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #009a44;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.botaoPrimario:hover {
+  background: #008239;
+}

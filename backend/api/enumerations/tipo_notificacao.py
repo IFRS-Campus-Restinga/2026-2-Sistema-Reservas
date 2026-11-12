@@ -17,3 +17,4 @@ class TipoNotificacao(models.TextChoices):
     DEVOLUCAO_REENVIADA = "DEVOLUCAO_REENVIADA", "Termo de devolução reenviado"
     DEVOLUCAO_APROVADA = "DEVOLUCAO_APROVADA", "Termo de devolução aprovado"
     DEVOLUCAO_REJEITADA = "DEVOLUCAO_REJEITADA", "Termo de devolução rejeitado"
+    GRUPO_PROXIMO_VENCIMENTO = "GRUPO_PROXIMO_VENCIMENTO", "Vigência do grupo próxima do vencimento"
