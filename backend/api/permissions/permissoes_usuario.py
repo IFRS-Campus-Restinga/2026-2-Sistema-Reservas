@@ -1,13 +1,20 @@
+from api.models.reserva_model import Reserva
 from .grupo_permissions import tipos_grupo_que_pode_criar
 from .regras_comuns import usuario_e_admin
 from .regras_reserva import autorizacoes_vigentes, tipos_reserva_livre
 
 
 def permissoes_do_usuario(usuario):
+    possui_reservas = (
+        Reserva.objects.filter(usuario=usuario).exists()
+        if getattr(usuario, 'is_authenticated', False) and usuario.pk is not None
+        else False
+    )
     return {
         'administrador': usuario_e_admin(usuario),
         'criar_grupos_de': tipos_grupo_que_pode_criar(usuario),
         'reservar_sem_grupo': list(tipos_reserva_livre(usuario)),
+        'possui_reservas': possui_reservas,
     }
 
 

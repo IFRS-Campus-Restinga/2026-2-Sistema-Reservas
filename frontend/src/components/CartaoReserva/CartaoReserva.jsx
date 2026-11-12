@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ChevronDown, FileText, Repeat } from 'lucide-react';
+import Tooltip from '../Tooltip/Tooltip';
 import styles from './CartaoReserva.module.css';
 import { formatarDataCurta } from '../../utils/data';
 import {
@@ -77,10 +78,12 @@ function CartaoReserva({
             {nomeTipo}
           </span>
           {ehRecorrente && (
-            <span className={styles.tagRecorrente} title="Reserva com repetição agendada">
-              <Repeat size={11} />
-              Recorrente
-            </span>
+            <Tooltip texto="Reserva com repetição agendada">
+              <span className={styles.tagRecorrente}>
+                <Repeat size={11} />
+                Recorrente
+              </span>
+            </Tooltip>
           )}
           <span className={styles.nome}>{reserva.nome}</span>
         </span>
@@ -102,20 +105,21 @@ function CartaoReserva({
           </span>
         )}
         {aoAlternarExpansao && (
-          <button
-            type="button"
-            className={styles.botaoSanfona}
-            data-expandido={expandido}
-            onClick={(evento) => {
-              evento.stopPropagation();
-              aoAlternarExpansao();
-            }}
-            aria-expanded={expandido}
-            aria-label={expandido ? 'Recolher todas as reservas' : 'Expandir todas as reservas'}
-            title={expandido ? 'Recolher reservas' : 'Mostrar todas as reservas'}
-          >
-            <ChevronDown size={16} className={styles.iconeSanfona} />
-          </button>
+          <Tooltip texto={expandido ? 'Recolher reservas' : 'Mostrar todas as reservas'}>
+            <button
+              type="button"
+              className={styles.botaoSanfona}
+              data-expandido={expandido}
+              onClick={(evento) => {
+                evento.stopPropagation();
+                aoAlternarExpansao();
+              }}
+              aria-expanded={expandido}
+              aria-label={expandido ? 'Recolher todas as reservas' : 'Expandir todas as reservas'}
+            >
+              <ChevronDown size={16} className={styles.iconeSanfona} />
+            </button>
+          </Tooltip>
         )}
       </span>
     </Componente>

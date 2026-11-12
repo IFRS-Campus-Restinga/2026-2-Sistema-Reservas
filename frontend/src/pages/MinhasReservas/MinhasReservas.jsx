@@ -26,7 +26,7 @@ import SelectRemoto from '../../components/SelectRemoto/SelectRemoto';
 import { buscarAreas, buscarBlocos, cancelarReservaArea, cancelarReservaVeiculo } from '../../services';
 import { cancelarReservaRecursoGeral } from '../../services/reservasRecursosGerais';
 import { statusReservaApresentado, SITUACAO_RESERVA_LABEL } from '../../utils/reserva';
-import { ehAdministrador } from '../../utils/permissoes';
+import { ehAdministrador, podeReservarModalidade } from '../../utils/permissoes';
 import styles from './MinhasReservas.module.css';
 import SkeletonListaItens from '../../components/Skeleton/SkeletonListaItens';
 
@@ -210,12 +210,26 @@ function MinhasReservas() {
     return new Date() <= new Date(inicio.getTime() - 60 * 60 * 1000);
   }
 
+  function podeEditarPorPermissao(reserva) {
+    if (!reserva) return false;
+    return podeReservarModalidade(usuario, reserva.modalidade, reserva.recurso_detalhe?.tipo_recurso);
+  }
+
+  function podeEditar(reserva) {
+    return podeAlterar(reserva) && podeEditarPorPermissao(reserva);
+  }
+
   function motivoIndisponivel(reserva) {
-    if (!reserva || reserva.modalidade !== 'veiculo') return '';
-    const statusAberto = STATUS_ALTERAVEIS.veiculo.includes(reserva.status);
-    if (!statusAberto) return 'Esta reserva está em um estado final e não pode mais ser alterada.';
-    if (!ehAdministrador(usuario) && !podeAlterar(reserva)) {
-      return 'O prazo para editar ou cancelar encerrou uma hora antes da retirada.';
+    if (!reserva) return '';
+    const statusAberto = (STATUS_ALTERAVEIS[reserva.modalidade] || []).includes(reserva.status);
+    if (reserva.modalidade === 'veiculo') {
+      if (!statusAberto) return 'Esta reserva está em um estado final e não pode mais ser alterada.';
+      if (!ehAdministrador(usuario) && !podeAlterar(reserva)) {
+        return 'O prazo para editar ou cancelar encerrou uma hora antes da retirada.';
+      }
+    }
+    if (statusAberto && !podeEditarPorPermissao(reserva)) {
+      return 'Você não possui mais autorização vigente para editar esta reserva.';
     }
     return '';
   }
@@ -306,7 +320,7 @@ function MinhasReservas() {
   }
 
   function podeGerenciarRecorrencia(reserva) {
-    return Boolean(reserva?.recorrencia && !reserva.celula_timetable);
+    return Boolean(reserva?.recorrencia && !reserva.celula_timetable && podeAlterar(reserva));
   }
 
   async function abrirRecorrencia(reserva) {
@@ -526,7 +540,7 @@ function MinhasReservas() {
             </>
           ) : null}
           detalhes={detalhesDaReserva(selecionada)}
-          aoEditar={podeAlterar(selecionada) ? () => abrirEdicao(selecionada) : undefined}
+          aoEditar={podeEditar(selecionada) ? () => abrirEdicao(selecionada) : undefined}
           aoCancelar={podeAlterar(selecionada) ? cancelarSelecionada : undefined}
           aoGerenciarRecorrencia={
             podeGerenciarRecorrencia(selecionada)

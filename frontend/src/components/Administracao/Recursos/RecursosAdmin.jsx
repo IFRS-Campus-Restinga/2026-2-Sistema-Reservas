@@ -15,6 +15,7 @@ import Select from '../../Select/Select';
 import SelectRemoto from '../../SelectRemoto/SelectRemoto';
 import { OPCOES_STATUS_RECURSO, STATUS_RECURSO_LABEL } from '../../../utils/statusRecurso';
 import AlertBanner from '../../AlertBanner/AlertBanner';
+import Tooltip from '../../Tooltip/Tooltip';
 
 function RecursosAdmin() {
     const [busca, setBusca] = useState('');
@@ -127,25 +128,27 @@ function RecursosAdmin() {
             titulo: 'Ação',
             renderizar: (recurso) => (
                 <div className={styles.acoes}>
-                    <button
-                        type="button"
-                        className={styles.editar}
-                        onClick={() => abrirEdicao(recurso)}
-                        title="Editar"
-                        aria-label={`Editar ${recurso.nome}`}
-                    >
-                        <Pencil size={13} />
-                    </button>
+                    <Tooltip texto="Editar recurso">
+                        <button
+                            type="button"
+                            className={styles.editar}
+                            onClick={() => abrirEdicao(recurso)}
+                            aria-label={`Editar ${recurso.nome}`}
+                        >
+                            <Pencil size={13} />
+                        </button>
+                    </Tooltip>
 
-                    <button
-                        type="button"
-                        className={styles.excluir}
-                        onClick={() => solicitarExclusao(recurso)}
-                        title="Excluir"
-                        aria-label={`Excluir ${recurso.nome}`}
-                    >
-                        <Trash2 size={13} />
-                    </button>
+                    <Tooltip texto="Excluir recurso">
+                        <button
+                            type="button"
+                            className={styles.excluir}
+                            onClick={() => solicitarExclusao(recurso)}
+                            aria-label={`Excluir ${recurso.nome}`}
+                        >
+                            <Trash2 size={13} />
+                        </button>
+                    </Tooltip>
                 </div>
             ),
         },

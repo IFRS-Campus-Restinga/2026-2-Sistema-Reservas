@@ -13,6 +13,7 @@ DOCUMENTO_POR_TIPO_TERMO = {
 
 class NotificacaoSerializer(serializers.ModelSerializer):
     reserva = serializers.SerializerMethodField()
+    grupo = serializers.SerializerMethodField()
     motivo_rejeicao_termo = serializers.SerializerMethodField()
     termo_tipo = serializers.SerializerMethodField()
 
@@ -27,12 +28,15 @@ class NotificacaoSerializer(serializers.ModelSerializer):
             "criada_em",
             "lida_em",
             "reserva",
+            "grupo",
             "motivo_rejeicao_termo",
             "termo_tipo",
         ]
 
     def get_reserva(self, notificacao):
         reserva = notificacao.reserva
+        if reserva is None:
+            return None
         cancelada_por = reserva.cancelada_por
         _, modalidade = reserva_concreta(reserva)
         return {
@@ -55,11 +59,24 @@ class NotificacaoSerializer(serializers.ModelSerializer):
                 else None
             ),
         }
+
+    def get_grupo(self, notificacao):
+        grupo = notificacao.grupo
+        if grupo is None:
+            return None
+        return {
+            "id": grupo.id,
+            "nome": grupo.nome,
+            "tipo_membro_permitido": grupo.tipo_membro_permitido,
+            "data_inicio_validade": grupo.data_inicio_validade,
+            "data_fim_validade": grupo.data_fim_validade,
+        }
+
     def get_termo_tipo(self, notificacao):
         return DOCUMENTO_POR_TIPO_TERMO.get(TIPO_TERMO_POR_NOTIFICACAO.get(notificacao.tipo))
 
     def get_motivo_rejeicao_termo(self, notificacao):
-        if notificacao.tipo not in TIPOS_NOTIFICACAO_TERMO_REJEITADO:
+        if not notificacao.reserva_id or notificacao.tipo not in TIPOS_NOTIFICACAO_TERMO_REJEITADO:
             return None
 
         termo = getattr(

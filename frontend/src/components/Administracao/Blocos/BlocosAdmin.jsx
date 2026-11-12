@@ -13,6 +13,7 @@ import CampoBusca from '../CampoBusca/CampoBusca';
 import BarraFiltros from '../../BarraFiltros/BarraFiltros';
 import { ACESSIBILIDADE_LABELS } from '../../../utils/acessibilidadeBloco';
 import AlertBanner from '../../AlertBanner/AlertBanner';
+import Tooltip from '../../Tooltip/Tooltip';
 
 function BlocosAdministracao() {
 
@@ -116,25 +117,27 @@ function BlocosAdministracao() {
             titulo: 'Ação',
             renderizar: (bloco) => (
                 <div className={styles.acoes}>
-                    <button
-                        type="button"
-                        className={styles.editar}
-                        onClick={() => abrirEdicao(bloco)}
-                        title="Editar"
-                        aria-label={`Editar bloco ${bloco.numero}`}
-                    >
-                        <Pencil size={13} />
-                    </button>
+                    <Tooltip texto="Editar bloco">
+                        <button
+                            type="button"
+                            className={styles.editar}
+                            onClick={() => abrirEdicao(bloco)}
+                            aria-label={`Editar bloco ${bloco.numero}`}
+                        >
+                            <Pencil size={13} />
+                        </button>
+                    </Tooltip>
 
-                    <button
-                        type="button"
-                        className={styles.excluir}
-                        onClick={() => solicitarExclusao(bloco)}
-                        title="Excluir"
-                        aria-label={`Excluir bloco ${bloco.numero}`}
-                    >
-                        <Trash2 size={13} />
-                    </button>
+                    <Tooltip texto="Excluir bloco">
+                        <button
+                            type="button"
+                            className={styles.excluir}
+                            onClick={() => solicitarExclusao(bloco)}
+                            aria-label={`Excluir bloco ${bloco.numero}`}
+                        >
+                            <Trash2 size={13} />
+                        </button>
+                    </Tooltip>
                 </div>
             ),
         },

@@ -243,6 +243,17 @@ fieldset.campo {
   background-color: var(--cor-marca-escura);
 }
 
+.rotuloComDica {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.rotuloComDica label {
+  margin-bottom: 0;
+}
+
 @media (max-width: 479px) {
   .linhaDupla,
   .opcoes {

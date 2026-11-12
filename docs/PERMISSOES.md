@@ -53,7 +53,7 @@ Permissões que já existem:
 | `PodeCriarGrupo` | Leitura: qualquer usuário logado. Criar: admin e servidor, conforme o tipo do grupo |
 | `PodeGerenciarGrupo` | O criador do grupo ou admin |
 | `PodeGerenciarMembrosGrupo` | O criador do grupo ou admin |
-| `PodeGerenciarReserva` | O responsável pela reserva ou admin |
+| `PodeGerenciarReserva` | O responsável pela reserva, o criador do grupo autorizador (para reservas de alunos) ou admin |
 | `LeituraPublica` | Leitura: qualquer pessoa, **mesmo sem login**. Escrita: ninguém. Use só combinada com outra regra (veja abaixo) |
 
 #### Endpoints públicos (sem login)
@@ -178,7 +178,7 @@ const usuario = useUsuario();
 }
 ```
 
-- Use as funções de `src/utils/permissoes.js`: `ehAdministrador`, `podeCriarGrupo`, `podeGerenciarGrupos`, `podeReservar(usuario, tipo)`, `podeReservarArea`, `podeReservarVeiculo`, `podeReservarRecursoGeral`, `podeReservarAlgo`. Os tipos ficam em `src/utils/tipoRecursoReservavel.js`.
+- Use as funções de `src/utils/permissoes.js`: `ehAdministrador`, `podeCriarGrupo`, `podeGerenciarGrupos`, `podeReservar(usuario, tipo)`, `podeReservarModalidade(usuario, modalidade, tipoRecursoId)`, `podeReservarArea`, `podeReservarVeiculo`, `podeReservarRecursoGeral`, `podeReservarAlgo`, `podeVerMinhasReservas`. Os tipos ficam em `src/utils/tipoRecursoReservavel.js`.
 - **Não** faça `usuario.papel === 'admin'` nas telas. Se a regra mudar no backend, o front acompanha sozinho.
 - Esconder um botão não protege nada. Trate o erro **403** da API e mostre a mensagem que vier nele.
 
@@ -229,7 +229,8 @@ Telas e tabs hoje:
 | Tela | Quem vê |
 |---|---|
 | Calendário | Qualquer pessoa, mesmo sem login. É a página inicial de quem não pode reservar nada |
-| Home, Minhas Reservas | Quem pode reservar ao menos um tipo (`podeReservarAlgo`) |
+| Home | Quem pode reservar ao menos um tipo (`podeReservarAlgo`) |
+| Minhas Reservas, Notificações | Quem pode reservar ao menos um tipo ou já possui histórico de reservas (`podeVerMinhasReservas`) |
 | Áreas, Recursos, Veículos | Quem pode reservar aquele tipo (sem grupo ou por grupo vigente) |
 | Meus Grupos | Quem pode criar grupos (admin e servidor) |
 | Administração | Só admin |

@@ -57,6 +57,9 @@ export const excluirGrupo = async (id) => {
 
 export const buscarMembros = (grupoId, parametros, signal) => consultarPagina(`${GRUPOS_URL}${grupoId}/membros/`, parametros, signal);
 
+export const buscarReservasGrupo = (grupoId, parametros, signal) =>
+    consultarPagina(`${GRUPOS_URL}${grupoId}/reservas/`, parametros, signal);
+
 export const buscarCandidatos = async (grupoId, { limite = 10, busca = '', excluir = [] } = {}) => {
     try {
         const response = await axios.get(

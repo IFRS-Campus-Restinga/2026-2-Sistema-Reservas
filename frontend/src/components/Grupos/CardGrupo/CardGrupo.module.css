@@ -99,3 +99,14 @@
   color: #9ca3af;
   font-size: 12px;
 }
+
+.botoesAcoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.botoesAcoes > button {
+  flex: 1;
+  min-width: 140px;
+}

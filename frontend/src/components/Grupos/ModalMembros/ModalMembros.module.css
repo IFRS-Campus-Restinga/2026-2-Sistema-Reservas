@@ -38,6 +38,12 @@
   white-space: nowrap;
 }
 
+.tituloComDica {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .formAdicionar {
   display: flex;
   align-items: flex-start;

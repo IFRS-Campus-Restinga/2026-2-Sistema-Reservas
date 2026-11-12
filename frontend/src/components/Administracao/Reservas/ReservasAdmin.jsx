@@ -6,6 +6,7 @@ import styles from './ReservasAdmin.module.css';
 import RelatorioUso from '../RelatorioUso/RelatorioUso';
 import AlertBanner from '../../AlertBanner/AlertBanner';
 import SelectRemoto from '../../SelectRemoto/SelectRemoto';
+import Tooltip from '../../Tooltip/Tooltip';
 
 import {
   buscarAreas,
@@ -676,37 +677,37 @@ function ReservasAdmin() {
 
         return (
           <div className={styles.acoes}>
-            <button
-              type="button"
-              className={styles.editar}
-              disabled={!gerenciavel}
-              onClick={() => abrirEdicao(reserva)}
-              title={
-                gerenciavel
-                  ? 'Editar reserva'
-                  : motivoBloqueio
-              }
-              aria-label={`Editar reserva ${reserva.nome}`}
+            <Tooltip
+              texto={gerenciavel ? 'Editar reserva' : motivoBloqueio}
+              desabilitado={!gerenciavel}
             >
-              <Pencil size={14} />
-            </button>
+              <button
+                type="button"
+                className={styles.editar}
+                disabled={!gerenciavel}
+                onClick={() => abrirEdicao(reserva)}
+                aria-label={`Editar reserva ${reserva.nome}`}
+              >
+                <Pencil size={14} />
+              </button>
+            </Tooltip>
 
-            <button
-              type="button"
-              className={styles.cancelar}
-              disabled={!gerenciavel}
-              onClick={() =>
-                solicitarCancelamento(reserva)
-              }
-              title={
-                gerenciavel
-                  ? 'Cancelar reserva'
-                  : motivoBloqueio
-              }
-              aria-label={`Cancelar reserva ${reserva.nome}`}
+            <Tooltip
+              texto={gerenciavel ? 'Cancelar reserva' : motivoBloqueio}
+              desabilitado={!gerenciavel}
             >
-              <Trash2 size={14} />
-            </button>
+              <button
+                type="button"
+                className={styles.cancelar}
+                disabled={!gerenciavel}
+                onClick={() =>
+                  solicitarCancelamento(reserva)
+                }
+                aria-label={`Cancelar reserva ${reserva.nome}`}
+              >
+                <Trash2 size={14} />
+              </button>
+            </Tooltip>
           </div>
         );
       },

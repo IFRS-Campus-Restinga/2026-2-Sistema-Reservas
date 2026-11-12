@@ -20,6 +20,7 @@ import ReservaAreaModal from "../../components/ReservaArea/ReservaAreaModal";
 import GerenciarRecorrenciaModal from "../../components/RecorrenciaArea/GerenciarRecorrenciaModal";
 import Select from "../../components/Select/Select";
 import AlertBanner from "../../components/AlertBanner/AlertBanner";
+import Tooltip from "../../components/Tooltip/Tooltip";
 import { diasDaSemana, horarioParaMinutos, somarDias } from "../../utils/data";
 import { ehAdministrador, podeReservarArea } from "../../utils/permissoes";
 import { mensagemDeErro } from "../../utils/erros";
@@ -273,15 +274,16 @@ function Calendario() {
     <div className={styles.pagina}>
       <div className="d-flex flex-wrap align-items-center gap-2 bg-white border-bottom px-3 px-md-4 py-3 flex-shrink-0">
         <div className="d-flex align-items-center gap-1">
-          <button
-            type="button"
-            className={styles.botaoNavData}
-            aria-label={visao === "semana" ? "Semana anterior" : "Dia anterior"}
-            title={visao === "semana" ? "Semana anterior" : "Dia anterior"}
-            onClick={() => navegarData(-1)}
-          >
-            <ChevronLeft size={16} />
-          </button>
+          <Tooltip texto={visao === "semana" ? "Semana anterior" : "Dia anterior"}>
+            <button
+              type="button"
+              className={styles.botaoNavData}
+              aria-label={visao === "semana" ? "Semana anterior" : "Dia anterior"}
+              onClick={() => navegarData(-1)}
+            >
+              <ChevronLeft size={16} />
+            </button>
+          </Tooltip>
 
           <input
             type="date"
@@ -291,15 +293,16 @@ function Calendario() {
             onChange={(evento) => evento.target.value && setData(evento.target.value)}
           />
 
-          <button
-            type="button"
-            className={styles.botaoNavData}
-            aria-label={visao === "semana" ? "Próxima semana" : "Próximo dia"}
-            title={visao === "semana" ? "Próxima semana" : "Próximo dia"}
-            onClick={() => navegarData(1)}
-          >
-            <ChevronRight size={16} />
-          </button>
+          <Tooltip texto={visao === "semana" ? "Próxima semana" : "Próximo dia"}>
+            <button
+              type="button"
+              className={styles.botaoNavData}
+              aria-label={visao === "semana" ? "Próxima semana" : "Próximo dia"}
+              onClick={() => navegarData(1)}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </Tooltip>
         </div>
 
         <div className="flex-grow-1" />
@@ -432,6 +435,18 @@ function Calendario() {
                       ? "aula"
                       : String(reserva.tipo_reserva).toLowerCase();
 
+                    const ehTimetable = Boolean(reserva.celula_timetable);
+                    const nomeResponsavel = ehTimetable
+                      ? (reserva.professor ? `Prof. ${reserva.professor}` : "Aula Regular")
+                      : reserva.usuario_detalhe?.nome;
+
+                    const textoTooltip = [
+                      reserva.nome,
+                      `${reserva.horario_inicio.slice(0, 5)}–${reserva.horario_fim.slice(0, 5)}`,
+                      nomeResponsavel,
+                      ehTimetable ? "Timetable" : null,
+                    ].filter(Boolean).join("\n");
+
                     return (
                       <button
                         key={`${reserva.id}-${reserva.data}`}
@@ -439,29 +454,47 @@ function Calendario() {
                         className={`${styles.reserva} ${reserva.recorrencia ? styles.recorrente : ""}`}
                         data-tipo={tipoCor}
                         style={{ top: posicaoY(reserva.horario_inicio) + 1, height: altura - 2 }}
+                        title={textoTooltip}
                         onClick={() => setReservaDetalhe(reserva)}
                       >
                         {reserva.recorrencia && (
-                          <span
-                            className={styles.iconeRecorrencia}
-                            role="img"
-                            aria-label="Reserva recorrente"
-                            title="Reserva recorrente"
-                          >
-                            <Repeat size={14} />
-                          </span>
+                          <Tooltip texto="Reserva recorrente">
+                            <span
+                              className={styles.iconeRecorrencia}
+                              role="img"
+                              aria-label="Reserva recorrente"
+                            >
+                              <Repeat size={14} />
+                            </span>
+                          </Tooltip>
                         )}
                         <span className={styles.reservaTitulo}>
                           {reserva.nome}
                         </span>
-                        {altura > 40 && (
-                          <span className={styles.reservaDetalhe}>
-                            {reserva.horario_inicio.slice(0, 5)}–{reserva.horario_fim.slice(0, 5)}
+                        {altura > 28 && (
+                          altura <= 60 && ehTimetable ? (
+                            <div className={styles.linhaHorarioChip}>
+                              <span className={styles.reservaDetalhe} style={{ width: 'auto' }}>
+                                {reserva.horario_inicio.slice(0, 5)}–{reserva.horario_fim.slice(0, 5)}
+                              </span>
+                              <span className={styles.chipTimetable}>
+                                Timetable
+                              </span>
+                            </div>
+                          ) : (
+                            <span className={styles.reservaDetalhe}>
+                              {reserva.horario_inicio.slice(0, 5)}–{reserva.horario_fim.slice(0, 5)}
+                            </span>
+                          )
+                        )}
+                        {altura > 42 && nomeResponsavel && (
+                          <span className={styles.reservaDetalhe} style={{ textTransform: 'capitalize' }}>
+                            {nomeResponsavel}
                           </span>
                         )}
-                        {altura > 58 && (
-                          <span className={styles.reservaDetalhe} style={{ textTransform: 'capitalize' }}>
-                            {reserva.usuario_detalhe?.nome}
+                        {altura > 60 && ehTimetable && (
+                          <span className={styles.chipTimetable}>
+                            Timetable
                           </span>
                         )}
                       </button>
@@ -479,7 +512,11 @@ function Calendario() {
           reserva={reservaDetalhe}
           modalidade="Área"
           item={reservaDetalhe.area_detalhe?.nome || `Área #${reservaDetalhe.area}`}
-          responsavel={reservaDetalhe.usuario_detalhe?.nome || "Não informado"}
+          responsavel={
+            reservaDetalhe.celula_timetable
+              ? (reservaDetalhe.professor ? `Prof. ${reservaDetalhe.professor}` : "Aula regular")
+              : (reservaDetalhe.usuario_detalhe?.nome || "Não informado")
+          }
           detalhes={[
             {
               rotulo: "Finalidade",

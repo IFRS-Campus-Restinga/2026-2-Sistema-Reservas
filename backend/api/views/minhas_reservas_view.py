@@ -32,6 +32,11 @@ class MinhaReservaSerializer(serializers.BaseSerializer):
             dados = dict(serializer(especifica).data)
             dados['modalidade'] = modalidade
             dados['situacao'] = situacao_reserva(reserva)
+            if 'usuario_detalhe' not in dados and getattr(reserva, 'usuario', None) is not None:
+                dados['usuario_detalhe'] = {
+                    'nome': reserva.usuario.nome,
+                    'perfil_acesso': reserva.usuario.perfil_acesso,
+                }
             if modalidade == 'veiculo':
                 dados['veiculo_detalhe'] = VeiculoSerializer(especifica.veiculo).data
             elif modalidade == 'recurso_geral':

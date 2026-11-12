@@ -7,6 +7,7 @@ import ModalConfirmacao from '../../ModalConfirmacao/ModalConfirmacao';
 import CampoBusca from '../../CampoBusca/CampoBusca';
 import BarraFiltros from '../../../BarraFiltros/BarraFiltros';
 import AlertBanner from '../../../AlertBanner/AlertBanner';
+import Tooltip from '../../../Tooltip/Tooltip';
 import { mensagemDeErro } from '../../../../utils/erros';
 import ModalCadastro from './ModalCadastro';
 import styles from './CadastroSimples.module.css';
@@ -77,14 +78,18 @@ function CadastroSimples({ url, titulo, campos, colunas, servico, descreverItem,
             titulo: 'Ação',
             renderizar: (item) => (
                 <div className={styles.acoes}>
-                    <button type="button" className={styles.editar} onClick={() => abrirModal(item)}
-                        title="Editar" aria-label={`Editar ${descreverItem(item)}`}>
-                        <Pencil size={13} />
-                    </button>
-                    <button type="button" className={styles.excluir} onClick={() => setExcluindo(item)}
-                        title="Excluir" aria-label={`Excluir ${descreverItem(item)}`}>
-                        <Trash2 size={13} />
-                    </button>
+                    <Tooltip texto="Editar">
+                        <button type="button" className={styles.editar} onClick={() => abrirModal(item)}
+                            aria-label={`Editar ${descreverItem(item)}`}>
+                            <Pencil size={13} />
+                        </button>
+                    </Tooltip>
+                    <Tooltip texto="Excluir">
+                        <button type="button" className={styles.excluir} onClick={() => setExcluindo(item)}
+                            aria-label={`Excluir ${descreverItem(item)}`}>
+                            <Trash2 size={13} />
+                        </button>
+                    </Tooltip>
                 </div>
             ),
         },

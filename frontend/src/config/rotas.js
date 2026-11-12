@@ -1,3 +1,4 @@
+import { lazy } from "react";
 import {
   Home as IconeHome,
   Package,
@@ -10,17 +11,17 @@ import {
   Bell,
 } from "lucide-react";
 
-import Home from "../pages/Home/Home";
-import Areas from "../pages/Areas/Areas";
-import AreaDetalhe from "../pages/AreaDetalhe/AreaDetalhe";
-import Calendario from "../pages/Calendario/Calendario";
-import Veiculos from "../pages/Veiculos/Veiculos";
-import VeiculoDetalhe from "../pages/VeiculoDetalhe/VeiculoDetalhe";
-import Recursos from "../pages/Recursos/Recursos";
-import MinhasReservas from "../pages/MinhasReservas/MinhasReservas";
-import Grupos from "../pages/Grupos/Grupos";
-import Administracao from "../pages/Administracao/Administracao";
-import Notificacoes from "../pages/Notificacoes/Notificacoes";
+const Home = lazy(() => import("../pages/Home/Home"));
+const Areas = lazy(() => import("../pages/Areas/Areas"));
+const AreaDetalhe = lazy(() => import("../pages/AreaDetalhe/AreaDetalhe"));
+const Calendario = lazy(() => import("../pages/Calendario/Calendario"));
+const Veiculos = lazy(() => import("../pages/Veiculos/Veiculos"));
+const VeiculoDetalhe = lazy(() => import("../pages/VeiculoDetalhe/VeiculoDetalhe"));
+const Recursos = lazy(() => import("../pages/Recursos/Recursos"));
+const MinhasReservas = lazy(() => import("../pages/MinhasReservas/MinhasReservas"));
+const Grupos = lazy(() => import("../pages/Grupos/Grupos"));
+const Administracao = lazy(() => import("../pages/Administracao/Administracao"));
+const Notificacoes = lazy(() => import("../pages/Notificacoes/Notificacoes"));
 import {
   ehAdministrador,
   podeGerenciarGrupos,
@@ -28,6 +29,7 @@ import {
   podeReservarArea,
   podeReservarRecursoGeral,
   podeReservarVeiculo,
+  podeVerMinhasReservas,
 } from "../utils/permissoes";
 
 export const ROTAS = [
@@ -82,18 +84,18 @@ export const ROTAS = [
     id: "minhas-reservas",
     path: "/minhas-reservas",
     componente: MinhasReservas,
-    permissao: podeReservarAlgo,
+    permissao: podeVerMinhasReservas,
     menu: { titulo: "Minhas Reservas", icone: ClipboardList },
   },
   {
-  id: "notificacoes",
-  path: "/notificacoes",
-  componente: Notificacoes,
-  permissao: podeReservarAlgo,
-  menu: {
-    titulo: "Notificações",
-    icone: Bell,
-  },
+    id: "notificacoes",
+    path: "/notificacoes",
+    componente: Notificacoes,
+    permissao: podeVerMinhasReservas,
+    menu: {
+      titulo: "Notificações",
+      icone: Bell,
+    },
   },
   {
     id: "grupos",

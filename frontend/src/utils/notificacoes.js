@@ -1,7 +1,9 @@
 import {
+  AlertTriangle,
   Bell,
   CheckCircle2,
   FileText,
+  Pencil,
   XCircle,
 } from 'lucide-react';
 
@@ -57,6 +59,20 @@ export function configuracaoNotificacao(tipo) {
     return {
       Icone: FileText,
       classe: 'iconeTermo',
+    };
+  }
+
+  if (tipo === 'GRUPO_PROXIMO_VENCIMENTO') {
+    return {
+      Icone: AlertTriangle,
+      classe: 'iconeTermo',
+    };
+  }
+
+  if (tipo === 'ALTERACAO_RESERVA') {
+    return {
+      Icone: Pencil,
+      classe: 'iconeInfo',
     };
   }
 

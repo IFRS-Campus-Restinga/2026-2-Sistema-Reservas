@@ -6,6 +6,7 @@ import { TIPO_RECORRENCIA_LABEL } from '../../utils/recorrencia';
 import { SITUACAO_RESERVA_LABEL, statusReservaApresentado } from '../../utils/reserva';
 import AlertBanner from '../AlertBanner/AlertBanner';
 import { mensagemDeErro } from '../../utils/erros';
+import Tooltip from '../Tooltip/Tooltip';
 import styles from './ModalDetalheReserva.module.css';
 import ModalConfirmacao from '../Administracao/ModalConfirmacao/ModalConfirmacao';
 
@@ -162,12 +163,36 @@ function ModalDetalheReserva({
           {administrativo && acoesAdministrativas}
           {!administrativo && (
             <div className={styles.acoes}>
-              <button type="button" disabled={!aoEditar || bloqueado} onClick={aoEditar}>
-                <Pencil size={13} /> Editar
-              </button>
-              <button type="button" className={styles.cancelar} disabled={!podeCancelar || bloqueado} onClick={() => setConfirmando(true)}>
-                <Trash2 size={13} /> Cancelar
-              </button>
+              <Tooltip
+                texto={
+                  bloqueado
+                    ? 'Aguarde a conclusão da operação em andamento.'
+                    : !aoEditar
+                      ? (motivoAcoesIndisponiveis || 'Esta reserva não pode ser editada no momento.')
+                      : 'Alterar os dados desta reserva'
+                }
+                desabilitado={!aoEditar || bloqueado}
+                className={styles.gatilhoAcao}
+              >
+                <button type="button" disabled={!aoEditar || bloqueado} onClick={aoEditar}>
+                  <Pencil size={13} /> Editar
+                </button>
+              </Tooltip>
+              <Tooltip
+                texto={
+                  bloqueado
+                    ? 'Aguarde a conclusão da operação em andamento.'
+                    : !podeCancelar
+                      ? (motivoAcoesIndisponiveis || 'Esta reserva não pode ser cancelada no momento.')
+                      : 'Cancelar esta reserva'
+                }
+                desabilitado={!podeCancelar || bloqueado}
+                className={styles.gatilhoAcao}
+              >
+                <button type="button" className={styles.cancelar} disabled={!podeCancelar || bloqueado} onClick={() => setConfirmando(true)}>
+                  <Trash2 size={13} /> Cancelar
+                </button>
+              </Tooltip>
               {reserva.recorrencia && aoGerenciarRecorrencia && (
                 <button type="button" className={styles.larguraTotal} disabled={bloqueado} onClick={aoGerenciarRecorrencia}>
                   <Repeat size={13} /> Gerenciar Recorrência

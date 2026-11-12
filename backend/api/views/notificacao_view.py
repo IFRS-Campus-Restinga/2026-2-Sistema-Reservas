@@ -3,13 +3,14 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 
 from api.enumerations.status_termo import StatusTermo
 from api.models.termo_responsabilidade_model import TermoResponsabilidade
 from api.models.notificacao_model import Notificacao
 from api.permissions.regras_comuns import UsuarioAutenticado
 from api.serializers.notificacao_serializer import NotificacaoSerializer
+from api.services.notificacao_service import notificar_grupos_proximos_vencimento
 
 def notificacoes_com_relacoes():
     return (
@@ -20,7 +21,9 @@ def notificacoes_com_relacoes():
             'reserva__reservaarea',
             'reserva__reservaveiculo',
             'reserva__reservarecursogeral',
+            'grupo',
         )
+        .filter(Q(grupo__isnull=True) | Q(grupo__excluido_em__isnull=True))
         .prefetch_related(
             Prefetch(
                 'reserva__termos',
@@ -39,6 +42,8 @@ class MinhasNotificacoesListView(APIView):
     permission_classes = [UsuarioAutenticado]
 
     def get(self, request):
+        notificar_grupos_proximos_vencimento(request.user)
+
         notificacoes = (
             notificacoes_com_relacoes()
             .filter(usuario=request.user)

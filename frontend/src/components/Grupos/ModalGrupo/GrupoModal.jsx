@@ -4,6 +4,7 @@ import { listarTodosTiposRecurso } from '../../../services';
 import { TIPO_RECURSO_RESERVAVEL, TIPO_RECURSO_RESERVAVEL_LABEL } from '../../../utils/tipoRecursoReservavel';
 import Modal from '../../Administracao/Modal/Modal';
 import AlertBanner from '../../AlertBanner/AlertBanner';
+import DicaInfo from '../../Tooltip/DicaInfo';
 import styles from './GrupoModal.module.css';
 
 const formularioInicial = {
@@ -332,7 +333,13 @@ function GrupoModal({
 
                 <div className={styles.linhaDupla}>
                     <div className={styles.campo}>
-                        <label htmlFor="data_inicio_validade">Válido a partir de *</label>
+                        <div className={styles.rotuloComDica}>
+                            <label htmlFor="data_inicio_validade">Válido a partir de *</label>
+                            <DicaInfo
+                                texto="Os membros passam a poder reservar somente a partir desta data."
+                                rotulo="Explicação sobre data de início da vigência"
+                            />
+                        </div>
                         <input
                             id="data_inicio_validade"
                             name="data_inicio_validade"
@@ -345,7 +352,13 @@ function GrupoModal({
                     </div>
 
                     <div className={styles.campo}>
-                        <label htmlFor="data_fim_validade">Válido até (opcional)</label>
+                        <div className={styles.rotuloComDica}>
+                            <label htmlFor="data_fim_validade">Válido até (opcional)</label>
+                            <DicaInfo
+                                texto="Se ficar em branco, a vigência não expira. Quando preenchida, o sistema notifica com 7 dias de antecedência."
+                                rotulo="Explicação sobre data de fim da vigência"
+                            />
+                        </div>
                         <input
                             id="data_fim_validade"
                             name="data_fim_validade"

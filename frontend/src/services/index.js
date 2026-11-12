@@ -52,6 +52,7 @@ export {
     atualizarGrupo,
     excluirGrupo,
     buscarMembros,
+    buscarReservasGrupo,
     buscarCandidatos,
     adicionarMembros,
     atualizarMembro,
