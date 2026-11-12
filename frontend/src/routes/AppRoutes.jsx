@@ -1,9 +1,13 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
 import MainLayout from '../layouts/MainLayout'
-import NotFound from '../pages/NotFound/NotFound'
+import CarregandoRota from '../components/CarregandoRota/CarregandoRota'
+import ErrorBoundaryRota from '../components/CarregandoRota/ErrorBoundaryRota'
 import RotaProtegida from './RotaProtegida'
 import { ROTAS } from '../config/rotas'
+
+const NotFound = lazy(() => import('../pages/NotFound/NotFound'))
 
 function AppRoutes() {
   return (
@@ -22,7 +26,16 @@ function AppRoutes() {
             />
           ))}
         </Route>
-        <Route path="*" element={<NotFound />} />
+        <Route
+          path="*"
+          element={
+            <ErrorBoundaryRota>
+              <Suspense fallback={<CarregandoRota />}>
+                <NotFound />
+              </Suspense>
+            </ErrorBoundaryRota>
+          }
+        />
       </Routes>
     </BrowserRouter>
   )
