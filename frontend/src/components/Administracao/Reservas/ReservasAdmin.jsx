@@ -832,38 +832,29 @@ function ReservasAdmin() {
       <AlertBanner tipo="erro" mensagem={erro} />
 
 
-      {carregando ? (
-        <p
-          className={styles.carregando}
-          role="status"
-        >
-          Carregando reservas...
-        </p>
-      ) : (
-        <>
-          <TabelaAdministracao
-            colunas={colunas}
-            dados={reservas}
-            renderizarExpansao={renderizarOcorrencias}
-            mensagemVazia={
-              busca.trim() ||
-              modalidade !== 'todas' ||
-              periodo.inicio ||
-              periodo.fim
-                ? 'Nenhuma reserva encontrada para os filtros selecionados.'
-                : 'Nenhuma reserva cadastrada.'
-            }
-          />
+      <TabelaAdministracao
+        carregando={carregando}
+        rotuloCarregando="Carregando reservas..."
+        colunas={colunas}
+        dados={reservas}
+        renderizarExpansao={renderizarOcorrencias}
+        mensagemVazia={
+          busca.trim() ||
+          modalidade !== 'todas' ||
+          periodo.inicio ||
+          periodo.fim
+            ? 'Nenhuma reserva encontrada para os filtros selecionados.'
+            : 'Nenhuma reserva cadastrada.'
+        }
+      />
 
-          <Paginacao
-            paginaAtual={pagina}
-            totalPaginas={Math.ceil(
-              total / TAMANHO_PAGINA
-            )}
-            aoMudarPagina={setPagina}
-          />
-        </>
-      )}
+      <Paginacao
+        paginaAtual={pagina}
+        totalPaginas={Math.ceil(
+          total / TAMANHO_PAGINA
+        )}
+        aoMudarPagina={setPagina}
+      />
 
 
       <ModalDetalheReserva
