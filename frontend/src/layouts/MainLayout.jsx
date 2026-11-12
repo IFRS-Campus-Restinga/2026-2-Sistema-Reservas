@@ -1,13 +1,16 @@
 import { matchPath, Outlet, useLocation } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import Sidebar from '../components/SideBar/SideBar'
 import Header from '../components/Header/Header'
-import NaoAutenticado from '../pages/NaoAutenticado/NaoAutenticado'
+import CarregandoRota from '../components/CarregandoRota/CarregandoRota'
+import ErrorBoundaryRota from '../components/CarregandoRota/ErrorBoundaryRota'
 import { ITENS_MENU, ROTAS } from '../config/rotas'
 import { UsuarioContext } from '../contexts/UsuarioContext'
 import { NotificacoesProvider } from '../contexts/NotificacoesContext'
 import { buscarUsuarioLogado } from '../services'
 import styles from './MainLayout.module.css'
+
+const NaoAutenticado = lazy(() => import('../pages/NaoAutenticado/NaoAutenticado'))
 
 function MainLayout() {
   const [menuRecolhido, setMenuRecolhido] = useState(() => window.matchMedia('(max-width: 767px)').matches)
@@ -45,7 +48,13 @@ function MainLayout() {
     ROTAS.some((rota) => rota.publica && matchPath(rota.path, location.pathname))
 
   if (!usuario && !rotaPublica) {
-    return <NaoAutenticado />
+    return (
+      <ErrorBoundaryRota chave={location.pathname}>
+        <Suspense fallback={<CarregandoRota />}>
+          <NaoAutenticado />
+        </Suspense>
+      </ErrorBoundaryRota>
+    )
   }
 
   return (
@@ -65,7 +74,11 @@ function MainLayout() {
             />
 
             <main className={styles.content}>
-              <Outlet />
+              <ErrorBoundaryRota chave={location.pathname}>
+                <Suspense fallback={<CarregandoRota />}>
+                  <Outlet />
+                </Suspense>
+              </ErrorBoundaryRota>
             </main>
           </div>
         </div>

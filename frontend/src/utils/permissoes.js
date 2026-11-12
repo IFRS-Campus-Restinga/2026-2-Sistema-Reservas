@@ -10,9 +10,28 @@ export const podeCriarGrupo = (usuario, tipoMembro) =>
 
 export const podeGerenciarGrupos = (usuario) => (usuario?.permissoes?.criar_grupos_de?.length ?? 0) > 0;
 
-export const podeReservar = (usuario, tipoRecurso) =>
+export const podeReservar = (usuario, tipoRecurso, tipoRecursoId = null) =>
   Boolean(usuario?.permissoes?.reservar_sem_grupo?.includes(tipoRecurso)) ||
-  Boolean(usuario?.autorizacoes?.some((autorizacao) => autorizacao.tipos_recurso_autorizados?.includes(tipoRecurso)));
+  Boolean(
+    usuario?.autorizacoes?.some(
+      (autorizacao) =>
+        autorizacao.tipos_recurso_autorizados?.includes(tipoRecurso) &&
+        (tipoRecurso !== TIPO_RECURSO_RESERVAVEL.RECURSO_GERAL ||
+          tipoRecursoId == null ||
+          autorizacao.tipos_recurso?.includes(Number(tipoRecursoId)))
+    )
+  );
+
+const TIPO_POR_MODALIDADE = {
+  area: TIPO_RECURSO_RESERVAVEL.AREA,
+  veiculo: TIPO_RECURSO_RESERVAVEL.VEICULO,
+  recurso_geral: TIPO_RECURSO_RESERVAVEL.RECURSO_GERAL,
+};
+
+export const podeReservarModalidade = (usuario, modalidade, tipoRecursoId = null) => {
+  const tipoRecurso = TIPO_POR_MODALIDADE[modalidade];
+  return Boolean(tipoRecurso && podeReservar(usuario, tipoRecurso, tipoRecursoId));
+};
 
 export const podeReservarArea = (usuario) => podeReservar(usuario, TIPO_RECURSO_RESERVAVEL.AREA);
 
@@ -22,5 +41,8 @@ export const podeReservarRecursoGeral = (usuario) => podeReservar(usuario, TIPO_
 
 export const podeReservarAlgo = (usuario) =>
   podeReservarArea(usuario) || podeReservarVeiculo(usuario) || podeReservarRecursoGeral(usuario);
+
+export const podeVerMinhasReservas = (usuario) =>
+  podeReservarAlgo(usuario) || Boolean(usuario?.permissoes?.possui_reservas);
 
 export const temPermissao = (usuario, regra) => !regra || Boolean(regra(usuario));

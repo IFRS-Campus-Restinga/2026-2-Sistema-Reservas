@@ -7,19 +7,33 @@ import styles from './RecursosAdmin.module.css';
 import { atualizarRecursoGeral, criarRecursoGeral, excluirRecursoGeral } from '../../../services';
 
 import CampoBusca from '../CampoBusca/CampoBusca';
+import BarraFiltros from '../../BarraFiltros/BarraFiltros';
 import ModalConfirmacao from '../ModalConfirmacao/ModalConfirmacao';
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import RecursoModal from './ModalRecurso/RecursoModal';
+import Select from '../../Select/Select';
+import SelectRemoto from '../../SelectRemoto/SelectRemoto';
+import { OPCOES_STATUS_RECURSO, STATUS_RECURSO_LABEL } from '../../../utils/statusRecurso';
+import AlertBanner from '../../AlertBanner/AlertBanner';
+import Tooltip from '../../Tooltip/Tooltip';
 
 function RecursosAdmin() {
     const [busca, setBusca] = useState('');
+    const [filtroTiposRecurso, setFiltroTiposRecurso] = useState([]);
+    const [filtroStatus, setFiltroStatus] = useState('todos');
 
     const [modalRecursoAberto, setModalRecursoAberto] = useState(false);
     const [recursoEditando, setRecursoEditando] = useState(null);
     const [recursoExcluindo, setRecursoExcluindo] = useState(null);
+    const [aviso, setAviso] = useState(null);
 
 
-    const { itens: recursos, carregando, erro, setErro, recarregar: carregarDados, paginacao } = useListaPaginada('/api/recursos-gerais/', { busca });
+    const { itens: recursos, carregando, erro, setErro, recarregar: carregarDados, paginacao } = useListaPaginada('/api/recursos-gerais/', {
+        busca,
+        tipo_recurso: filtroTiposRecurso.join(','),
+        status: filtroStatus,
+    });
+    const filtrando = Boolean(busca.trim()) || filtroTiposRecurso.length > 0 || filtroStatus !== 'todos';
 
     function abrirCadastro() {
         setRecursoEditando(null);
@@ -49,6 +63,7 @@ function RecursosAdmin() {
         }
 
         fecharModalRecurso();
+        setAviso({ tipo: 'sucesso', mensagem: recursoEditando ? 'Recurso atualizado com sucesso.' : 'Recurso cadastrado com sucesso.' });
         await carregarDados();
     }
 
@@ -66,28 +81,12 @@ function RecursosAdmin() {
             await excluirRecursoGeral(recursoExcluindo.id);
             setRecursoExcluindo(null);
             await carregarDados();
+            setAviso({ tipo: 'sucesso', mensagem: 'Recurso excluído com sucesso.' });
         } catch (erro) {
             console.error(erro);
-            setErro('Não foi possível excluir o recurso.');
+            setAviso({ tipo: 'erro', mensagem: 'Não foi possível excluir o recurso.' });
         }
     }
-
-    function mostrarStatus(status) {
-        switch (status) {
-            case 'ATIVO':
-                return 'Ativo';
-            case 'MANUTENCAO':
-                return 'Manutenção';
-            case 'INATIVO':
-                return 'Inativo';
-            default:
-                return status;
-        }
-    }
-
-
-    const termoBusca = busca.trim().toLowerCase();
-    const recursosFiltrados = recursos;
 
     const colunas = [
         {
@@ -120,7 +119,7 @@ function RecursosAdmin() {
                     {recurso.status === 'ATIVO'
                         ? <ToggleRight size={13} aria-hidden="true" />
                         : <ToggleLeft size={13} aria-hidden="true" />}
-                    {mostrarStatus(recurso.status)}
+                    {STATUS_RECURSO_LABEL[recurso.status] || recurso.status}
                 </span>
             ),
         },
@@ -129,25 +128,27 @@ function RecursosAdmin() {
             titulo: 'Ação',
             renderizar: (recurso) => (
                 <div className={styles.acoes}>
-                    <button
-                        type="button"
-                        className={styles.editar}
-                        onClick={() => abrirEdicao(recurso)}
-                        title="Editar"
-                        aria-label={`Editar ${recurso.nome}`}
-                    >
-                        <Pencil size={13} />
-                    </button>
+                    <Tooltip texto="Editar recurso">
+                        <button
+                            type="button"
+                            className={styles.editar}
+                            onClick={() => abrirEdicao(recurso)}
+                            aria-label={`Editar ${recurso.nome}`}
+                        >
+                            <Pencil size={13} />
+                        </button>
+                    </Tooltip>
 
-                    <button
-                        type="button"
-                        className={styles.excluir}
-                        onClick={() => solicitarExclusao(recurso)}
-                        title="Excluir"
-                        aria-label={`Excluir ${recurso.nome}`}
-                    >
-                        <Trash2 size={13} />
-                    </button>
+                    <Tooltip texto="Excluir recurso">
+                        <button
+                            type="button"
+                            className={styles.excluir}
+                            onClick={() => solicitarExclusao(recurso)}
+                            aria-label={`Excluir ${recurso.nome}`}
+                        >
+                            <Trash2 size={13} />
+                        </button>
+                    </Tooltip>
                 </div>
             ),
         },
@@ -155,38 +156,55 @@ function RecursosAdmin() {
 
     return (
         <div className={styles.recursos}>
-            <div className={styles.barraAcoes}>
+            <BarraFiltros
+                acoes={(
+                    <button
+                        type="button"
+                        className={styles.adicionar}
+                        onClick={abrirCadastro}
+                    >
+                        <Plus size={16} />
+                        Adicionar
+                    </button>
+                )}
+            >
                 <CampoBusca
                     valor={busca}
                     aoAlterar={setBusca}
                     placeholder="Buscar por nome, tipo de recurso ou código..."
                 />
-
-                <button
-                    type="button"
-                    className={styles.adicionar}
-                    onClick={abrirCadastro}
-                >
-                    <Plus size={16} />
-                    Adicionar
-                </button>
-            </div>
-
-            {erro && (
-                <p className={styles.erro} role="alert">{erro}</p>
-            )}
-
-            {carregando ? (
-                <p className={styles.carregando} role="status">Carregando recursos...</p>
-            ) : (
-                <TabelaAdministracao
-                    colunas={colunas}
-                    dados={recursosFiltrados}
-                    mensagemVazia={termoBusca
-                        ? 'Nenhum recurso encontrado para esta busca.'
-                        : 'Nenhum recurso cadastrado.'}
+                <SelectRemoto
+                    url="/api/tipos-recurso/"
+                    valor={filtroTiposRecurso}
+                    aoAlterar={setFiltroTiposRecurso}
+                    rotuloTodos="Todos os tipos de recurso"
+                    ariaLabel="Filtrar recursos por tipo de recurso"
+                    placeholderBusca="Buscar tipo..."
+                    multiplo
                 />
-            )}
+                <Select
+                    valor={filtroStatus}
+                    aoAlterar={setFiltroStatus}
+                    opcoes={OPCOES_STATUS_RECURSO}
+                    valorTodos="todos"
+                    rotuloTodos="Todos os status"
+                    ariaLabel="Filtrar recursos por status"
+                />
+            </BarraFiltros>
+
+            <AlertBanner tipo={aviso?.tipo} mensagem={aviso?.mensagem} aoFechar={() => setAviso(null)} />
+
+            <AlertBanner tipo="erro" mensagem={erro} />
+
+            <TabelaAdministracao
+                carregando={carregando}
+                rotuloCarregando="Carregando recursos..."
+                colunas={colunas}
+                dados={recursos}
+                mensagemVazia={filtrando
+                    ? 'Nenhum recurso encontrado para os filtros aplicados.'
+                    : 'Nenhum recurso cadastrado.'}
+            />
 
             <Paginacao {...paginacao} />
 

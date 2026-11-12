@@ -2,6 +2,8 @@ from accounts.enumerations import Papel
 from api.enumerations.auditoria_enumerations import EntidadeAuditoria
 from api.models.area_model import Area
 from api.models.bloco_model import Bloco
+from api.models.categoria_recurso_model import CategoriaRecurso
+from api.models.equipamento_area_model import EquipamentoArea
 from api.models.grupo_model import Grupo
 from api.models.log_auditoria_model import LogAuditoria
 from api.models.membro_grupo_model import MembroGrupo
@@ -24,12 +26,22 @@ ENTIDADE_POR_MODEL = {
     MembroGrupo: EntidadeAuditoria.MEMBRO_GRUPO,
     RecursoGeral: EntidadeAuditoria.RECURSO_GERAL,
     TipoRecurso: EntidadeAuditoria.TIPO_RECURSO,
+    CategoriaRecurso: EntidadeAuditoria.CATEGORIA_RECURSO,
     Area: EntidadeAuditoria.AREA,
+    EquipamentoArea: EntidadeAuditoria.EQUIPAMENTO_AREA,
     Bloco: EntidadeAuditoria.BLOCO,
     Veiculo: EntidadeAuditoria.VEICULO,
 }
 
-MODELS_AUDITADOS_PARA_SERVIDOR = (Grupo, MembroGrupo)
+MODELS_AUDITADOS_PARA_SERVIDOR = (
+    Grupo,
+    MembroGrupo,
+    Reserva,
+    ReservaArea,
+    ReservaRecursoGeral,
+    ReservaVeiculo,
+    Recorrencia,
+)
 
 
 def _dono(objeto):
@@ -54,6 +66,8 @@ def _perfil_auditado(ator, objeto):
             return None
         return Papel.ADMIN
     if getattr(ator, 'papel', None) == Papel.SERVIDOR and isinstance(objeto, MODELS_AUDITADOS_PARA_SERVIDOR):
+        if isinstance(objeto, (Reserva, Recorrencia)) and objeto.usuario_id == ator.pk:
+            return None
         return Papel.SERVIDOR
     return None
 

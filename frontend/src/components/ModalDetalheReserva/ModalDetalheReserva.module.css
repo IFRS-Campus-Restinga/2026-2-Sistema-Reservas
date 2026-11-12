@@ -156,21 +156,21 @@
   white-space: nowrap;
 }
 
-.erro {
-  margin: 0;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: #fef2f2;
-  color: #b91c1c;
-  font-size: 12px;
-}
-
 .acoes {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   padding-top: 8px;
   border-top: 1px solid #f3f4f6;
+}
+
+.gatilhoAcao {
+  flex: 1;
+  display: flex;
+}
+
+.gatilhoAcao > button {
+  width: 100%;
 }
 
 .acoes button {

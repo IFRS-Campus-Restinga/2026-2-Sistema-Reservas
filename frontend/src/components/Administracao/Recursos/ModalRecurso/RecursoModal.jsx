@@ -1,6 +1,8 @@
 import SelectRemoto from '../../../SelectRemoto/SelectRemoto';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Modal from '../../Modal/Modal';
+import AlertBanner from '../../../AlertBanner/AlertBanner';
+import { mensagemDeErro } from '../../../../utils/erros';
 import styles from './RecursoModal.module.css';
 
 const formularioInicial = {
@@ -20,6 +22,7 @@ function RecursoModal({
     aoFechar,
     aoSalvar,
 }) {
+    const controleModal = useRef(null);
     const [formulario, setFormulario] = useState(formularioInicial);
     const [salvando, setSalvando] = useState(false);
     const [erros, setErros] = useState({});
@@ -97,7 +100,7 @@ function RecursoModal({
 
             setErros(Object.keys(novosErros).length > 0
                 ? novosErros
-                : { geral: erro.message || 'Não foi possível salvar o recurso.' });
+                : { geral: mensagemDeErro(erro, 'Não foi possível salvar o recurso. Tente novamente.') });
         } finally {
             setSalvando(false);
         }
@@ -105,6 +108,8 @@ function RecursoModal({
 
     return (
         <Modal
+            ref={controleModal}
+            confirmarDescarte
             aberto={aberto}
             titulo={recurso ? 'Editar recurso' : 'Adicionar recurso'}
             aoFechar={aoFechar}
@@ -113,7 +118,7 @@ function RecursoModal({
                     <button
                         type="button"
                         className={styles.cancelar}
-                        onClick={aoFechar}
+                        onClick={() => controleModal.current?.fechar()}
                     >
                         Cancelar
                     </button>
@@ -135,7 +140,7 @@ function RecursoModal({
                 onSubmit={enviarFormulario}
                 onInvalid={mostrarErro}
             >
-                {mensagemErro('geral')}
+                <AlertBanner tipo="erro" mensagem={erros.geral} />
 
                 <div className={styles.campo}>
                     <label htmlFor="nome">Nome *</label>

@@ -6,9 +6,12 @@ import { useNavigate } from "react-router-dom";
 import { Row, Col } from "react-bootstrap";
 import { Search } from "lucide-react";
 import CampoBusca from "../../components/Administracao/CampoBusca/CampoBusca";
+import BarraFiltros from "../../components/BarraFiltros/BarraFiltros";
 import Select from "../../components/Select/Select";
 import CardArea from "../../components/CardArea/CardArea";
+import AlertBanner from "../../components/AlertBanner/AlertBanner";
 import styles from "./Areas.module.css";
+import SkeletonCardLista from "../../components/Skeleton/SkeletonCardLista";
 
 const OPCOES_CAPACIDADE = [
   { valor: 20, rotulo: "20+ pessoas" },
@@ -28,14 +31,13 @@ function Areas() {
 
   return (
     <div className="d-flex flex-column gap-4 p-3 p-md-4">
-      <div className="d-flex flex-wrap align-items-center justify-content-center gap-2">
+      <BarraFiltros>
         <CampoBusca valor={busca} aoAlterar={setBusca} placeholder="Buscar área" />
 
         <SelectRemoto url="/api/blocos/"
           valor={filtroBloco}
           aoAlterar={setFiltroBloco}
-          filtros={{ page_size: 100 }}
-          mostrarBusca={false}
+          placeholderBusca="Buscar bloco..."
           valorTodos="todos"
           rotuloTodos="Todos os blocos"
           ariaLabel="Filtrar por bloco"
@@ -49,14 +51,12 @@ function Areas() {
           rotuloTodos="Qualquer capacidade"
           ariaLabel="Filtrar por capacidade"
         />
-      </div>
+      </BarraFiltros>
 
-      {erro && (
-        <p className="text-danger" role="alert">{erro}</p>
-      )}
+      <AlertBanner tipo="erro" mensagem={erro} />
 
       {carregando ? (
-        <p className="text-muted" role="status">Carregando áreas...</p>
+        <SkeletonCardLista rotulo="Carregando áreas..." />
       ) : areasFiltradas.length === 0 ? (
         <div className={`text-center bg-white border rounded-3 py-5 px-3 text-muted ${styles.vazio}`}>
           <Search size={32} className="d-block mx-auto mb-2 opacity-25" />

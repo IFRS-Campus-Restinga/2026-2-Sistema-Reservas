@@ -1,7 +1,11 @@
 import { useEffect, useState, useMemo } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { useTimetableStore } from '../../../store/timetableStore';
+import Select from '../../Select/Select';
+import AlertBanner from '../../AlertBanner/AlertBanner';
+import Tooltip from '../../Tooltip/Tooltip';
 import styles from './TimetableAdmin.module.css';
+import SkeletonGrade from '../../Skeleton/SkeletonGrade';
 
 const PERIODOS_MATRIZ = [
   { id: 1, rotulo: '1', tempo: '7:30 - 8:20' },
@@ -29,10 +33,10 @@ const DIAS_ROTULOS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex']; // Exatamente como na 
 const getGridRowStart = (id) => id + 1;
 
 function TimetableAdmin() {
-  const { timetableData, isLoading, error, fetchTimetable, syncTimetable } = useTimetableStore();
+  const { timetableData, ultimaSincronizacao, isLoading, error, fetchTimetable, syncTimetable } = useTimetableStore();
   const [salaSelecionada, setSalaSelecionada] = useState('');
   const [sincronizando, setSincronizando] = useState(false);
-  const [mensagemSucesso, setMensagemSucesso] = useState('');
+  const [aviso, setAviso] = useState(null);
 
   useEffect(() => {
     fetchTimetable();
@@ -45,26 +49,59 @@ function TimetableAdmin() {
   const handleSincronizar = async () => {
     try {
       setSincronizando(true);
-      setMensagemSucesso('');
+      setAviso(null);
       const resultado = await syncTimetable();
       const detalhe = resultado?.total_reservas
         ? ` (${resultado.total_aulas} aulas e ${resultado.total_reservas} reservas de área criadas)`
         : '';
-      setMensagemSucesso(`Grade horária sincronizada com sucesso com o EduPage!${detalhe}`);
-      setTimeout(() => setMensagemSucesso(''), 5000);
+      setAviso({ tipo: 'sucesso', mensagem: `Grade horária sincronizada com sucesso com o EduPage!${detalhe}` });
     } catch (err) {
       console.error(err);
+      setAviso({ tipo: 'erro', mensagem: 'Não foi possível sincronizar a grade horária.' });
     } finally {
       setSincronizando(false);
     }
   };
 
-  if (isLoading && !timetableData) return <div className={styles.loading}>Carregando grade horária...</div>;
+  const informacaoSincronizacao = (
+    <p className={styles.ultimaSincronizacao} role="status">
+      {ultimaSincronizacao ? <>
+        Última sincronização: <time dateTime={ultimaSincronizacao}>
+          {new Date(ultimaSincronizacao).toLocaleString('pt-BR', {
+            timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short',
+          })}
+        </time> (horário de Brasília)
+      </> : timetableData
+        ? 'Nenhuma sincronização realizada.'
+        : 'Última sincronização indisponível.'}
+    </p>
+  );
+
+  const avisos = (
+    <>
+      <AlertBanner tipo={aviso?.tipo} mensagem={aviso?.mensagem} aoFechar={() => setAviso(null)} />
+      <AlertBanner tipo="erro" mensagem={aviso?.tipo === 'erro' ? '' : error} />
+    </>
+  );
+
+  if (isLoading && !timetableData) {
+    return (
+      <SkeletonGrade
+        variante="cartoes"
+        comBarra
+        linhas={5}
+        rotulo="Carregando grade horária..."
+        className={styles.container}
+      />
+    );
+  }
   if (error && !timetableData) {
     return (
-      <div className={styles.errorContainer}>
-        <div className={styles.error}>Erro ao carregar grade: {error}</div>
-        <button 
+      <div className={styles.emptyContainer}>
+        {informacaoSincronizacao}
+        {avisos}
+        <button
+          type="button"
           className={styles.botaoSincronizar} 
           onClick={handleSincronizar}
           disabled={sincronizando}
@@ -79,8 +116,11 @@ function TimetableAdmin() {
   if (!timetableData || Object.keys(timetableData).length === 0) {
     return (
       <div className={styles.emptyContainer}>
+        {informacaoSincronizacao}
+        {avisos}
         <p className={styles.empty}>Nenhuma aula cadastrada no banco de dados.</p>
-        <button 
+        <button
+          type="button"
           className={styles.botaoSincronizar} 
           onClick={handleSincronizar}
           disabled={sincronizando}
@@ -165,30 +205,43 @@ function TimetableAdmin() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h2>Grade Horária do EduPage</h2>
+        <div>
+          <h2>Grade Horária do EduPage</h2>
+          {informacaoSincronizacao}
+        </div>
         <div className={styles.filtros}>
-          <label>Selecione a Sala: </label>
-          <select value={salaAtual} onChange={(e) => setSalaSelecionada(e.target.value)}>
-            {salas.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-          <button 
-            type="button"
-            className={styles.botaoSincronizar} 
-            onClick={handleSincronizar}
-            disabled={sincronizando}
-            title="Sincronizar grade com o EduPage"
+          <label className={styles.campoSala}>
+            Sala
+            <Select
+              valor={salaAtual}
+              aoAlterar={setSalaSelecionada}
+              opcoes={salas.map((sala) => ({ valor: sala, rotulo: sala }))}
+              ariaLabel="Sala"
+              filtro
+            />
+          </label>
+          <Tooltip
+            texto={
+              sincronizando
+                ? 'Sincronização em andamento. Aguarde a conclusão.'
+                : 'Atualizar horários e bloqueios de salas com base na grade oficial do EduPage'
+            }
+            desabilitado={sincronizando}
           >
-            <RefreshCw size={15} className={sincronizando ? styles.girando : ''} />
-            {sincronizando ? 'Sincronizando...' : 'Sincronizar'}
-          </button>
+            <button 
+              type="button"
+              className={styles.botaoSincronizar} 
+              onClick={handleSincronizar}
+              disabled={sincronizando}
+            >
+              <RefreshCw size={15} className={sincronizando ? styles.girando : ''} />
+              {sincronizando ? 'Sincronizando...' : 'Sincronizar'}
+            </button>
+          </Tooltip>
         </div>
       </div>
 
-      {mensagemSucesso && (
-        <div className={styles.alertaSucesso}>
-          {mensagemSucesso}
-        </div>
-      )}
+      {avisos}
 
       <div className={styles.gridContainer}>
         {/* Cabeçalho da Grade */}

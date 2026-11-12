@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { NotificacoesContext } from './notificacoes-context';
 
 import {
@@ -6,6 +6,7 @@ import {
   marcarNotificacaoComoLida,
   marcarTodasNotificacoesComoLidas,
 } from '../services';
+import { mensagemDeErro } from '../utils/erros';
 
 export function NotificacoesProvider({ children, usuario }) {
   const [notificacoes, setNotificacoes] = useState([]);
@@ -14,6 +15,7 @@ export function NotificacoesProvider({ children, usuario }) {
   const [erro, setErro] = useState('');
   const [pagina, setPagina] = useState(1);
   const [total, setTotal] = useState(0);
+  const [filtroLida, setFiltroLida] = useState('');
 
   const [revisao, setRevisao] = useState(0);
 
@@ -29,10 +31,20 @@ export function NotificacoesProvider({ children, usuario }) {
     setPagina(valor);
   }
 
+  function mudarFiltroLida(valor) {
+    setCarregando(true);
+    setErro('');
+    setFiltroLida(valor);
+    setPagina(1);
+  }
+
+  // Usado ao sair da página de notificações, para o Header não ficar com a lista filtrada.
+  const limparFiltroLida = useCallback(() => setFiltroLida(''), []);
+
   useEffect(() => {
     if (!usuario) return;
     const controle = new AbortController();
-    listarNotificacoes(pagina, controle.signal)
+    listarNotificacoes(pagina, controle.signal, filtroLida)
       .then((dados) => {
         if (controle.signal.aborted) return;
         setNotificacoes(dados.results || []);
@@ -40,11 +52,11 @@ export function NotificacoesProvider({ children, usuario }) {
         setNaoLidas(dados.nao_lidas || 0);
       })
       .catch((falha) => {
-        if (!controle.signal.aborted) setErro(falha.message || 'N?o foi poss?vel carregar as notifica??es.');
+        if (!controle.signal.aborted) setErro(mensagemDeErro(falha, 'Não foi possível carregar as notificações.'));
       })
       .finally(() => { if (!controle.signal.aborted) setCarregando(false); });
     return () => controle.abort();
-  }, [usuario, pagina, revisao]);
+  }, [usuario, pagina, revisao, filtroLida]);
 
   async function marcarComoLida(id) {
     const jaLida = notificacoes.find((item) => item.id === id)?.lida;
@@ -77,6 +89,9 @@ export function NotificacoesProvider({ children, usuario }) {
     );
 
     setNaoLidas(0);
+
+    // No filtro "não lidas", a lista atual deixou de corresponder ao filtro.
+    if (filtroLida === 'false') carregarNotificacoes();
   }
 
   return (
@@ -89,6 +104,9 @@ export function NotificacoesProvider({ children, usuario }) {
         carregarNotificacoes,
         marcarComoLida,
         marcarTodasComoLidas,
+        filtroLida,
+        mudarFiltroLida,
+        limparFiltroLida,
         paginacao: { paginaAtual: pagina, totalPaginas: Math.ceil(total / 20), aoMudarPagina: mudarPagina },
       }}
     >

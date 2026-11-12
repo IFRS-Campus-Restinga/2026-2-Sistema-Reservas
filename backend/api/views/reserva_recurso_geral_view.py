@@ -1,21 +1,35 @@
 from .view_helpers import listar
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_time
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from api.enumerations.status_reserva import StatusReserva
+from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
 from api.models.recurso_geral_model import RecursoGeral
 from api.models.reserva_recurso_geral_model import ReservaRecursoGeral
 from api.permissions.regras_comuns import UsuarioAutenticado, usuario_e_admin
-from api.permissions.reserva_permissions import PodeGerenciarReserva
+from api.permissions.reserva_permissions import (
+    PodeGerenciarReserva,
+    validar_autorizacao_gerenciamento_grupo,
+)
 from api.serializers.reserva_recurso_geral_serializer import ReservaRecursoGeralSerializer
 from api.validators.reserva_recurso_geral_validator import STATUS_RESERVAS_ATIVAS, validar_autorizacao, validar_disponibilidade, quantidade_disponivel
 from api.enumerations.auditoria_enumerations import AcaoAuditoria
 from api.services.auditoria import foto, registrar_auditoria
+from api.services.notificacao_service import (
+    criar_notificacao_alteracao_por_terceiro,
+    criar_notificacao_cancelamento_por_terceiro,
+)
 from api.services.termo_service import invalidar_termo_apos_edicao
+from api.services.recorrencia_service import (
+    RECORRENCIA_RECURSO_GERAL,
+    criar_reservas_recorrentes,
+    serializar_recorrencia,
+)
 from .view_helpers import BuscarObjetoComPermissaoMixin
 
 STATUS_ALTERAVEIS = [
@@ -42,7 +56,7 @@ class ReservaRecursoGeralListCreateView(APIView):
     def get(self, request):
         reservas = ReservaRecursoGeral.objects.filter(
             usuario=request.user
-        ).order_by("-data", "-horario_inicio")
+        ).select_related("recorrencia").order_by("-data", "-horario_inicio")
 
         return listar(request, reservas, ReservaRecursoGeralSerializer)
 
@@ -52,12 +66,27 @@ class ReservaRecursoGeralListCreateView(APIView):
 
         with transaction.atomic():
             dados = serializer.validated_data
+            dados_recorrencia = dados.pop("recorrencia", None)
             recurso = get_object_or_404(
                 RecursoGeral.objects.select_for_update(),
                 pk=dados["recurso_geral"].pk,
             )
 
             dados["recurso_geral"] = recurso
+
+            if dados_recorrencia:
+                recorrencia, datas_puladas = criar_reservas_recorrentes(
+                    RECORRENCIA_RECURSO_GERAL, request.user, dados, dados_recorrencia
+                )
+
+                return Response(
+                    {
+                        **serializar_recorrencia(RECORRENCIA_RECURSO_GERAL, recorrencia, request.user),
+                        "datas_puladas": datas_puladas,
+                    },
+                    status=status.HTTP_201_CREATED,
+                )
+
             validar_autorizacao(request.user, dados)
             validar_disponibilidade(dados)
 
@@ -137,9 +166,16 @@ class ReservaRecursoGeralDetailView(BuscarObjetoComPermissaoMixin, APIView):
                     })
 
                 reserva.status = novo_status
-                reserva.save(update_fields=["status"])
+                if novo_status == StatusReserva.CANCELADA:
+                    reserva.cancelada_em = timezone.now()
+                    reserva.cancelada_por = request.user
+                    reserva.save(update_fields=["status", "cancelada_em", "cancelada_por"])
+                else:
+                    reserva.save(update_fields=["status"])
                 acao = AcaoAuditoria.CANCELAR if novo_status == StatusReserva.CANCELADA else AcaoAuditoria.EDITAR
                 registrar_auditoria(request.user, acao, reserva, antes=antes, depois=foto(reserva))
+                if novo_status == StatusReserva.CANCELADA and request.user.pk != reserva.usuario_id:
+                    criar_notificacao_cancelamento_por_terceiro(reserva, ator=request.user)
 
                 return Response(ReservaRecursoGeralSerializer(reserva).data)
 
@@ -180,11 +216,21 @@ class ReservaRecursoGeralDetailView(BuscarObjetoComPermissaoMixin, APIView):
 
             dados["recurso_geral"] = recurso
             validar_autorizacao(reserva.usuario, dados)
+            validar_autorizacao_gerenciamento_grupo(
+                request.user,
+                reserva.usuario,
+                TipoRecursoReservavel.RECURSO_GERAL,
+                recurso.tipo_recurso_id,
+                dados["data"],
+                dados.get("data_devolucao_prevista") or dados["data"],
+            )
             validar_disponibilidade(dados, excluir_reserva=reserva.pk)
 
             serializer.validated_data["recurso_geral"] = recurso
             invalidar_termo_apos_edicao(reserva, serializer.validated_data)
             serializer.save()
             registrar_auditoria(request.user, AcaoAuditoria.EDITAR, reserva, antes=antes, depois=foto(reserva))
+            if request.user.pk != reserva.usuario_id:
+                criar_notificacao_alteracao_por_terceiro(reserva, ator=request.user)
 
         return Response(serializer.data)

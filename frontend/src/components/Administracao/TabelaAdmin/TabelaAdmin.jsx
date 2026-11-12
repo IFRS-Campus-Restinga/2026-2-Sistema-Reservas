@@ -1,10 +1,24 @@
+import { Fragment } from 'react';
+import SkeletonTabela from '../../Skeleton/SkeletonTabela';
 import styles from './TabelaAdmin.module.css';
 
-function TabelaAdmin({ colunas, dados,mensagemVazia = "Nenhum item encontrado.",}) 
+// renderizarExpansao (opcional): conteúdo exibido numa linha abaixo do item; retorne null para não exibir
+// carregando (opcional): troca as linhas por um skeleton, mantendo o cabeçalho real
+// rotuloCarregando (opcional): texto lido pelo leitor de tela durante o carregamento
+function TabelaAdmin({
+  colunas,
+  dados,
+  mensagemVazia = "Nenhum item encontrado.",
+  renderizarExpansao,
+  carregando = false,
+  rotuloCarregando = "Carregando...",
+})
 {
   return (
     <div className={styles.container}>
-      <table className={styles.tabela}>
+      {carregando && <span role="status" className="visually-hidden">{rotuloCarregando}</span>}
+
+      <table className={styles.tabela} aria-busy={carregando}>
         <thead>
           <tr>
             {colunas.map((coluna) => (
@@ -16,17 +30,31 @@ function TabelaAdmin({ colunas, dados,mensagemVazia = "Nenhum item encontrado.",
         </thead>
 
         <tbody>
-          {dados.map((item) => (
-            <tr key={item.id}>
-              {colunas.map((coluna) => (
-                <td key={coluna.chave}>
-                  {coluna.renderizar ? coluna.renderizar(item): item[coluna.campo]}
-                </td>
-              ))}
-            </tr>
-          ))}
+          {carregando && <SkeletonTabela colunas={colunas} />}
 
-          {dados.length === 0 && (
+          {!carregando && dados.map((item) => {
+            const expansao = renderizarExpansao?.(item);
+
+            return (
+              <Fragment key={item.id}>
+                <tr>
+                  {colunas.map((coluna) => (
+                    <td key={coluna.chave}>
+                      {coluna.renderizar ? coluna.renderizar(item): item[coluna.campo]}
+                    </td>
+                  ))}
+                </tr>
+
+                {expansao && (
+                  <tr className={styles.linhaExpandida}>
+                    <td colSpan={colunas.length}>{expansao}</td>
+                  </tr>
+                )}
+              </Fragment>
+            );
+          })}
+
+          {!carregando && dados.length === 0 && (
             <tr>
               <td colSpan={colunas.length} className={styles.vazio}>
                 {mensagemVazia}

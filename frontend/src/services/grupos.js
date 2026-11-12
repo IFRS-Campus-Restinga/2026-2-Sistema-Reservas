@@ -4,6 +4,11 @@ const GRUPOS_URL = '/api/grupos/';
 
 export const buscarGrupos = (parametros, signal) => consultarPagina(GRUPOS_URL, parametros, signal);
 
+export const copiarGrupo = async (id, dados) => {
+    const response = await axios.post(`${GRUPOS_URL}${id}/copiar/`, dados, { withCredentials: true });
+    return response.data;
+};
+
 export const criarGrupo = async (dados) => {
     try {
         const response = await axios.post(
@@ -51,6 +56,9 @@ export const excluirGrupo = async (id) => {
 };
 
 export const buscarMembros = (grupoId, parametros, signal) => consultarPagina(`${GRUPOS_URL}${grupoId}/membros/`, parametros, signal);
+
+export const buscarReservasGrupo = (grupoId, parametros, signal) =>
+    consultarPagina(`${GRUPOS_URL}${grupoId}/reservas/`, parametros, signal);
 
 export const buscarCandidatos = async (grupoId, { limite = 10, busca = '', excluir = [] } = {}) => {
     try {

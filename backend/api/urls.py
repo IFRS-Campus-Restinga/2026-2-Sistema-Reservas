@@ -1,10 +1,17 @@
 from django.urls import path
 from api.views.minhas_reservas_view import MinhasReservasListView, ResumoReservasView
 from api.views.recurso_geral_view import RecursoGeralListCreateView, RecursoGeralDetailView
-from api.views.tipo_recurso_view import TipoRecursoCreateView
+from api.views.tipo_recurso_view import TipoRecursoCreateView, TipoRecursoDetailView
+from api.views.categoria_recurso_view import CategoriaRecursoListCreateView, CategoriaRecursoDetailView
+from api.views.equipamento_area_view import EquipamentoAreaListCreateView, EquipamentoAreaDetailView
 from api.views.bloco_view import BlocoListCreateView, BlocoDetailView
 from api.views.area_view import AreaDetailView, AreaListCreateView
-from api.views.grupo_view import GrupoListCreateView, GrupoDetailView
+from api.views.grupo_view import (
+    GrupoListCreateView,
+    GrupoDetailView,
+    GrupoCopiarView,
+    ReservasGrupoListView,
+)
 from api.views.membro_grupo_view import MembroGrupoListCreateView, MembroGrupoCandidatosView, MembroGrupoDetailView
 from api.views.veiculo_view import VeiculoCreateView, VeiculoDetailView
 from api.views.timetable_view import TimetableView
@@ -20,7 +27,11 @@ from api.views.reserva_veiculo_view import (
     ReservaVeiculoDetailView,
     ReservaVeiculoListCreateView,
 )
-from api.views.recorrencia_view import RecorrenciaReservaAreaDetailView
+from api.views.recorrencia_view import (
+    RecorrenciaReservaAreaDetailView,
+    RecorrenciaReservaRecursoGeralDetailView,
+    RecorrenciaReservaVeiculoDetailView,
+)
 from api.views.agenda_reserva_view import AgendaReservasView
 from api.views.opcoes_disponibilidade_view import OpcoesDisponibilidadeView
 from api.views.relatorio_uso_view import RelatorioUsoView
@@ -52,6 +63,11 @@ urlpatterns = [
     path('recursos-gerais/', RecursoGeralListCreateView.as_view(), name='recurso-geral-list-create'),
     path('recursos-gerais/<int:pk>/', RecursoGeralDetailView.as_view(), name='recurso-geral-detail'),
     path('tipos-recurso/', TipoRecursoCreateView.as_view(), name='tipo-recurso-create'),
+    path('tipos-recurso/<int:pk>/', TipoRecursoDetailView.as_view(), name='tipo-recurso-detail'),
+    path('categorias-recurso/', CategoriaRecursoListCreateView.as_view(), name='categoria-recurso-list-create'),
+    path('categorias-recurso/<int:pk>/', CategoriaRecursoDetailView.as_view(), name='categoria-recurso-detail'),
+    path('equipamentos-area/', EquipamentoAreaListCreateView.as_view(), name='equipamento-area-list-create'),
+    path('equipamentos-area/<int:pk>/', EquipamentoAreaDetailView.as_view(), name='equipamento-area-detail'),
     path('blocos/', BlocoListCreateView.as_view(), name='bloco-list-create'),
     path('blocos/<int:pk>/', BlocoDetailView.as_view(), name='bloco-detail'),
     path('areas/', AreaListCreateView.as_view(), name='area-list-create'),
@@ -63,11 +79,14 @@ urlpatterns = [
     path('auditoria/<int:pk>/', LogAuditoriaDetailView.as_view(), name='log-auditoria-detail'),
     path('grupos/', GrupoListCreateView.as_view(), name='grupo-list-create'),
     path('grupos/<int:pk>/', GrupoDetailView.as_view(), name='grupo-detail'),
+    path('grupos/<int:pk>/copiar/', GrupoCopiarView.as_view(), name='grupo-copiar'),
+    path('grupos/<int:pk>/reservas/', ReservasGrupoListView.as_view(), name='grupo-reservas-list'),
     path('grupos/<int:grupo_pk>/membros/', MembroGrupoListCreateView.as_view(), name='membro-grupo-list-create'),
     path('grupos/<int:grupo_pk>/candidatos/', MembroGrupoCandidatosView.as_view(), name='membro-grupo-candidatos'),
     path('grupos/<int:grupo_pk>/membros/<int:pk>/', MembroGrupoDetailView.as_view(), name='membro-grupo-detail'),
     path("reservas/recursos-gerais/", ReservaRecursoGeralListCreateView.as_view(), name="reserva-recurso-geral-list-create"),
     path("reservas/recursos-gerais/disponibilidade/", DisponibilidadeRecursoGeralView.as_view(), name="disponibilidade-recurso-geral"),
+    path("reservas/recursos-gerais/recorrencias/<int:pk>/", RecorrenciaReservaRecursoGeralDetailView.as_view(), name="reserva-recurso-geral-recorrencia-detail"),
     path("reservas/recursos-gerais/<int:pk>/", ReservaRecursoGeralDetailView.as_view(), name="reserva-recurso-geral-detail"),
     path("reservas/areas/", ReservaAreaListCreateView.as_view(), name="reserva-area-list-create"),
     path("reservas/areas/minhas/", MinhasReservasAreaListView.as_view(), name="reserva-area-minhas"),
@@ -75,6 +94,7 @@ urlpatterns = [
     path("reservas/areas/<int:pk>/", ReservaAreaDetailView.as_view(), name="reserva-area-detail"),
     path("reservas/veiculos/", ReservaVeiculoListCreateView.as_view(), name="reserva-veiculo-list-create"),
     path("reservas/veiculos/disponibilidade/", DisponibilidadeReservaVeiculoView.as_view(), name="disponibilidade-reserva-veiculo"),
+    path("reservas/veiculos/recorrencias/<int:pk>/", RecorrenciaReservaVeiculoDetailView.as_view(), name="reserva-veiculo-recorrencia-detail"),
     path("reservas/pendentes/<int:pk>/confirmar/", ConfirmarReservaView.as_view(), name="reserva-pendente-confirmar"),
     path("notificacoes/", MinhasNotificacoesListView.as_view(), name="minhas-notificacoes"),
     path("notificacoes/<int:pk>/lida/", MarcarNotificacaoLidaView.as_view(), name="notificacao-marcar-lida"), 

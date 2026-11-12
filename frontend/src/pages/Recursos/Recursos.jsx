@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PackageSearch } from 'lucide-react';
 import CampoBusca from '../../components/Administracao/CampoBusca/CampoBusca';
+import BarraFiltros from '../../components/BarraFiltros/BarraFiltros';
 import CardRecurso from '../../components/CardRecurso/CardRecurso';
 import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/ReservaRecursoGeralModal';
-import Select from '../../components/Select/Select';
-import { CATEGORIA_RECURSO_LABEL } from '../../utils/categoriaRecurso';
+import SelectRemoto from '../../components/SelectRemoto/SelectRemoto';
+import AlertBanner from '../../components/AlertBanner/AlertBanner';
 import styles from './Recursos.module.css';
+import SkeletonCardLista from '../../components/Skeleton/SkeletonCardLista';
 
 function Recursos() {
   const navigate = useNavigate();
@@ -18,29 +20,30 @@ function Recursos() {
   const [reserva, setReserva] = useState(null);
 
   const { itens: tiposExibidos, total, carregando, erro, paginacao } = useListaPaginada('/api/tipos-recurso/', { catalogo: true, busca, categoria });
-  const opcoesCategoria = Object.entries(CATEGORIA_RECURSO_LABEL).map(([valor, rotulo]) => ({ valor, rotulo }));
   function abrirReserva(tipo) { setReserva({ tipo }); }
 
   return (
     <div className={styles.pagina}>
-      <div className="d-flex flex-wrap align-items-center justify-content-center gap-2">
+      <BarraFiltros>
         <CampoBusca
           valor={busca}
           aoAlterar={setBusca}
           placeholder="Buscar tipo de recurso"
         />
       
-        <Select
+        <SelectRemoto
+          url="/api/categorias-recurso/"
+          filtros={{ page_size: 100 }}
+          mostrarBusca={false}
           valor={categoria}
           aoAlterar={setCategoria}
-          opcoes={opcoesCategoria}
           valorTodos="todos"
           rotuloTodos="Todas as categorias"
           ariaLabel="Filtrar por categoria"
         />
-      </div>
+      </BarraFiltros>
 
-      {erro && <p role="alert">{erro}</p>}
+      <AlertBanner tipo="erro" mensagem={erro} />
       <section
         className={styles.resultados}
         aria-label="Tipos de recursos disponíveis"
@@ -50,7 +53,9 @@ function Recursos() {
           <span>{total} tipo(s) encontrado(s)</span>
         </div>
 
-        {carregando ? <p role="status">Carregando recursos...</p> : tiposExibidos.length === 0 ? (
+        {carregando ? (
+          <SkeletonCardLista rotulo="Carregando recursos..." quantidade={6} classeGrade={styles.grade} />
+        ) : tiposExibidos.length === 0 ? (
           <div className={styles.vazio}>
             <PackageSearch size={30} aria-hidden="true" />
             <p>Nenhum recurso encontrado.</p>
@@ -72,7 +77,8 @@ function Recursos() {
                 }}
               >
                 <CardRecurso
-                  categoria={tipo.categoria}
+                  categoria={tipo.categoria_icone}
+                  nomeCategoria={tipo.categoria_nome}
                   titulo={tipo.descricao}
                   resumo={tipo}
                   aoClicar={() => abrirReserva(tipo)}

@@ -4,10 +4,11 @@ import SelectRemoto from '../../SelectRemoto/SelectRemoto';
 import { useState } from 'react';
 import { useUsuario } from '../../../hooks/useUsuario';
 import { Plus } from 'lucide-react';
-import { criarGrupo, atualizarGrupo, excluirGrupo } from '../../../services';
+import { criarGrupo, atualizarGrupo, excluirGrupo, copiarGrupo } from '../../../services';
 
-import { ehAdministrador, podeGerenciarGrupos } from '../../../utils/permissoes';
+import { ehAdministrador, podeGerenciarGrupos, podeCriarGrupo as podeCriarTipoGrupo } from '../../../utils/permissoes';
 import Botao from '../../Botao/Botao';
+import BarraFiltros from '../../BarraFiltros/BarraFiltros';
 import CampoBusca from '../../Administracao/CampoBusca/CampoBusca';
 import Select from '../../Select/Select';
 import ModalConfirmacao from '../../Administracao/ModalConfirmacao/ModalConfirmacao';
@@ -15,7 +16,9 @@ import CardGrupo from '../CardGrupo/CardGrupo';
 import GrupoModal from '../ModalGrupo/GrupoModal';
 import { FILTRO_TODOS } from '../gruposUtils';
 import { TIPO_RECURSO_RESERVAVEL, TIPO_RECURSO_RESERVAVEL_LABEL } from '../../../utils/tipoRecursoReservavel';
+import AlertBanner from '../../AlertBanner/AlertBanner';
 import styles from './GruposGerenciador.module.css';
+import SkeletonListaItens from '../../Skeleton/SkeletonListaItens';
 
 const OPCOES_RECURSO = Object.entries(TIPO_RECURSO_RESERVAVEL_LABEL)
     .map(([valor, rotulo]) => ({ valor, rotulo }));
@@ -29,44 +32,69 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
     const [tipoAtivo, setTipoAtivo] = useState(ehAdmin ? 'servidor' : 'aluno');
     const [busca, setBusca] = useState('');
     const [filtroRecurso, setFiltroRecurso] = useState(FILTRO_TODOS);
-    const [filtroTipoRecurso, setFiltroTipoRecurso] = useState(FILTRO_TODOS);
+    const [filtroTiposRecurso, setFiltroTiposRecurso] = useState([]);
 
     const [modalAberto, setModalAberto] = useState(false);
     const [grupoEditando, setGrupoEditando] = useState(null);
+    const [grupoCopiando, setGrupoCopiando] = useState(null);
     const [grupoExcluindo, setGrupoExcluindo] = useState(null);
+    const [aviso, setAviso] = useState(null);
 
-    const { itens: gruposDaTela, carregando, erro, setErro, recarregar: carregarGrupos, paginacao } = useListaPaginada('/api/grupos/', { busca, tipo_membro: tipoAtivo, recurso: filtroRecurso, tipo_recurso: filtroTipoRecurso, meus: apenasMeusGrupos });
+    const { itens: gruposDaTela, carregando, erro, setErro, recarregar: carregarGrupos, paginacao } = useListaPaginada('/api/grupos/', { busca, tipo_membro: tipoAtivo, recurso: filtroRecurso, tipo_recurso: filtroTiposRecurso.join(','), meus: apenasMeusGrupos });
     const filtrandoRecursoGeral = filtroRecurso === TIPO_RECURSO_RESERVAVEL.RECURSO_GERAL;
 
     function selecionarFiltroRecurso(recurso) {
         setFiltroRecurso(recurso);
-        setFiltroTipoRecurso(FILTRO_TODOS);
+        setFiltroTiposRecurso([]);
     }
 
     function abrirCadastro() {
+        setAviso(null);
+        setGrupoCopiando(null);
         setGrupoEditando(null);
         setModalAberto(true);
     }
 
     function abrirEdicao(grupo) {
+        setAviso(null);
+        setGrupoCopiando(null);
         setGrupoEditando(grupo);
+        setModalAberto(true);
+    }
+
+    function abrirCopia(grupo) {
+        setAviso(null);
+        setGrupoEditando(null);
+        setGrupoCopiando(grupo);
         setModalAberto(true);
     }
 
     function fecharModal() {
         setModalAberto(false);
         setGrupoEditando(null);
+        setGrupoCopiando(null);
     }
 
     async function salvarGrupo(dados) {
         setErro('');
+        setAviso(null);
+        let mensagemSucesso;
 
-        if (grupoEditando) {
+        if (grupoCopiando) {
+            const copia = await copiarGrupo(grupoCopiando.id, dados);
+            mensagemSucesso = `Grupo “${copia.nome}” criado com sucesso.`;
+            setBusca(copia.nome);
+            setFiltroRecurso(FILTRO_TODOS);
+            setFiltroTiposRecurso([]);
+        } else if (grupoEditando) {
             await atualizarGrupo(grupoEditando.id, dados);
+            mensagemSucesso = 'Grupo atualizado com sucesso.';
         } else {
             await criarGrupo(dados);
+            mensagemSucesso = 'Grupo cadastrado com sucesso.';
         }
         fecharModal();
+        setAviso({ tipo: 'sucesso', mensagem: mensagemSucesso });
 
         await carregarGrupos();
     }
@@ -81,15 +109,17 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
         }
         try {
             setErro('');
+            setAviso(null);
 
             await excluirGrupo(grupoExcluindo.id);
 
             setGrupoExcluindo(null);
 
             await carregarGrupos();
+            setAviso({ tipo: 'sucesso', mensagem: 'Grupo excluído com sucesso.' });
         } catch (erro) {
             console.error(erro);
-            setErro('Não foi possível excluir o grupo.');
+            setAviso({ tipo: 'erro', mensagem: 'Não foi possível excluir o grupo.' });
         }
     }
 
@@ -120,33 +150,8 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
                 <h2 className={styles.tituloUnico}>Grupos de Alunos</h2>
             )}
 
-            <div className={styles.barraAcoes}>
-                <div className={styles.filtros}>
-                    <CampoBusca
-                        valor={busca}
-                        aoAlterar={setBusca}
-                        placeholder="Buscar grupo por nome..."
-                    />
-                    <Select
-                        valor={filtroRecurso}
-                        aoAlterar={selecionarFiltroRecurso}
-                        opcoes={OPCOES_RECURSO}
-                        valorTodos={FILTRO_TODOS}
-                        rotuloTodos="Todos os recursos"
-                        ariaLabel="Filtrar por recurso"
-                    />
-                    {filtrandoRecursoGeral && (
-                        <SelectRemoto url="/api/tipos-recurso/"
-                            valor={filtroTipoRecurso}
-                            aoAlterar={setFiltroTipoRecurso}
-                            valorTodos={FILTRO_TODOS}
-                            rotuloTodos="Todos os tipos"
-                            ariaLabel="Filtrar por tipo de recurso geral"
-                            placeholderBusca="Buscar tipo..."
-                        />
-                    )}
-                </div>
-                {podeCriarGrupo && (
+            <BarraFiltros
+                acoes={podeCriarGrupo && (
                     <Botao
                         titulo="Novo grupo"
                         icone={Plus}
@@ -154,14 +159,38 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
                         aoClicar={abrirCadastro}
                     />
                 )}
-            </div>
+            >
+                <CampoBusca
+                    valor={busca}
+                    aoAlterar={setBusca}
+                    placeholder="Buscar grupo por nome..."
+                />
+                <Select
+                    valor={filtroRecurso}
+                    aoAlterar={selecionarFiltroRecurso}
+                    opcoes={OPCOES_RECURSO}
+                    valorTodos={FILTRO_TODOS}
+                    rotuloTodos="Todos os recursos"
+                    ariaLabel="Filtrar por recurso"
+                />
+                {filtrandoRecursoGeral && (
+                    <SelectRemoto url="/api/tipos-recurso/"
+                        valor={filtroTiposRecurso}
+                        aoAlterar={setFiltroTiposRecurso}
+                        rotuloTodos="Todos os tipos de recurso"
+                        multiplo
+                        ariaLabel="Filtrar por tipo de recurso geral"
+                        placeholderBusca="Buscar tipo..."
+                    />
+                )}
+            </BarraFiltros>
 
-            {erro && (
-                <p className={styles.erro} role="alert">{erro}</p>
-            )}
+            <AlertBanner tipo={aviso?.tipo} mensagem={aviso?.mensagem} aoFechar={() => setAviso(null)} />
+
+            <AlertBanner tipo="erro" mensagem={erro} />
 
             {carregando ? (
-                <p className={styles.carregando} role="status">Carregando grupos...</p>
+                <SkeletonListaItens variante="grupo" espaco={16} quantidade={4} rotulo="Carregando grupos..." />
             ) : gruposDaTela.length === 0 ? (
                 <p className={styles.vazio}>
                     {filtrando
@@ -178,6 +207,8 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
                             grupo={grupo}
                             aoEditar={abrirEdicao}
                             aoExcluir={solicitarExclusao}
+                            aoCopiar={podeCriarTipoGrupo(usuario, grupo.tipo_membro_permitido) ? abrirCopia : undefined}
+                            aoAtualizar={carregarGrupos}
                         />
                     ))}
                 </div>
@@ -186,7 +217,8 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
             <Paginacao {...paginacao} />
             {modalAberto && (
                 <GrupoModal
-                    grupo={grupoEditando}
+                    grupo={grupoCopiando || grupoEditando}
+                    copiando={Boolean(grupoCopiando)}
                     ehAdmin={ehAdmin}
                     tipoInicial={tipoAtivo}
                     aoFechar={fecharModal}

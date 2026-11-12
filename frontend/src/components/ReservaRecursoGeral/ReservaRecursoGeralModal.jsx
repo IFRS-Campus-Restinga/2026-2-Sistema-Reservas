@@ -2,14 +2,25 @@ import SelectRemoto from '../SelectRemoto/SelectRemoto';
 import useListaPaginada from '../../hooks/useListaPaginada';
 import useDisponibilidadeReserva, { intervaloDisponivel } from '../../hooks/useDisponibilidadeReserva';
 /* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 
 import Modal from '../Administracao/Modal/Modal';
 import Botao from '../Botao/Botao';
 import CalendarioReserva from '../CalendarioReserva/CalendarioReserva';
+import CamposRecorrencia from '../CamposRecorrencia/CamposRecorrencia';
 import { criarReservaRecursoGeral, atualizarReservaRecursoGeral, consultarDisponibilidadeRecursoGeral } from '../../services/reservasRecursosGerais';
 import { TIPO_PRAZO_LABEL } from '../../utils/tipoPrazo';
+import {
+  TIPO_RECORRENCIA,
+  conflitosRecorrencia,
+  datasConflitantesRecorrencia,
+  gerarDatasRecorrencia,
+  montarRecorrencia,
+  validarRecorrencia,
+} from '../../utils/recorrencia';
+import AlertBanner from '../AlertBanner/AlertBanner';
+import { mensagemDeErro } from '../../utils/erros';
 import styles from './ReservaRecursoGeralModal.module.css';
 
 const HORARIOS = Array.from({ length: 29 }, (_, indice) => {
@@ -28,6 +39,7 @@ function ReservaRecursoGeralModal({
   aoFechar,
   aoReservar,
 }) {
+  const controleModal = useRef(null);
   const [tipoId, setTipoId] = useState('');
   const [recursoId, setRecursoId] = useState('');
   const [titulo, setTitulo] = useState('');
@@ -40,6 +52,10 @@ function ReservaRecursoGeralModal({
   const [horarioFim, setHorarioFim] = useState('10:00');
   const [quantidade, setQuantidade] = useState(1);
   const [dataDevolucao, setDataDevolucao] = useState('');
+  const [recorrente, setRecorrente] = useState(false);
+  const [tipoRecorrencia, setTipoRecorrencia] = useState(TIPO_RECORRENCIA.SEMANAL);
+  const [dataFimRecorrencia, setDataFimRecorrencia] = useState('');
+  const [falhaRecorrencia, setFalhaRecorrencia] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState('');
   const [disponiveisPeriodo, setDisponiveisPeriodo] = useState(null);
@@ -48,10 +64,20 @@ function ReservaRecursoGeralModal({
   useEffect(() => {
     if (!aberto) return;
 
-    const tipoInicialId = tipo?.id || recursoInicial?.tipo_recurso || '';
+    const tipoInicialId =
+      tipo?.id ||
+      recursoInicial?.tipo_recurso ||
+      reservaEdicao?.tipo_detalhe?.id ||
+      reservaEdicao?.recurso_detalhe?.tipo_recurso ||
+      '';
+    const recursoInicialId =
+      recursoInicial?.id ||
+      reservaEdicao?.recurso_detalhe?.id ||
+      reservaEdicao?.recurso_geral ||
+      '';
 
     setTipoId(String(tipoInicialId));
-    setRecursoId(String(recursoInicial?.id || ''));
+    setRecursoId(String(recursoInicialId));
     setTitulo(reservaEdicao?.nome || '');
     setDescricao(reservaEdicao?.descricao || '');
     setData(reservaEdicao?.data || '');
@@ -64,6 +90,7 @@ function ReservaRecursoGeralModal({
     setHorarioFim(reservaEdicao?.horario_fim?.slice(0, 5) || '10:00');
     setQuantidade(reservaEdicao?.quantidades || 1);
     setDataDevolucao(reservaEdicao?.data_devolucao_prevista || '');
+    reiniciarRecorrencia();
     setDisponiveisPeriodo(null);
     setErro('');
   }, [aberto, tipo, recursoInicial, reservaEdicao]);
@@ -122,9 +149,7 @@ function ReservaRecursoGeralModal({
       })
       .catch((falha) => {
         if (ativo) {
-          setErro(
-            falha.message || 'Não foi possível consultar a disponibilidade.'
-          );
+          setErro(mensagemDeErro(falha, 'Não foi possível consultar a disponibilidade.'));
         }
       })
       .finally(() => {
@@ -148,12 +173,33 @@ function ReservaRecursoGeralModal({
     ? (disponiveisPeriodo ?? Number(recurso.quantidade_total))
     : 0;
 
+  const recorrenciaAtiva = recorrente && !reservaEdicao && !prazoLongo;
+  const recorrenciaValida =
+    recorrenciaAtiva && !validarRecorrencia(data, tipoRecorrencia, dataFimRecorrencia);
+  const quantidadeReservas = recorrenciaValida
+    ? gerarDatasRecorrencia(data, tipoRecorrencia, dataFimRecorrencia).length
+    : 1;
+
+  const assinaturaPedido = JSON.stringify([
+    recursoId, data, horarioInicio, horarioFim, quantidade, tipoRecorrencia, dataFimRecorrencia,
+  ]);
+  const falhaAtual =
+    falhaRecorrencia?.assinatura === assinaturaPedido ? falhaRecorrencia : null;
+
+  function reiniciarRecorrencia() {
+    setRecorrente(false);
+    setTipoRecorrencia(TIPO_RECORRENCIA.SEMANAL);
+    setDataFimRecorrencia('');
+    setFalhaRecorrencia(null);
+  }
+
   function selecionarTipo(id) {
     setTipoId(id);
     setRecursoId('');
     setQuantidade(1);
     setDataDevolucao('');
     setDisponiveisPeriodo(null);
+    reiniciarRecorrencia();
     setErro('');
   }
 
@@ -165,12 +211,18 @@ function ReservaRecursoGeralModal({
     setQuantidade(1);
     setDataDevolucao('');
     setDisponiveisPeriodo(null);
+    reiniciarRecorrencia();
     setErro('');
   }
 
-  async function enviar(evento) {
+  function enviar(evento) {
     evento.preventDefault();
+    salvar();
+  }
+
+  async function salvar({ pularConflitos = false } = {}) {
     setErro('');
+    setFalhaRecorrencia(null);
 
     if (!tipoSelecionado) {
       setErro('Selecione um tipo de recurso.');
@@ -197,8 +249,14 @@ function ReservaRecursoGeralModal({
       return;
     }
 
-    if (quantidade < 1 || quantidade > limite) {
+    const limiteQuantidade = recorrenciaAtiva ? Number(recurso.quantidade_total) : limite;
+
+    if (quantidade < 1 || quantidade > limiteQuantidade) {
       setErro('A quantidade solicitada não está disponível.');
+      return;
+    }
+
+    if (recorrenciaAtiva && !recorrenciaValida) {
       return;
     }
 
@@ -221,11 +279,27 @@ function ReservaRecursoGeralModal({
         : await criarReservaRecursoGeral({
             ...dados,
             tipo_reserva: 'INTERNA',
+            recorrencia: montarRecorrencia(
+              recorrenciaAtiva,
+              tipoRecorrencia,
+              dataFimRecorrencia,
+              pularConflitos
+            ),
           });
 
       aoReservar(resultado);
     } catch (erroRequisicao) {
-      setErro(erroRequisicao.message);
+      const conflitos = conflitosRecorrencia(erroRequisicao);
+
+      if (conflitos.length) {
+        setFalhaRecorrencia({
+          assinatura: assinaturaPedido,
+          conflitos,
+          datas: datasConflitantesRecorrencia(erroRequisicao),
+        });
+      } else {
+        setErro(mensagemDeErro(erroRequisicao, 'Não foi possível salvar a reserva.'));
+      }
     } finally {
       setEnviando(false);
     }
@@ -233,6 +307,8 @@ function ReservaRecursoGeralModal({
 
   return (
     <Modal
+      ref={controleModal}
+      confirmarDescarte
       aberto={aberto}
       titulo={reservaEdicao ? 'Editar reserva' : 'Reservar recurso'}
       aoFechar={enviando ? undefined : aoFechar}
@@ -363,6 +439,24 @@ function ReservaRecursoGeralModal({
           </label>
         )}
 
+        {!reservaEdicao && recurso && !prazoLongo && (
+          <div className={styles.recorrencia}>
+            <CamposRecorrencia
+              ativa={recorrente}
+              aoAlternar={setRecorrente}
+              tipo={tipoRecorrencia}
+              aoAlterarTipo={setTipoRecorrencia}
+              dataFim={dataFimRecorrencia}
+              aoAlterarDataFim={setDataFimRecorrencia}
+              dataInicio={data}
+              conflitos={falhaAtual?.conflitos}
+              datasConflitantes={falhaAtual?.datas}
+              aoPularConflitos={() => salvar({ pularConflitos: true })}
+              desabilitado={enviando}
+            />
+          </div>
+        )}
+
         <label>
           Observações
           <textarea
@@ -377,20 +471,17 @@ function ReservaRecursoGeralModal({
         {recurso?.tem_termo_de_responsabilidade && (
           <p className={styles.termo}>
             Este recurso exige termo de responsabilidade.
+            {recorrenciaAtiva && ' Cada reserva da série exigirá o envio do termo.'}
           </p>
         )}
 
-        {erro && (
-          <p className={styles.erro} role="alert">
-            {erro}
-          </p>
-        )}
+        <AlertBanner tipo="erro" mensagem={erro} />
 
         <div className={styles.acoes}>
           <Botao
             titulo="Cancelar"
             estilo="secundario"
-            aoClicar={aoFechar}
+            aoClicar={() => controleModal.current?.fechar()}
             desabilitado={enviando}
           />
 
@@ -400,7 +491,9 @@ function ReservaRecursoGeralModal({
                 ? 'Salvando...'
                 : reservaEdicao
                   ? 'Salvar alterações'
-                  : 'Confirmar reserva'
+                  : quantidadeReservas > 1
+                    ? `Confirmar ${quantidadeReservas} reservas`
+                    : 'Confirmar reserva'
             }
             tipo="submit"
             desabilitado={enviando}

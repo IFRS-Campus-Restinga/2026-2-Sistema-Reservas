@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions
+from rest_framework.exceptions import ValidationError
 
 from accounts.enumerations import Papel
 from api.models.grupo_model import Grupo
@@ -31,8 +32,14 @@ class PodeCriarGrupo(UsuarioAutenticado):
     def tem_permissao(self, request, view):
         if request.method in permissions.SAFE_METHODS:
             return True
+        if not hasattr(request.data, 'get'):
+            raise ValidationError({'detail': 'O corpo da requisição deve ser um objeto JSON.'})
         tipos_permitidos = tipos_grupo_que_pode_criar(request.user)
         tipo_membro_permitido = request.data.get('tipo_membro_permitido')
+        if tipo_membro_permitido is not None and not isinstance(tipo_membro_permitido, str):
+            raise ValidationError({
+                'tipo_membro_permitido': 'Este campo deve ser um texto.'
+            })
         if tipo_membro_permitido not in PAPEIS_QUE_PODEM_CRIAR_POR_TIPO_MEMBRO:
             return bool(tipos_permitidos)
         return tipo_membro_permitido in tipos_permitidos

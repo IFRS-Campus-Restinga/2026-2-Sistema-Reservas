@@ -5,6 +5,8 @@ import { ehAdministrador } from '../../../utils/permissoes';
 import { gerarRelatorioUso } from '../../../services/relatorios';
 import Modal from '../Modal/Modal';
 import SelectRemoto from '../../SelectRemoto/SelectRemoto';
+import AlertBanner from '../../AlertBanner/AlertBanner';
+import { mensagemDeErro } from '../../../utils/erros';
 import styles from './RelatorioUso.module.css';
 
 const ROTULOS = { area: 'Áreas', veiculo: 'Veículos', recurso_geral: 'Recursos Gerais', todas: 'Todos os Recursos' };
@@ -90,7 +92,7 @@ export default function RelatorioUso() {
   async function gerar(evento) {
     evento.preventDefault(); setErro(''); setCarregando(true);
     try { setRelatorio(await gerarRelatorioUso({ ...filtros, modalidade })); }
-    catch (falha) { setErro(falha.message); }
+    catch (falha) { setErro(mensagemDeErro(falha, 'Não foi possível gerar o relatório.')); }
     finally { setCarregando(false); }
   }
 
@@ -126,7 +128,7 @@ export default function RelatorioUso() {
           <label className={styles.checkbox}><input type="checkbox" checked={filtros.incluir_canceladas} onChange={(e) => alterar('incluir_canceladas', e.target.checked)} />Incluir canceladas e rejeitadas</label>
           <button type="submit" disabled={carregando}>{carregando ? 'Gerando...' : 'Gerar relatório'}</button>
         </form>
-        {erro && <p className={styles.erro} role="alert">{erro}</p>}
+        <AlertBanner tipo="erro" mensagem={erro} aoFechar={() => setErro('')} />
         {relatorio && <section className={styles.resultado}>
           <div className={`${styles.visualizacao} ${styles.impressao}`}>
             <header><h1>Relatório de uso — {ROTULOS[modalidade]}</h1><p>Gerado por {relatorio.gerado_por} em {new Date(relatorio.gerado_em).toLocaleString('pt-BR')}</p><p>Período: {dataPt(filtros.data_inicio)} a {dataPt(filtros.data_fim)}</p></header>

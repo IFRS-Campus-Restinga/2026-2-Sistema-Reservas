@@ -12,13 +12,23 @@ import ModalDetalheReserva from '../../components/ModalDetalheReserva/ModalDetal
 import ReservaRecursoGeralModal from '../../components/ReservaRecursoGeral/ReservaRecursoGeralModal';
 import ReservaAreaModal from '../../components/ReservaArea/ReservaAreaModal';
 import ReservaVeiculoModal from '../../components/ReservaVeiculo/ReservaVeiculoModal';
+import GerenciarRecorrenciaModal from '../../components/RecorrenciaArea/GerenciarRecorrenciaModal';
+import GerenciarRecorrenciaVeiculoModal from '../../components/RecorrenciaVeiculo/GerenciarRecorrenciaVeiculoModal';
+import GerenciarRecorrenciaRecursoGeralModal from '../../components/RecorrenciaRecursoGeral/GerenciarRecorrenciaRecursoGeralModal';
 import TermoReserva from '../../components/TermoReserva/TermoReserva';
+import AlertBanner from '../../components/AlertBanner/AlertBanner';
+import { mensagemDeErro } from '../../utils/erros';
 import Select from '../../components/Select/Select';
-import { cancelarReservaArea, cancelarReservaVeiculo } from '../../services';
+import BarraFiltros from '../../components/BarraFiltros/BarraFiltros';
+import CampoBusca from '../../components/Administracao/CampoBusca/CampoBusca';
+import CampoPeriodo from '../../components/CampoPeriodo/CampoPeriodo';
+import SelectRemoto from '../../components/SelectRemoto/SelectRemoto';
+import { buscarAreas, buscarBlocos, cancelarReservaArea, cancelarReservaVeiculo } from '../../services';
 import { cancelarReservaRecursoGeral } from '../../services/reservasRecursosGerais';
 import { statusReservaApresentado, SITUACAO_RESERVA_LABEL } from '../../utils/reserva';
-import { ehAdministrador } from '../../utils/permissoes';
+import { ehAdministrador, podeReservarModalidade } from '../../utils/permissoes';
 import styles from './MinhasReservas.module.css';
+import SkeletonListaItens from '../../components/Skeleton/SkeletonListaItens';
 
 const STATUS_ALTERAVEIS = {
   recurso_geral: ['PENDENTE', 'CONFIRMADA', 'AGUARDANDO_TERMO'],
@@ -37,7 +47,7 @@ const MODALIDADES = {
 const OPCOES_TIPO = [
   { valor: 'area', rotulo: 'Áreas' },
   { valor: 'veiculo', rotulo: 'Veículos' },
-  { valor: 'recurso_geral', rotulo: 'Recursos' },
+  { valor: 'recurso_geral', rotulo: 'Recursos gerais' },
 ];
 
 const OPCOES_STATUS = Object.entries(SITUACAO_RESERVA_LABEL).map(([valor, rotulo]) => ({
@@ -58,10 +68,15 @@ function MinhasReservas() {
   const [editando, setEditando] = useState(null);
   const [editandoArea, setEditandoArea] = useState(null);
   const [editandoVeiculo, setEditandoVeiculo] = useState(null);
+  const [recorrenciaGerenciada, setRecorrenciaGerenciada] = useState(null);
+  const [locaisRecorrencia, setLocaisRecorrencia] = useState(null);
   const [selecionada, setSelecionada] = useState(null);
   const [recorrenciasExpandidas, setRecorrenciasExpandidas] = useState({});
   const [filtroTipo, setFiltroTipo] = useState('todos');
+  const [filtroTiposRecurso, setFiltroTiposRecurso] = useState([]);
   const [filtroStatus, setFiltroStatus] = useState('todos');
+  const [busca, setBusca] = useState('');
+  const [periodo, setPeriodo] = useState({ inicio: '', fim: '' });
   const [aviso, setAviso] = useState(
     location.state?.criada
       ? location.state?.tipo === 'veiculo'
@@ -70,15 +85,28 @@ function MinhasReservas() {
       : ''
   );
 
-  const { itens: reservas, erro, setErro, carregando, recarregar, paginacao } = useListaPaginada('/api/reservas/minhas/', { modalidade: filtroTipo, situacao: filtroStatus, agrupar_recorrencias: true });
+  const { itens: reservas, erro, setErro, carregando, recarregar, paginacao } = useListaPaginada('/api/reservas/minhas/', {
+    busca: busca.trim(),
+    modalidade: filtroTipo,
+    tipo_recurso: filtroTipo === 'recurso_geral' ? filtroTiposRecurso.join(',') : '',
+    situacao: filtroStatus,
+    data_inicio: periodo.inicio,
+    data_fim: periodo.fim,
+    agrupar_recorrencias: true,
+  });
+  const filtrando = Boolean(busca.trim()) || filtroTipo !== 'todos' || filtroStatus !== 'todos'
+    || Boolean(periodo.inicio) || Boolean(periodo.fim);
   const recursos = reservas.map((item) => item.recurso_detalhe).filter(Boolean);
   const tipos = reservas.map((item) => item.tipo_detalhe).filter(Boolean);
   const veiculos = reservas.map((item) => item.veiculo_detalhe).filter(Boolean);
 
+  function selecionarFiltroTipo(tipo) {
+    setFiltroTipo(tipo);
+    setFiltroTiposRecurso([]);
+  }
+
   function recursoDaReserva(reserva) {
-    return recursos.find(
-      (recurso) => String(recurso.id) === String(reserva.recurso_geral)
-    );
+    return reserva.recurso_detalhe;
   }
 
   function nomeItem(reserva) {
@@ -98,6 +126,29 @@ function MinhasReservas() {
     return reserva.item || reserva.descricao || 'Não informado';
   }
 
+  function detalhesRecorrencia(reserva) {
+    if (!reserva.recorrencia || reserva.ehOcorrenciaIndividual) return [];
+
+    const tipoLabel = TIPO_RECORRENCIA_LABEL[reserva.recorrencia.tipo] || reserva.recorrencia.tipo || 'Recorrente';
+    const inicio = formatarData(reserva.primeira_data || reserva.data);
+    const fim = formatarData(reserva.ultima_data || reserva.recorrencia.data_fim || reserva.data);
+    const detalhes = [{
+      rotulo: 'Recorrência',
+      valor: `${tipoLabel} (${inicio} a ${fim})`,
+      icone: Repeat,
+    }];
+
+    if (reserva.total_ocorrencias > 1) {
+      detalhes.push({
+        rotulo: 'Total de repetições',
+        valor: `${reserva.total_ocorrencias} datas agendadas`,
+        icone: CalendarCheck,
+      });
+    }
+
+    return detalhes;
+  }
+
   function detalhesDaReserva(reserva) {
     if (reserva.modalidade === 'recurso_geral') {
       return [
@@ -111,6 +162,7 @@ function MinhasReservas() {
           valor: `${reserva.quantidades} unidade(s) · devolução até ${formatarData(reserva.data_devolucao_prevista)}`,
           icone: Package,
         },
+        ...detalhesRecorrencia(reserva),
       ];
     }
 
@@ -123,25 +175,7 @@ function MinhasReservas() {
         },
       ];
 
-      if (reserva.recorrencia && !reserva.ehOcorrenciaIndividual) {
-        const tipoLabel = TIPO_RECORRENCIA_LABEL[reserva.recorrencia.tipo] || reserva.recorrencia.tipo || 'Recorrente';
-        const inicio = formatarData(reserva.primeira_data || reserva.data);
-        const fim = formatarData(reserva.ultima_data || reserva.recorrencia.data_fim || reserva.data);
-
-        detalhes.push({
-          rotulo: 'Recorrência',
-          valor: `${tipoLabel} (${inicio} a ${fim})`,
-          icone: Repeat,
-        });
-
-        if (reserva.total_ocorrencias > 1) {
-          detalhes.push({
-            rotulo: 'Total de repetições',
-            valor: `${reserva.total_ocorrencias} datas agendadas`,
-            icone: CalendarCheck,
-          });
-        }
-      }
+      detalhes.push(...detalhesRecorrencia(reserva));
 
       detalhes.push({
         rotulo: 'Observações',
@@ -159,6 +193,7 @@ function MinhasReservas() {
           valor: `${reserva.destino} · ${reserva.quantidade_passageiros} ocupante(s), incluindo motorista`,
           icone: UserRound,
         },
+        ...detalhesRecorrencia(reserva),
         { rotulo: 'Observações', valor: reserva.descricao },
       ];
     }
@@ -175,12 +210,26 @@ function MinhasReservas() {
     return new Date() <= new Date(inicio.getTime() - 60 * 60 * 1000);
   }
 
+  function podeEditarPorPermissao(reserva) {
+    if (!reserva) return false;
+    return podeReservarModalidade(usuario, reserva.modalidade, reserva.recurso_detalhe?.tipo_recurso);
+  }
+
+  function podeEditar(reserva) {
+    return podeAlterar(reserva) && podeEditarPorPermissao(reserva);
+  }
+
   function motivoIndisponivel(reserva) {
-    if (!reserva || reserva.modalidade !== 'veiculo') return '';
-    const statusAberto = STATUS_ALTERAVEIS.veiculo.includes(reserva.status);
-    if (!statusAberto) return 'Esta reserva está em um estado final e não pode mais ser alterada.';
-    if (!ehAdministrador(usuario) && !podeAlterar(reserva)) {
-      return 'O prazo para editar ou cancelar encerrou uma hora antes da retirada.';
+    if (!reserva) return '';
+    const statusAberto = (STATUS_ALTERAVEIS[reserva.modalidade] || []).includes(reserva.status);
+    if (reserva.modalidade === 'veiculo') {
+      if (!statusAberto) return 'Esta reserva está em um estado final e não pode mais ser alterada.';
+      if (!ehAdministrador(usuario) && !podeAlterar(reserva)) {
+        return 'O prazo para editar ou cancelar encerrou uma hora antes da retirada.';
+      }
+    }
+    if (statusAberto && !podeEditarPorPermissao(reserva)) {
+      return 'Você não possui mais autorização vigente para editar esta reserva.';
     }
     return '';
   }
@@ -270,7 +319,40 @@ function MinhasReservas() {
     setAviso('Reserva atualizada.');
   }
 
+  function podeGerenciarRecorrencia(reserva) {
+    return Boolean(reserva?.recorrencia && !reserva.celula_timetable && podeAlterar(reserva));
+  }
+
+  async function abrirRecorrencia(reserva) {
+    setSelecionada(null);
+
+    // O modal de área precisa da lista de áreas e blocos; carrega só na primeira vez
+    if (reserva.modalidade === 'area' && !locaisRecorrencia) {
+      try {
+        const [areas, blocos] = await Promise.all([buscarAreas(), buscarBlocos()]);
+        setLocaisRecorrencia({ areas: areas || [], blocos: blocos || [] });
+      } catch (falha) {
+        setErro(mensagemDeErro(falha, 'Não foi possível carregar as áreas.'));
+        return;
+      }
+    }
+
+    setRecorrenciaGerenciada({ id: reserva.recorrencia.id, modalidade: reserva.modalidade });
+  }
+
+  function concluirRecorrencia(mensagem) {
+    recarregar();
+    setRecorrenciaGerenciada(null);
+    setAviso(mensagem);
+  }
+
   function formatarPeriodoCartao(reserva) {
+    if (reserva?.modalidade === 'veiculo' && reserva.recorrencia && !reserva.ehOcorrenciaIndividual) {
+      const inicio = formatarData(reserva.primeira_data || reserva.data);
+      const fim = formatarData(reserva.ultima_data || reserva.recorrencia.data_fim || reserva.data);
+      return `${inicio} até ${fim} · retirada ${String(reserva.horario_inicio).slice(0, 5)}, retorno ${String(reserva.horario_fim).slice(0, 5)}`;
+    }
+
     if (reserva?.modalidade === 'veiculo') {
       return `${formatarData(reserva.data)} · ${String(reserva.horario_inicio).slice(0, 5)} até ${formatarData(reserva.data_devolucao_prevista)} · ${String(reserva.horario_fim).slice(0, 5)}`;
     }
@@ -307,28 +389,33 @@ function MinhasReservas() {
 
   return (
     <div className={styles.pagina}>
-      {carregando && <p role="status">Carregando reservas...</p>}
-      {aviso && (
-        <p className={styles.aviso}>
-          {aviso}
-        </p>
-      )}
+      <BarraFiltros>
+        <CampoBusca
+          valor={busca}
+          aoAlterar={setBusca}
+          placeholder="Buscar por título ou item..."
+        />
 
-      {erro && (
-        <p className={styles.erro} role="alert">
-          {erro}
-        </p>
-      )}
-
-      <div className="d-flex flex-wrap gap-2">
         <Select
           valor={filtroTipo}
-          aoAlterar={setFiltroTipo}
+          aoAlterar={selecionarFiltroTipo}
           opcoes={OPCOES_TIPO}
           valorTodos="todos"
           rotuloTodos="Todos os tipos"
           ariaLabel="Filtrar por tipo"
         />
+
+        {filtroTipo === 'recurso_geral' && (
+          <SelectRemoto
+            url="/api/tipos-recurso/"
+            valor={filtroTiposRecurso}
+            aoAlterar={setFiltroTiposRecurso}
+            rotuloTodos="Todos os tipos de recurso"
+            ariaLabel="Filtrar por tipo de recurso geral"
+            placeholderBusca="Buscar tipo..."
+            multiplo
+          />
+        )}
 
         <Select
           valor={filtroStatus}
@@ -338,12 +425,26 @@ function MinhasReservas() {
           rotuloTodos="Todas as situações"
           ariaLabel="Filtrar por situação da reserva"
         />
-      </div>
+
+        <CampoPeriodo
+          inicio={periodo.inicio}
+          fim={periodo.fim}
+          aoAlterar={setPeriodo}
+          ariaLabel="Filtrar por período"
+        />
+      </BarraFiltros>
+
+      <AlertBanner mensagem={aviso} aoFechar={() => setAviso('')} />
+      <AlertBanner tipo="erro" mensagem={erro} />
 
       <section className={styles.lista} aria-label="Minhas reservas">
-        {ordenadas.length === 0 && (
+        {carregando && <SkeletonListaItens variante="reserva" quantidade={6} rotulo="Carregando reservas..." />}
+
+        {!carregando && ordenadas.length === 0 && (
           <p className={styles.vazio}>
-            Você ainda não possui reservas cadastradas.
+            {filtrando
+              ? 'Nenhuma reserva encontrada para os filtros aplicados.'
+              : 'Você ainda não possui reservas cadastradas.'}
           </p>
         )}
 
@@ -373,7 +474,10 @@ function MinhasReservas() {
                   {reserva.ocorrencias.map((ocorrencia) => {
                     const statusOcorrencia = statusReservaApresentado(ocorrencia);
                     const tipoOcorrencia = String(ocorrencia.tipo_reserva || '').toLowerCase();
-                    const horarioCurto = `${String(ocorrencia.horario_inicio).slice(0, 5)}–${String(ocorrencia.horario_fim).slice(0, 5)}`;
+                    const retornoEmOutroDia = ocorrencia.data_devolucao_prevista && ocorrencia.data_devolucao_prevista !== ocorrencia.data;
+                    const horarioCurto = retornoEmOutroDia
+                      ? `${String(ocorrencia.horario_inicio).slice(0, 5)} até ${formatarData(ocorrencia.data_devolucao_prevista)} ${String(ocorrencia.horario_fim).slice(0, 5)}`
+                      : `${String(ocorrencia.horario_inicio).slice(0, 5)}–${String(ocorrencia.horario_fim).slice(0, 5)}`;
 
                     return (
                       <button
@@ -436,8 +540,13 @@ function MinhasReservas() {
             </>
           ) : null}
           detalhes={detalhesDaReserva(selecionada)}
-          aoEditar={podeAlterar(selecionada) ? () => abrirEdicao(selecionada) : undefined}
+          aoEditar={podeEditar(selecionada) ? () => abrirEdicao(selecionada) : undefined}
           aoCancelar={podeAlterar(selecionada) ? cancelarSelecionada : undefined}
+          aoGerenciarRecorrencia={
+            podeGerenciarRecorrencia(selecionada)
+              ? () => abrirRecorrencia(selecionada)
+              : undefined
+          }
           motivoAcoesIndisponiveis={motivoIndisponivel(selecionada)}
           aoFechar={() => setSelecionada(null)}
         />
@@ -473,6 +582,38 @@ function MinhasReservas() {
           reservaEdicao={editandoVeiculo.reserva}
           aoFechar={() => setEditandoVeiculo(null)}
           aoReservar={salvarEdicaoVeiculo}
+        />
+      )}
+
+      {recorrenciaGerenciada?.modalidade === 'area' && (
+        <GerenciarRecorrenciaModal
+          aberto
+          recorrenciaId={recorrenciaGerenciada.id}
+          areas={locaisRecorrencia?.areas}
+          blocos={locaisRecorrencia?.blocos}
+          aoFechar={() => setRecorrenciaGerenciada(null)}
+          aoSalvar={() => concluirRecorrencia('Recorrência atualizada.')}
+          aoCancelarRecorrencia={() => concluirRecorrencia('Recorrência cancelada.')}
+        />
+      )}
+
+      {recorrenciaGerenciada?.modalidade === 'veiculo' && (
+        <GerenciarRecorrenciaVeiculoModal
+          aberto
+          recorrenciaId={recorrenciaGerenciada.id}
+          aoFechar={() => setRecorrenciaGerenciada(null)}
+          aoSalvar={() => concluirRecorrencia('Recorrência atualizada.')}
+          aoCancelarRecorrencia={() => concluirRecorrencia('Recorrência cancelada.')}
+        />
+      )}
+
+      {recorrenciaGerenciada?.modalidade === 'recurso_geral' && (
+        <GerenciarRecorrenciaRecursoGeralModal
+          aberto
+          recorrenciaId={recorrenciaGerenciada.id}
+          aoFechar={() => setRecorrenciaGerenciada(null)}
+          aoSalvar={() => concluirRecorrencia('Recorrência atualizada.')}
+          aoCancelarRecorrencia={() => concluirRecorrencia('Recorrência cancelada.')}
         />
       )}
     </div>

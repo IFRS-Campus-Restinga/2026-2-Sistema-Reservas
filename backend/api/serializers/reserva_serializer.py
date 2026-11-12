@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from api.models.reserva_model import Reserva
+from .recorrencia_serializer import RecorrenciaSerializer
 
 
 class ReservaSerializer(serializers.ModelSerializer):
@@ -8,6 +9,7 @@ class ReservaSerializer(serializers.ModelSerializer):
     modalidade = serializers.SerializerMethodField()
     item = serializers.SerializerMethodField()
     detalhes = serializers.SerializerMethodField()
+    recorrencia = RecorrenciaSerializer(read_only=True)
 
     class Meta:
         model = Reserva
@@ -25,6 +27,7 @@ class ReservaSerializer(serializers.ModelSerializer):
             "modalidade",
             "item",
             "detalhes",
+            "recorrencia",
         ]
 
     def _reserva_especifica(self, reserva):
@@ -76,7 +79,7 @@ class ReservaSerializer(serializers.ModelSerializer):
                 "id": recurso.id,
                 "nome": recurso.nome,
                 "tipo": recurso.tipo_recurso.descricao,
-                "categoria": recurso.tipo_recurso.categoria,
+                "categoria": recurso.tipo_recurso.categoria.nome if recurso.tipo_recurso.categoria else None,
             }
 
         return None

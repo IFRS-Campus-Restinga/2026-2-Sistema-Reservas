@@ -13,12 +13,9 @@ import TimetableAdmin from "../../components/Administracao/Timetable/TimetableAd
 import GruposGerenciador from "../../components/Grupos/GruposGerenciador/GruposGerenciador";
 import AuditoriaAdmin from "../../components/Administracao/Auditoria/AuditoriaAdmin";
 import SolicitacoesAdmin from "../../components/Administracao/Solicitacoes/SolicitacoesAdmin";
+import CadastrosAdmin from "../../components/Administracao/Cadastros/CadastrosAdmin";
 
 const abas = [
-  {
-    id: "visao-geral",
-    rotulo: "Visão Geral",
-  },
   { 
     id: "solicitacoes", 
     rotulo: "Solicitações" 
@@ -48,6 +45,10 @@ const abas = [
     rotulo: "Grupos",
   },
   {
+    id: "cadastros",
+    rotulo: "Cadastros",
+  },
+  {
     id: "timetable",
     rotulo: "Timetable",
   },
@@ -61,7 +62,7 @@ function Administracao() {
   const location = useLocation();
 
   const [abaAtiva, setAbaAtiva] = useState(
-    location.state?.aba || "visao-geral"
+    location.state?.aba || "solicitacoes"
   );
 
   useEffect(() => {
@@ -85,11 +86,6 @@ function Administracao() {
 
       <div className={styles.conteudo}>
         {abaAtiva === "solicitacoes" && (<SolicitacoesAdmin solicitacaoInicial={location.state?.solicitacaoInicial}/>)}
-        {abaAtiva === "visao-geral" && (
-          <p className={styles.visaoGeral}>
-            Visão geral da administração.
-          </p>
-        )}
 
         {abaAtiva === "reservas" && (
                   <ReservasAdmin />
@@ -113,6 +109,10 @@ function Administracao() {
 
         {abaAtiva === "grupos" && (
           <GruposGerenciador />
+        )}
+
+        {abaAtiva === "cadastros" && (
+          <CadastrosAdmin />
         )}
         
         {abaAtiva === "timetable" && (

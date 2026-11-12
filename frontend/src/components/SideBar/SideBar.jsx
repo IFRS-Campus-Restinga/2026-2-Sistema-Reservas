@@ -8,6 +8,7 @@ import { ITENS_MENU } from "../../config/rotas";
 import { useUsuario } from "../../hooks/useUsuario";
 import { useNotificacoes } from "../../hooks/useNotificacoes";
 import { temPermissao } from "../../utils/permissoes";
+import Tooltip from "../Tooltip/Tooltip";
 import styles from "./SideBar.module.css";
 import { HUB_URL } from "../../config/hub"
 
@@ -52,67 +53,87 @@ export default function Sidebar({
                 <div className={styles.itensNavegacao}>
                     {itens.map(({ id, path, menu: { titulo, icone: Icon } }) => {
                         const ativo = paginaAtual == titulo;
+                        const quantidade = id === "notificacoes" ? naoLidas : 0;
+                        const descricao = quantidade > 0
+                            ? `${titulo}: ${quantidade} não lidas`
+                            : titulo;
 
                         return (
-                            <button
+                            <Tooltip
                                 key={id}
-                                type="button"
-                                onClick={() => navigate(path)}
-                                title={menuRecolhido ? titulo : undefined}
-                                className={`${styles.item} ${menuRecolhido ? styles.itemRecolhido : ""
-                                    } ${ativo ? styles.itemAtivo : ""}`}
+                                texto={menuRecolhido || quantidade > 0 ? descricao : undefined}
+                                posicao="right"
                             >
-                                <span className={styles.iconeItem}>
-                                    <Icon size={18} />
+                                <button
+                                    type="button"
+                                    onClick={() => navigate(path)}
+                                    aria-label={descricao}
+                                    className={`${styles.item} ${menuRecolhido ? styles.itemRecolhido : ""
+                                        } ${ativo ? styles.itemAtivo : ""}`}
+                                >
+                                    <span className={styles.iconeItem}>
+                                        <Icon size={18} />
 
-                                    {id === "notificacoes" && naoLidas > 0 && (
-                                        <span className={styles.contadorNotificacoes}>
-                                        {naoLidas > 9 ? "9+" : naoLidas}
+                                        {quantidade > 0 && (
+                                            <span className={styles.contadorNotificacoes} aria-hidden="true">
+                                            {quantidade > 9 ? "9+" : quantidade}
+                                            </span>
+                                        )}
+                                    </span>
+
+                                    {!menuRecolhido && (
+                                        <span className={styles.tituloItem}>
+                                            {titulo}
                                         </span>
                                     )}
-                                </span>
-
-                                {!menuRecolhido && (
-                                    <span className={styles.tituloItem}>
-                                        {titulo}
-                                    </span>
-                                )}
-                            </button>
+                                </button>
+                            </Tooltip>
                         );
                     })}
                 </div>
             </nav>
 
             <div className={styles.footer}>
-                <button
-                    type="button"
-                    onClick={() => window.location.href = HUB_URL}
-                    title={menuRecolhido ? "Voltar ao HUB" : undefined}
-                    className={`${styles.botaoFooter} ${styles.botaoSair
-                        } ${menuRecolhido ? styles.botaoFooterRecolhido : ""}`}
+                <Tooltip
+                    texto={menuRecolhido ? "Voltar ao HUB" : undefined}
+                    posicao="right"
                 >
-                    <ExternalLink size={16} />
+                    <button
+                        type="button"
+                        onClick={() => window.location.href = HUB_URL}
+                        aria-label="Voltar ao HUB"
+                        className={`${styles.botaoFooter} ${styles.botaoSair
+                            } ${menuRecolhido ? styles.botaoFooterRecolhido : ""}`}
+                    >
+                        <ExternalLink size={16} />
 
-                    {!menuRecolhido && (
-                        <span>Voltar ao HUB</span>
-                    )}
-                </button>
+                        {!menuRecolhido && (
+                            <span>Voltar ao HUB</span>
+                        )}
+                    </button>
+                </Tooltip>
 
-                <button
-                    type="button"
-                    onClick={recolherMenu}
-                    className={`${styles.botaoFooter} ${styles.botaoRecolher
-                        } ${menuRecolhido ? styles.botaoFooterRecolhido : ""}`}
+                <Tooltip
+                    texto={menuRecolhido ? "Expandir menu lateral" : "Recolher menu lateral"}
+                    posicao="right"
                 >
-                    {menuRecolhido ? (
-                        <ChevronRight size={14} />
-                    ) : (
-                        <>
-                            <ChevronLeft size={14} />
-                            <span>Recolher</span>
-                        </>
-                    )}
-                </button>
+                    <button
+                        type="button"
+                        onClick={recolherMenu}
+                        aria-label={menuRecolhido ? "Expandir menu lateral" : "Recolher menu lateral"}
+                        className={`${styles.botaoFooter} ${styles.botaoRecolher
+                            } ${menuRecolhido ? styles.botaoFooterRecolhido : ""}`}
+                    >
+                        {menuRecolhido ? (
+                            <ChevronRight size={14} />
+                        ) : (
+                            <>
+                                <ChevronLeft size={14} />
+                                <span>Recolher</span>
+                            </>
+                        )}
+                    </button>
+                </Tooltip>
             </div>
         </aside>
     );

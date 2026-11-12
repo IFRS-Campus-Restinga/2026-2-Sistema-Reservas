@@ -46,6 +46,7 @@ function formatarDataHora(dataHora) {
 
 function Header({ titulo, usuario }) {
   const [notificacoesAbertas, setNotificacoesAbertas] = useState(false);
+  const [erroMarcarTodas, setErroMarcarTodas] = useState('');
 
   const [notificacaoSelecionada, setNotificacaoSelecionada] =
     useState(null);
@@ -127,7 +128,7 @@ function Header({ titulo, usuario }) {
             modalidade:
               atualizada.reserva.modalidade,
             termo_tipo:
-              atualizada.reserva.termo_tipo ||
+              atualizada.termo_tipo ||
               "responsabilidade",
           },
         },
@@ -143,9 +144,11 @@ function Header({ titulo, usuario }) {
     if (naoLidas === 0) return;
 
     try {
+      setErroMarcarTodas('');
       await marcarTodasComoLidas();
     } catch (erro) {
       console.error(erro);
+      setErroMarcarTodas('Não foi possível marcar as notificações como lidas.');
     }
   }
 
@@ -264,6 +267,12 @@ function Header({ titulo, usuario }) {
                       </button>
                     )}
                   </div>
+
+                  {erroMarcarTodas && (
+                    <p className={`${styles.estadoNotificacoes} ${styles.erroNotificacoes}`} role="alert">
+                      {erroMarcarTodas}
+                    </p>
+                  )}
 
 
                   <div

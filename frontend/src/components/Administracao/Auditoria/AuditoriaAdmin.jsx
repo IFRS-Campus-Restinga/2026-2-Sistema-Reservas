@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import AlertBanner from '../../AlertBanner/AlertBanner';
 import styles from './AuditoriaAdmin.module.css';
 
 import { buscarLogsAuditoria } from '../../../services';
@@ -175,6 +176,8 @@ function AuditoriaAdmin() {
                         opcoes={paraOpcoes(PERFIL_RESPONSAVEL_LABEL)}
                         valorTodos=""
                         rotuloTodos="Todos os perfis"
+                        filtro
+                        larguraTotal
                         ariaLabel="Filtrar por perfil do responsável"
                     />
                 </label>
@@ -198,6 +201,8 @@ function AuditoriaAdmin() {
                         opcoes={paraOpcoes(ACAO_AUDITORIA_LABEL)}
                         valorTodos=""
                         rotuloTodos="Todas as ações"
+                        filtro
+                        larguraTotal
                         ariaLabel="Filtrar por ação"
                     />
                 </label>
@@ -210,6 +215,8 @@ function AuditoriaAdmin() {
                         opcoes={paraOpcoes(ENTIDADE_AUDITORIA_LABEL)}
                         valorTodos=""
                         rotuloTodos="Todas as entidades"
+                        filtro
+                        larguraTotal
                         ariaLabel="Filtrar por entidade"
                     />
                 </label>
@@ -239,19 +246,15 @@ function AuditoriaAdmin() {
                 </button>
             </div>
 
-            {erro && (
-                <p className={styles.erro} role="alert">{erro}</p>
-            )}
+            <AlertBanner tipo="erro" mensagem={erro} />
 
-            {carregando ? (
-                <p className={styles.carregando} role="status">Carregando registros...</p>
-            ) : (
-                <TabelaAdministracao
-                    colunas={colunas}
-                    dados={logs}
-                    mensagemVazia="Nenhum registro de auditoria encontrado."
-                />
-            )}
+            <TabelaAdministracao
+                carregando={carregando}
+                rotuloCarregando="Carregando registros..."
+                colunas={colunas}
+                dados={logs}
+                mensagemVazia="Nenhum registro de auditoria encontrado."
+            />
 
             <Paginacao
                 paginaAtual={pagina}

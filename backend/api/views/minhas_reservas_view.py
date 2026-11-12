@@ -14,9 +14,8 @@ from api.serializers.reserva_recurso_geral_serializer import ReservaRecursoGeral
 from api.serializers.recurso_geral_serializer import RecursoGeralSerializer
 from api.serializers.veiculo_serializer import VeiculoSerializer
 from api.serializers.tipo_recurso_serializer import TipoRecursoSerializer
-from .view_helpers import listar
-from api.pagination import PaginacaoPadrao
-from api.services.filtros_listagem import filtrar_listagem
+from .view_helpers import listar, listar_agrupado_por_recorrencia
+from api.services.filtros_listagem import BUSCA_MINHAS_RESERVAS, filtrar_listagem
 from api.services.situacao_reserva_service import filtro_situacao, situacao_reserva
 
 
@@ -33,6 +32,11 @@ class MinhaReservaSerializer(serializers.BaseSerializer):
             dados = dict(serializer(especifica).data)
             dados['modalidade'] = modalidade
             dados['situacao'] = situacao_reserva(reserva)
+            if 'usuario_detalhe' not in dados and getattr(reserva, 'usuario', None) is not None:
+                dados['usuario_detalhe'] = {
+                    'nome': reserva.usuario.nome,
+                    'perfil_acesso': reserva.usuario.perfil_acesso,
+                }
             if modalidade == 'veiculo':
                 dados['veiculo_detalhe'] = VeiculoSerializer(especifica.veiculo).data
             elif modalidade == 'recurso_geral':
@@ -46,7 +50,8 @@ class MinhasReservasListView(APIView):
 
     def get(self, request):
         reservas = Reserva.objects.filter(usuario=request.user).select_related(
-            'reservaarea__area__bloco', 'reservaarea__recorrencia', 'usuario',
+            'reservaarea__area__bloco', 'reservaarea__recorrencia', 'reservaveiculo__recorrencia',
+            'reservarecursogeral__recorrencia', 'usuario',
             'reservaveiculo__veiculo', 'reservarecursogeral__recurso_geral__tipo_recurso',
         ).prefetch_related(Prefetch(
             'termos', queryset=TermoResponsabilidade.objects.filter(atual=True), to_attr='termos_atuais',
@@ -65,27 +70,10 @@ class MinhasReservasListView(APIView):
             filtro = filtro_situacao(situacao)
             reservas = reservas.filter(filtro).distinct() if filtro is not None else reservas.none()
         if request.query_params.get('agrupar_recorrencias') != 'true':
-            return listar(request, reservas, MinhaReservaSerializer)
-        grupos = {}
-        for reserva in filtrar_listagem(request, reservas):
-            area = getattr(reserva, 'reservaarea', None)
-            chave = ('serie', area.recorrencia_id) if area and area.recorrencia_id else ('reserva', reserva.pk)
-            grupos.setdefault(chave, []).append(reserva)
-        paginator = PaginacaoPadrao()
-        pagina = paginator.paginate_queryset(list(grupos.values()), request)
-        resultados = []
-        for grupo in pagina:
-            grupo.sort(key=lambda r: (r.data, r.horario_inicio, r.pk))
-            futuras = [r for r in grupo if r.status not in ('CANCELADA', 'REJEITADA') and
-                       (r.data, r.horario_fim) >= (agora.date(), agora.time().replace(tzinfo=None))]
-            principal = (futuras or grupo)[0]
-            dados = MinhaReservaSerializer(principal).data
-            if dados.get('recorrencia') and dados['modalidade'] == 'area':
-                dados.update(primeira_data=grupo[0].data, ultima_data=grupo[-1].data,
-                             total_ocorrencias=len(grupo),
-                             ocorrencias=MinhaReservaSerializer(grupo, many=True).data)
-            resultados.append(dados)
-        return paginator.get_paginated_response(resultados)
+            return listar(request, reservas, MinhaReservaSerializer, BUSCA_MINHAS_RESERVAS)
+        return listar_agrupado_por_recorrencia(
+            request, filtrar_listagem(request, reservas, BUSCA_MINHAS_RESERVAS), MinhaReservaSerializer,
+        )
 
 
 class ResumoReservasView(APIView):

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Modal from '../../Modal/Modal';
+import AlertBanner from '../../../AlertBanner/AlertBanner';
 import styles from './VeiculoModal.module.css';
 
 const formularioInicial = {
@@ -21,6 +22,7 @@ function VeiculoModal({
     aoFechar,
     aoSalvar,
 }) {
+    const controleModal = useRef(null);
     const [formulario, setFormulario] = useState(formularioInicial);
     const [salvando, setSalvando] = useState(false);
     const [erros, setErros] = useState({});
@@ -103,6 +105,8 @@ function VeiculoModal({
 
     return (
         <Modal
+            ref={controleModal}
+            confirmarDescarte
             aberto={aberto}
             titulo={veiculo ? 'Editar veículo' : 'Adicionar veículo'}
             aoFechar={aoFechar}
@@ -111,7 +115,7 @@ function VeiculoModal({
                     <button
                         type="button"
                         className={styles.cancelar}
-                        onClick={aoFechar}
+                        onClick={() => controleModal.current?.fechar()}
                     >
                         Cancelar
                     </button>
@@ -133,7 +137,7 @@ function VeiculoModal({
                 onSubmit={enviarFormulario}
                 onInvalid={mostrarErro}
             >
-                {mensagemErro('geral')}
+                <AlertBanner tipo="erro" mensagem={erros.geral} />
                 <div className={styles.campo}>
                     <label htmlFor="nome">
                         Nome *

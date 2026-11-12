@@ -1,38 +1,61 @@
 import { useState } from 'react';
-import { Pencil, Trash2, Users } from 'lucide-react';
+import { CalendarDays, Copy, Pencil, Trash2, Users } from 'lucide-react';
 import Botao from '../../Botao/Botao';
+import Tooltip from '../../Tooltip/Tooltip';
 import ModalMembros from '../ModalMembros/ModalMembros';
-import { rotulosRecursos } from '../gruposUtils';
+import ModalReservasGrupo from '../ModalReservasGrupo/ModalReservasGrupo';
+import { formatarVigenciaGrupo, rotulosRecursos } from '../gruposUtils';
 import styles from './CardGrupo.module.css';
 
-function CardGrupo({ grupo, aoEditar, aoExcluir }) {
+function CardGrupo({ grupo, aoEditar, aoExcluir, aoCopiar, aoAtualizar }) {
     const [modalMembrosAberto, setModalMembrosAberto] = useState(false);
+    const [modalReservasAberto, setModalReservasAberto] = useState(false);
 
     const rotuloTipoMembro = grupo.tipo_membro_permitido === 'servidor' ? 'Servidores' : 'Alunos';
+    const membros = grupo.quantidade_membros === 1 ? '1 membro' : `${grupo.quantidade_membros} membros`;
+
+    function fecharMembros() {
+        setModalMembrosAberto(false);
+        aoAtualizar?.();
+    }
 
     return (
         <div className={styles.card}>
             <div className={styles.cabecalho}>
                 <h3 className={styles.nome}>{grupo.nome}</h3>
                 <div className={styles.acoesCabecalho}>
-                    <button
-                        type="button"
-                        className={styles.editar}
-                        onClick={() => aoEditar(grupo)}
-                        title="Editar grupo"
-                        aria-label={`Editar grupo ${grupo.nome}`}
-                    >
-                        <Pencil size={14} />
-                    </button>
-                    <button
-                        type="button"
-                        className={styles.excluir}
-                        onClick={() => aoExcluir(grupo)}
-                        title="Excluir grupo"
-                        aria-label={`Excluir grupo ${grupo.nome}`}
-                    >
-                        <Trash2 size={14} />
-                    </button>
+                    {aoCopiar && (
+                        <Tooltip texto="Copiar grupo">
+                            <button
+                                type="button"
+                                className={styles.editar}
+                                onClick={() => aoCopiar(grupo)}
+                                aria-label={`Copiar grupo ${grupo.nome}`}
+                            >
+                                <Copy size={14} />
+                            </button>
+                        </Tooltip>
+                    )}
+                    <Tooltip texto="Editar grupo">
+                        <button
+                            type="button"
+                            className={styles.editar}
+                            onClick={() => aoEditar(grupo)}
+                            aria-label={`Editar grupo ${grupo.nome}`}
+                        >
+                            <Pencil size={14} />
+                        </button>
+                    </Tooltip>
+                    <Tooltip texto="Excluir grupo">
+                        <button
+                            type="button"
+                            className={styles.excluir}
+                            onClick={() => aoExcluir(grupo)}
+                            aria-label={`Excluir grupo ${grupo.nome}`}
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                    </Tooltip>
                 </div>
             </div>
 
@@ -44,17 +67,39 @@ function CardGrupo({ grupo, aoEditar, aoExcluir }) {
                 <span className={styles.criador}>Criado por {grupo.criador_nome}</span>
             </div>
 
-            <Botao
-                titulo="Gerenciar membros"
-                icone={Users}
-                estilo="secundario"
-                aoClicar={() => setModalMembrosAberto(true)}
-            />
+            <div className={styles.informacoes}>
+                <span><CalendarDays size={14} aria-hidden="true" />Vigência: {formatarVigenciaGrupo(grupo)}</span>
+                <span><Users size={14} aria-hidden="true" />{membros}</span>
+            </div>
+
+            <div className={styles.botoesAcoes}>
+                <Botao
+                    titulo="Gerenciar membros"
+                    icone={Users}
+                    estilo="secundario"
+                    aoClicar={() => setModalMembrosAberto(true)}
+                />
+                {grupo.tipo_membro_permitido === 'aluno' && (
+                    <Botao
+                        titulo="Ver reservas do grupo"
+                        icone={CalendarDays}
+                        estilo="secundario"
+                        aoClicar={() => setModalReservasAberto(true)}
+                    />
+                )}
+            </div>
 
             {modalMembrosAberto && (
                 <ModalMembros
                     grupo={grupo}
-                    aoFechar={() => setModalMembrosAberto(false)}
+                    aoFechar={fecharMembros}
+                />
+            )}
+
+            {modalReservasAberto && (
+                <ModalReservasGrupo
+                    grupo={grupo}
+                    aoFechar={() => setModalReservasAberto(false)}
                 />
             )}
         </div>

@@ -5,9 +5,10 @@ import { ArrowLeft, CheckCircle, Users } from "lucide-react";
 import { buscarAgendaArea, buscarArea, buscarBloco } from "../../services";
 import ReservaAreaModal from "../../components/ReservaArea/ReservaAreaModal";
 import { ICONE_AREA_PADRAO, TIPO_AREA_ICONE, TIPO_AREA_LABEL } from "../../utils/tipoArea";
-import { EQUIPAMENTO_LABELS } from "../../utils/equipamentoArea";
 import { ACESSIBILIDADE_LABELS } from "../../utils/acessibilidadeBloco";
+import AlertBanner from "../../components/AlertBanner/AlertBanner";
 import styles from "./AreaDetalhe.module.css";
+import SkeletonDetalhe from "../../components/Skeleton/SkeletonDetalhe";
 
 function formatarIntervalo(reserva) {
   return `${reserva.horario_inicio.slice(0, 5)}–${reserva.horario_fim.slice(0, 5)}`;
@@ -50,11 +51,11 @@ function AreaDetalhe() {
   }, [id]);
 
   if (carregando) {
-    return <p className="text-muted p-4" role="status">Carregando área...</p>;
+    return <SkeletonDetalhe rotulo="Carregando área..." />;
   }
 
   if (erro || !area) {
-    return <p className="text-danger p-4" role="alert">{erro || "Área não encontrada."}</p>;
+    return <AlertBanner tipo="erro" mensagem={erro || "Área não encontrada."} className="m-3 m-md-4" />;
   }
 
   const blocoDaArea = blocos.find((bloco) => bloco.id === area.bloco);
@@ -114,12 +115,12 @@ function AreaDetalhe() {
 
             <h4 className="text-uppercase text-muted small fw-semibold mb-2">Equipamentos</h4>
             <div className="d-flex flex-wrap gap-2">
-              {area.equipamento.length === 0 && (
+              {area.equipamentos_detalhe.length === 0 && (
                 <span className="small text-muted">Nenhum equipamento cadastrado.</span>
               )}
-              {area.equipamento.map((item) => (
-                <span key={item} className="badge rounded-pill bg-light text-secondary fw-normal">
-                  {EQUIPAMENTO_LABELS[item] || item}
+              {area.equipamentos_detalhe.map((equipamento) => (
+                <span key={equipamento.id} className="badge rounded-pill bg-light text-secondary fw-normal">
+                  {equipamento.nome}
                 </span>
               ))}
             </div>

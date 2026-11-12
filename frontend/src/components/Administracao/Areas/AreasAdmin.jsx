@@ -9,15 +9,27 @@ import { criarArea, atualizarArea, excluirArea } from '../../../services';
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import AreaModal from './ModalArea/AreaModal';
 import ModalConfirmacao from '../ModalConfirmacao/ModalConfirmacao';
+import CampoBusca from '../CampoBusca/CampoBusca';
+import BarraFiltros from '../../BarraFiltros/BarraFiltros';
+import Select from '../../Select/Select';
+import SelectRemoto from '../../SelectRemoto/SelectRemoto';
+import { OPCOES_STATUS_RECURSO, STATUS_RECURSO_LABEL } from '../../../utils/statusRecurso';
+import { TIPO_AREA_LABEL } from '../../../utils/tipoArea';
+import AlertBanner from '../../AlertBanner/AlertBanner';
+import Tooltip from '../../Tooltip/Tooltip';
 
 function AreasAdministracao() {
 
     const [modalAreaAberto, setModalAreaAberto] = useState(false);
     const [areaEditando, setAreaEditando] = useState(null);
     const [areaExcluindo, setAreaExcluindo] = useState(null);
+    const [aviso, setAviso] = useState(null);
+    const [busca, setBusca] = useState('');
+    const [filtroBloco, setFiltroBloco] = useState('todos');
+    const [filtroStatus, setFiltroStatus] = useState('todos');
 
-
-    const { itens: areas, carregando, erro, setErro, recarregar: carregarDados, paginacao } = useListaPaginada('/api/areas/', {});
+    const { itens: areas, carregando, erro, setErro, recarregar: carregarDados, paginacao } = useListaPaginada('/api/areas/', { busca, bloco: filtroBloco, status: filtroStatus });
+    const filtrando = Boolean(busca.trim()) || filtroBloco !== 'todos' || filtroStatus !== 'todos';
 
     function abrirCadastro() {
         setAreaEditando(null);
@@ -43,6 +55,7 @@ function AreasAdministracao() {
             await criarArea(dados);
         }
         fecharModalArea();
+        setAviso({ tipo: 'sucesso', mensagem: areaEditando ? 'Área atualizada com sucesso.' : 'Área cadastrada com sucesso.' });
 
         await carregarDados();
     }
@@ -63,23 +76,11 @@ function AreasAdministracao() {
             setAreaExcluindo(null);
 
             await carregarDados();
+            setAviso({ tipo: 'sucesso', mensagem: 'Área excluída com sucesso.' });
         } catch (erro) {
             console.error(erro);
-            setErro('Não foi possível excluir a área.');
+            setAviso({ tipo: 'erro', mensagem: 'Não foi possível excluir a área.' });
         }
-    }
-
-    function mostrarStatus(status) {
-      switch (status) {
-        case 'ATIVO':
-          return 'Ativo';
-        case 'MANUTENCAO':
-          return 'Manutenção';
-        case 'INATIVO':
-          return 'Inativo';
-        default:
-          return status;
-      }
     }
 
     const colunas = [
@@ -101,7 +102,7 @@ function AreasAdministracao() {
         {
             chave: 'tipo',
             titulo: 'Tipo',
-            campo: 'tipo',
+            renderizar: (area) => TIPO_AREA_LABEL[area.tipo] || area.tipo,
         },
         {
             chave: 'disponibilidade',
@@ -123,7 +124,7 @@ function AreasAdministracao() {
                     {area.status === 'ATIVO'
                         ? <ToggleRight size={13} aria-hidden="true" />
                         : <ToggleLeft size={13} aria-hidden="true" />}
-                    {mostrarStatus(area.status)}
+                    {STATUS_RECURSO_LABEL[area.status] || area.status}
                 </span>
             ),
         },
@@ -132,25 +133,27 @@ function AreasAdministracao() {
             titulo: 'Ação',
             renderizar: (area) => (
                 <div className={styles.acoes}>
-                    <button
-                        type="button"
-                        className={styles.editar}
-                        onClick={() => abrirEdicao(area)}
-                        title="Editar"
-                        aria-label={`Editar área ${area.nome}`}
-                    >
-                        <Pencil size={13} />
-                    </button>
+                    <Tooltip texto="Editar área">
+                        <button
+                            type="button"
+                            className={styles.editar}
+                            onClick={() => abrirEdicao(area)}
+                            aria-label={`Editar área ${area.nome}`}
+                        >
+                            <Pencil size={13} />
+                        </button>
+                    </Tooltip>
 
-                    <button
-                        type="button"
-                        className={styles.excluir}
-                        onClick={() => solicitarExclusao(area)}
-                        title="Excluir"
-                        aria-label={`Excluir área ${area.nome}`}
-                    >
-                        <Trash2 size={13} />
-                    </button>
+                    <Tooltip texto="Excluir área">
+                        <button
+                            type="button"
+                            className={styles.excluir}
+                            onClick={() => solicitarExclusao(area)}
+                            aria-label={`Excluir área ${area.nome}`}
+                        >
+                            <Trash2 size={13} />
+                        </button>
+                    </Tooltip>
                 </div>
             ),
         },
@@ -158,30 +161,55 @@ function AreasAdministracao() {
 
     return (
         <div className={styles.areas}>
-            <div className={styles.barraAcoes}>
-                <button
-                    type="button"
-                    className={styles.adicionar}
-                    onClick={abrirCadastro}
-                >
-                    <Plus size={16} />
-                    Adicionar
-                </button>
-            </div>
-
-            {erro && (
-                <p className={styles.erro} role="alert">{erro}</p>
-            )}
-
-            {carregando ? (
-                <p className={styles.carregando} role="status">Carregando áreas...</p>
-            ) : (
-                <TabelaAdministracao
-                    colunas={colunas}
-                    dados={areas}
-                    mensagemVazia="Nenhuma área cadastrada."
+            <BarraFiltros
+                acoes={(
+                    <button
+                        type="button"
+                        className={styles.adicionar}
+                        onClick={abrirCadastro}
+                    >
+                        <Plus size={16} />
+                        Adicionar
+                    </button>
+                )}
+            >
+                <CampoBusca
+                    valor={busca}
+                    aoAlterar={setBusca}
+                    placeholder="Buscar área por nome..."
                 />
-            )}
+                <SelectRemoto
+                    url="/api/blocos/"
+                    valor={filtroBloco}
+                    aoAlterar={setFiltroBloco}
+                    valorTodos="todos"
+                    rotuloTodos="Todos os blocos"
+                    ariaLabel="Filtrar áreas por bloco"
+                    placeholderBusca="Buscar bloco..."
+                />
+                <Select
+                    valor={filtroStatus}
+                    aoAlterar={setFiltroStatus}
+                    opcoes={OPCOES_STATUS_RECURSO}
+                    valorTodos="todos"
+                    rotuloTodos="Todos os status"
+                    ariaLabel="Filtrar áreas por status"
+                />
+            </BarraFiltros>
+
+            <AlertBanner tipo={aviso?.tipo} mensagem={aviso?.mensagem} aoFechar={() => setAviso(null)} />
+
+            <AlertBanner tipo="erro" mensagem={erro} />
+
+            <TabelaAdministracao
+                carregando={carregando}
+                rotuloCarregando="Carregando áreas..."
+                colunas={colunas}
+                dados={areas}
+                mensagemVazia={filtrando
+                    ? 'Nenhuma área encontrada para os filtros aplicados.'
+                    : 'Nenhuma área cadastrada.'}
+            />
 
             <Paginacao {...paginacao} />
 

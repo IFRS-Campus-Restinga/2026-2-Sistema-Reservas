@@ -10,17 +10,24 @@ import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import VeiculoModal from './ModalVeiculo/VeiculoModal';
 import ModalConfirmacao from '../ModalConfirmacao/ModalConfirmacao';
 import CampoBusca from '../CampoBusca/CampoBusca';
-
+import BarraFiltros from '../../BarraFiltros/BarraFiltros';
+import Select from '../../Select/Select';
+import { OPCOES_STATUS_RECURSO, STATUS_RECURSO_LABEL } from '../../../utils/statusRecurso';
+import AlertBanner from '../../AlertBanner/AlertBanner';
+import Tooltip from '../../Tooltip/Tooltip';
 
 function VeiculosAdministracao() {
     const [busca, setBusca] = useState('');
+    const [filtroStatus, setFiltroStatus] = useState('todos');
 
     const [modalVeiculoAberto, setModalVeiculoAberto] =  useState(false);
     const [veiculoEditando, setVeiculoEditando] =useState(null);
     const [veiculoExcluindo, setVeiculoExcluindo] = useState(null);
+    const [aviso, setAviso] = useState(null);
 
 
-    const { itens: veiculos, carregando, erro, setErro, recarregar: carregarVeiculos, paginacao } = useListaPaginada('/api/veiculos/', { busca });
+    const { itens: veiculos, carregando, erro, setErro, recarregar: carregarVeiculos, paginacao } = useListaPaginada('/api/veiculos/', { busca, status: filtroStatus });
+    const filtrando = Boolean(busca.trim()) || filtroStatus !== 'todos';
 
     function abrirCadastro() {
         setVeiculoEditando(null);
@@ -46,6 +53,7 @@ function VeiculosAdministracao() {
             await criarVeiculo(dados);
         }
         fecharModalVeiculo();
+        setAviso({ tipo: 'sucesso', mensagem: veiculoEditando ? 'Veículo atualizado com sucesso.' : 'Veículo cadastrado com sucesso.' });
 
         await carregarVeiculos();
     }
@@ -68,28 +76,12 @@ function VeiculosAdministracao() {
             setVeiculoExcluindo(null);
 
             await carregarVeiculos();
+            setAviso({ tipo: 'sucesso', mensagem: 'Veículo excluído com sucesso.' });
         } catch (erro) {
             console.error(erro);
-            setErro('Não foi possível excluir o veículo.');
+            setAviso({ tipo: 'erro', mensagem: 'Não foi possível excluir o veículo.' });
         }
     }
-
-    function mostrarStatus(status) {
-      switch (status) {
-        case 'ATIVO':
-          return 'Ativo';
-        case 'MANUTENCAO':
-          return 'Manutenção';
-        case 'INATIVO':
-          return 'Inativo';
-        default:
-          return status;
-      }
-    }
-
-
-    const termoBusca = busca.trim().toLowerCase();
-    const veiculosFiltrados = veiculos;
 
     const colunas = [
         {
@@ -116,7 +108,7 @@ function VeiculosAdministracao() {
                     {veiculo.status === 'ATIVO'
                         ? <ToggleRight size={13} aria-hidden="true" />
                         : <ToggleLeft size={13} aria-hidden="true" />}
-                    {mostrarStatus(veiculo.status)}
+                    {STATUS_RECURSO_LABEL[veiculo.status] || veiculo.status}
                 </span>
             ),
         },
@@ -125,29 +117,31 @@ function VeiculosAdministracao() {
             titulo: 'Ação',
             renderizar: (veiculo) => (
                 <div className={styles.acoes}>
-                    <button
-                        type="button"
-                        className={styles.editar}
-                        onClick={() =>
-                            abrirEdicao(veiculo)
-                        }
-                        title="Editar"
-                        aria-label={`Editar ${veiculo.nome}`}
-                    >
-                        <Pencil size={13} />
-                    </button>
+                    <Tooltip texto="Editar veículo">
+                        <button
+                            type="button"
+                            className={styles.editar}
+                            onClick={() =>
+                                abrirEdicao(veiculo)
+                            }
+                            aria-label={`Editar ${veiculo.nome}`}
+                        >
+                            <Pencil size={13} />
+                        </button>
+                    </Tooltip>
 
-                    <button
-                        type="button"
-                        className={styles.excluir}
-                        onClick={() =>
-                            solicitarExclusao(veiculo)
-                        }
-                        title="Excluir"
-                        aria-label={`Excluir ${veiculo.nome}`}
-                    >
-                        <Trash2 size={13} />
-                    </button>
+                    <Tooltip texto="Excluir veículo">
+                        <button
+                            type="button"
+                            className={styles.excluir}
+                            onClick={() =>
+                                solicitarExclusao(veiculo)
+                            }
+                            aria-label={`Excluir ${veiculo.nome}`}
+                        >
+                            <Trash2 size={13} />
+                        </button>
+                    </Tooltip>
                 </div>
             ),
         },
@@ -156,37 +150,46 @@ function VeiculosAdministracao() {
 
     return (
         <div className={styles.veiculos}>
-            <div className={styles.barraAcoes}>
+            <BarraFiltros
+                acoes={(
+                    <button
+                        type="button"
+                        className={styles.adicionar}
+                        onClick={abrirCadastro}
+                    >
+                        <Plus size={16} />
+                        Adicionar
+                    </button>
+                )}
+            >
                 <CampoBusca
                     valor={busca}
                     aoAlterar={setBusca}
                     placeholder="Buscar por nome ou placa..."
                 />
-                <button
-                    type="button"
-                    className={styles.adicionar}
-                    onClick={abrirCadastro}
-                >
-                    <Plus size={16} />
-                    Adicionar
-                </button>
-            </div>
-
-            {erro && (
-                <p className={styles.erro} role="alert">{erro}</p>
-            )}
-
-            {carregando ? (
-                <p className={styles.carregando} role="status">Carregando veículos...</p>
-            ) : (
-                <TabelaAdministracao
-                    colunas={colunas}
-                    dados={veiculosFiltrados}
-                    mensagemVazia={termoBusca
-                        ? 'Nenhum veículo encontrado para esta busca.'
-                        : 'Nenhum veículo cadastrado.'}
+                <Select
+                    valor={filtroStatus}
+                    aoAlterar={setFiltroStatus}
+                    opcoes={OPCOES_STATUS_RECURSO}
+                    valorTodos="todos"
+                    rotuloTodos="Todos os status"
+                    ariaLabel="Filtrar veículos por status"
                 />
-            )}
+            </BarraFiltros>
+
+            <AlertBanner tipo={aviso?.tipo} mensagem={aviso?.mensagem} aoFechar={() => setAviso(null)} />
+
+            <AlertBanner tipo="erro" mensagem={erro} />
+
+            <TabelaAdministracao
+                carregando={carregando}
+                rotuloCarregando="Carregando veículos..."
+                colunas={colunas}
+                dados={veiculos}
+                mensagemVazia={filtrando
+                    ? 'Nenhum veículo encontrado para os filtros aplicados.'
+                    : 'Nenhum veículo cadastrado.'}
+            />
 
             <Paginacao {...paginacao} />
 

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, XCircle } from 'lucide-react';
 import Modal from '../../Modal/Modal';
+import AlertBanner from '../../../AlertBanner/AlertBanner';
 import styles from './ModalReservaPendente.module.css';
 
 const MODALIDADE_LABEL = {
@@ -28,6 +29,7 @@ function CampoDetalhe({ rotulo, valor }) {
 }
 
 function ModalReservaPendente({ aberto, reserva, aoFechar, aoConfirmar, confirmando = false, erroConfirmacao = '', aoCancelar, cancelando = false, erroCancelamento = '',}) {
+  const controleModal = useRef(null);
   const [modoCancelamento, setModoCancelamento] = useState(false);
   const [motivo, setMotivo] = useState('');
   const [erroMotivo, setErroMotivo] = useState('');
@@ -72,6 +74,8 @@ function ModalReservaPendente({ aberto, reserva, aoFechar, aoConfirmar, confirma
 
   return (
     <Modal
+      ref={controleModal}
+      confirmarDescarte
       aberto={aberto}
       titulo="Detalhes da reserva"
       variante="largo"
@@ -102,7 +106,7 @@ function ModalReservaPendente({ aberto, reserva, aoFechar, aoConfirmar, confirma
             <button
               type="button"
               className={styles.fechar}
-              onClick={aoFechar}
+              onClick={() => controleModal.current?.fechar()}
               disabled={ocupado}
             >
               Fechar
@@ -144,11 +148,7 @@ function ModalReservaPendente({ aberto, reserva, aoFechar, aoConfirmar, confirma
           <span className={styles.status}>Pendente</span>
         </div>
 
-        {erroAcao && (
-          <p className={styles.erro} role="alert">
-            {erroAcao}
-          </p>
-        )}
+        <AlertBanner tipo="erro" mensagem={erroAcao} />
 
         {modoCancelamento && (
           <section className={styles.blocoCancelamento}>

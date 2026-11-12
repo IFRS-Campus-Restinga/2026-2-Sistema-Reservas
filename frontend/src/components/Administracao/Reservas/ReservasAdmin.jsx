@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pencil, Repeat, Trash2 } from 'lucide-react';
 import Paginacao from '../Paginacao/Paginacao';
+import { mensagemDeErro } from '../../../utils/erros';
 import styles from './ReservasAdmin.module.css';
 import RelatorioUso from '../RelatorioUso/RelatorioUso';
+import AlertBanner from '../../AlertBanner/AlertBanner';
+import SelectRemoto from '../../SelectRemoto/SelectRemoto';
+import Tooltip from '../../Tooltip/Tooltip';
 
 import {
   buscarAreas,
@@ -13,6 +17,8 @@ import {
 import { consultarTodasPaginas } from '../../../services/paginacao';
 
 import CampoBusca from '../CampoBusca/CampoBusca';
+import BarraFiltros from '../../BarraFiltros/BarraFiltros';
+import CampoPeriodo from '../../CampoPeriodo/CampoPeriodo';
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import ModalConfirmacao from '../ModalConfirmacao/ModalConfirmacao';
 import Select from '../../Select/Select';
@@ -25,7 +31,14 @@ import ReservaRecursoGeralModal from '../../ReservaRecursoGeral/ReservaRecursoGe
 
 import ReservaVeiculoModal from '../../ReservaVeiculo/ReservaVeiculoModal';
 
+import GerenciarRecorrenciaModal from '../../RecorrenciaArea/GerenciarRecorrenciaModal';
+
+import GerenciarRecorrenciaVeiculoModal from '../../RecorrenciaVeiculo/GerenciarRecorrenciaVeiculoModal';
+
+import GerenciarRecorrenciaRecursoGeralModal from '../../RecorrenciaRecursoGeral/GerenciarRecorrenciaRecursoGeralModal';
+
 import { STATUS_RESERVA_LABEL } from '../../../utils/reserva';
+import { TIPO_RECORRENCIA_LABEL } from '../../../utils/recorrencia';
 
 const MODALIDADE_LABEL = {
   area: 'Área',
@@ -55,6 +68,25 @@ function formatarHorario(horario) {
   return horario
     ? horario.slice(0, 5)
     : '—';
+}
+
+
+function periodoReserva(reserva) {
+  const inicio = formatarHorario(reserva.horario_inicio);
+  const fim = formatarHorario(reserva.horario_fim);
+  const devolucao = reserva.detalhes?.data_devolucao_prevista;
+
+  if (devolucao && devolucao !== reserva.data) {
+    return {
+      datas: `${formatarData(reserva.data)} até ${formatarData(devolucao)}`,
+      horarios: `Retirada ${inicio} · Devolução ${fim}`,
+    };
+  }
+
+  return {
+    datas: formatarData(reserva.data),
+    horarios: `${inicio}–${fim}`,
+  };
 }
 
 
@@ -96,6 +128,53 @@ function detalheSecundario(reserva) {
   }
 
   return item.tipo || '—';
+}
+
+
+// Série recorrente agrupada pelo backend (agrupar_recorrencias)
+function ehSerie(reserva) {
+  return Boolean(
+    reserva?.recorrencia &&
+    !reserva.ehOcorrenciaIndividual &&
+    reserva.ocorrencias?.length
+  );
+}
+
+
+function podeGerenciarRecorrencia(reserva) {
+  return Boolean(
+    reserva?.recorrencia &&
+    ['area', 'veiculo', 'recurso_geral'].includes(reserva.modalidade) &&
+    !reserva.detalhes?.celula_timetable
+  );
+}
+
+
+// Reservas de veículo podem terminar em outro dia
+function horarioOcorrencia(reserva) {
+  const inicio = formatarHorario(reserva.horario_inicio);
+  const fim = formatarHorario(reserva.horario_fim);
+  const devolucao = reserva.detalhes?.data_devolucao_prevista;
+
+  return reserva.modalidade === 'veiculo' && devolucao && devolucao !== reserva.data
+    ? `${inicio} até ${formatarData(devolucao)} ${fim}`
+    : `${inicio}–${fim}`;
+}
+
+
+function motivoBloqueioGerenciamento(reserva) {
+  return reserva.detalhes?.celula_timetable
+    ? 'Reservas do Timetable são gerenciadas pela sincronização.'
+    : 'Esta reserva não pode mais ser alterada.';
+}
+
+
+function periodoDetalhe(reserva) {
+  const horario = `${formatarHorario(reserva.horario_inicio)} às ${formatarHorario(reserva.horario_fim)}`;
+
+  return ehSerie(reserva)
+    ? `${formatarData(reserva.primeira_data)} até ${formatarData(reserva.ultima_data)} · ${horario}`
+    : `${formatarData(reserva.data)} · ${horario}`;
 }
 
 
@@ -156,12 +235,16 @@ function ReservasAdmin() {
 
   const [busca, setBusca] = useState('');
   const [modalidade, setModalidade] = useState('todas');
+  const [filtroTiposRecurso, setFiltroTiposRecurso] = useState([]);
+  const [periodo, setPeriodo] = useState({ inicio: '', fim: '' });
 
   const [pagina, setPagina] = useState(1);
   const [total, setTotal] = useState(0);
+  const [totalReservas, setTotalReservas] = useState(0);
 
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
+  const [erroCatalogo, setErroCatalogo] = useState('');
   const [mensagemSucesso, setMensagemSucesso] =
     useState('');
 
@@ -182,6 +265,12 @@ function ReservasAdmin() {
 
   const [cancelando, setCancelando] = useState(false);
 
+  const [seriesExpandidas, setSeriesExpandidas] =
+    useState({});
+
+  const [recorrenciaGerenciada, setRecorrenciaGerenciada] =
+    useState(null);
+
   useEffect(() => {
     let ativo = true;
     Promise.all([
@@ -195,7 +284,7 @@ function ReservasAdmin() {
         if (!ativo) return;
         setAreas(areas || []); setBlocos(blocos || []); setVeiculos(veiculos || []);
         setRecursos(recursos || []); setTiposRecurso(tipos || []);
-      }).catch((falha) => { if (ativo) setErro(falha.message); });
+      }).catch((falha) => { if (ativo) setErroCatalogo(mensagemDeErro(falha, 'Não foi possível carregar as áreas, veículos e recursos.')); });
     return () => { ativo = false; };
   }, []);
 
@@ -214,8 +303,12 @@ function ReservasAdmin() {
           {
             busca: busca.trim(),
             tipo,
+            tipo_recurso: modalidade === 'recurso_geral' ? filtroTiposRecurso.join(',') : '',
+            data_inicio: periodo.inicio,
+            data_fim: periodo.fim,
             page: pagina,
             page_size: TAMANHO_PAGINA,
+            agrupar_recorrencias: true,
           },
           signal
         );
@@ -226,6 +319,7 @@ function ReservasAdmin() {
 
       setReservas(resultado.results || []);
       setTotal(resultado.count || 0);
+      setTotalReservas(resultado.total_reservas ?? resultado.count ?? 0);
     } catch (falha) {
       if (falha.name === 'AbortError') {
         return;
@@ -233,16 +327,13 @@ function ReservasAdmin() {
 
       console.error(falha);
 
-      setErro(
-        falha.message ||
-          'Não foi possível carregar as reservas.'
-      );
+      setErro(mensagemDeErro(falha, 'Não foi possível carregar as reservas.'));
     } finally {
       if (!signal?.aborted) {
         setCarregando(false);
       }
     }
-  }, [busca, modalidade, pagina]);
+  }, [busca, modalidade, filtroTiposRecurso, periodo, pagina]);
 
   useEffect(() => {
     const controle = new AbortController();
@@ -299,11 +390,87 @@ function ReservasAdmin() {
   }
 
 
+  function alternarSerie(idRecorrencia) {
+    setSeriesExpandidas((atuais) => ({
+      ...atuais,
+      [idRecorrencia]: !atuais[idRecorrencia],
+    }));
+  }
+
+
+  function abrirRecorrencia(reserva) {
+    setMensagemSucesso('');
+    setReservaDetalhes(null);
+    setRecorrenciaGerenciada({
+      id: reserva.recorrencia.id,
+      modalidade: reserva.modalidade,
+    });
+  }
+
+
+  async function recorrenciaAlterada(mensagem) {
+    setRecorrenciaGerenciada(null);
+
+    await carregarReservas();
+
+    setMensagemSucesso(mensagem);
+  }
+
+
+  function renderizarOcorrencias(reserva) {
+    if (!ehSerie(reserva) || !seriesExpandidas[reserva.recorrencia.id]) {
+      return null;
+    }
+
+    return (
+      <ul className={styles.ocorrencias}>
+        {reserva.ocorrencias.map((ocorrencia) => (
+          <li key={ocorrencia.id}>
+            <button
+              type="button"
+              className={styles.ocorrencia}
+              onClick={() =>
+                setReservaDetalhes({
+                  ...ocorrencia,
+                  ehOcorrenciaIndividual: true,
+                })
+              }
+            >
+              <strong>{formatarData(ocorrencia.data)}</strong>
+
+              <span>{horarioOcorrencia(ocorrencia)}</span>
+
+              <span
+                className={styles.status}
+                data-status={ocorrencia.status}
+              >
+                {labelStatus(ocorrencia.status)}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+
   function solicitarCancelamento(reserva) {
     setMensagemSucesso('');
     setErroCancelamento('');
     setMotivoCancelamento('');
     setReservaCancelando(reserva);
+  }
+
+
+  function abrirEdicaoDetalhes(reserva) {
+    setReservaDetalhes(null);
+    abrirEdicao(reserva);
+  }
+
+
+  function solicitarCancelamentoDetalhes(reserva) {
+    setReservaDetalhes(null);
+    solicitarCancelamento(reserva);
   }
 
 
@@ -353,10 +520,7 @@ function ReservasAdmin() {
     } catch (falha) {
       console.error(falha);
 
-      setErroCancelamento(
-        falha.message ||
-        'Não foi possível cancelar a reserva.'
-      );
+      setErroCancelamento(mensagemDeErro(falha, 'Não foi possível cancelar a reserva.'));
     } finally {
       setCancelando(false);
     }
@@ -366,17 +530,66 @@ function ReservasAdmin() {
     {
       chave: 'nome',
       titulo: 'Reserva',
-      renderizar: (reserva) => (
-        <button
-          type="button"
-          className={styles.nomeReserva}
-          onClick={() =>
-            setReservaDetalhes(reserva)
-          }
-        >
-          {reserva.nome}
-        </button>
-      ),
+      renderizar: (reserva) => {
+        if (!ehSerie(reserva)) {
+          return (
+            <button
+              type="button"
+              className={styles.nomeReserva}
+              onClick={() =>
+                setReservaDetalhes(reserva)
+              }
+            >
+              {reserva.nome}
+            </button>
+          );
+        }
+
+        const expandida = Boolean(
+          seriesExpandidas[reserva.recorrencia.id]
+        );
+
+        return (
+          <div className={styles.serie}>
+            <button
+              type="button"
+              className={styles.expandir}
+              aria-expanded={expandida}
+              aria-label={`${expandida ? 'Recolher' : 'Expandir'} reservas da série ${reserva.nome}`}
+              onClick={() =>
+                alternarSerie(reserva.recorrencia.id)
+              }
+            >
+              {expandida
+                ? <ChevronDown size={14} />
+                : <ChevronRight size={14} />}
+            </button>
+
+            <div className={styles.dadoSerie}>
+              <button
+                type="button"
+                className={styles.nomeReserva}
+                onClick={() =>
+                  setReservaDetalhes(reserva)
+                }
+              >
+                {reserva.nome}
+              </button>
+
+              <small>
+                <Repeat size={11} />
+                {TIPO_RECORRENCIA_LABEL[reserva.recorrencia.tipo] ||
+                  reserva.recorrencia.tipo}
+                {' · '}
+                {formatarData(reserva.primeira_data)} até{' '}
+                {formatarData(reserva.ultima_data)}
+                {' · '}
+                {reserva.total_ocorrencias} reservas
+              </small>
+            </div>
+          </div>
+        );
+      },
     },
     {
       chave: 'modalidade',
@@ -405,6 +618,20 @@ function ReservasAdmin() {
           </small>
         </div>
       ),
+    },
+    {
+      chave: 'data',
+      titulo: 'Data',
+      renderizar: (reserva) => {
+        const { datas, horarios } = periodoReserva(reserva);
+
+        return (
+          <div className={styles.dadoPrincipal}>
+            <span>{datas}</span>
+            <small>{horarios}</small>
+          </div>
+        );
+      },
     },
     {
       chave: 'status',
@@ -438,47 +665,49 @@ function ReservasAdmin() {
       chave: 'acoes',
       titulo: 'Ações',
       renderizar: (reserva) => {
+        if (ehSerie(reserva)) {
+          return null;
+        }
+
         const gerenciavel =
           podeGerenciar(reserva);
 
         const motivoBloqueio =
-          reserva.detalhes?.celula_timetable
-            ? 'Reservas do Timetable são gerenciadas pela sincronização.'
-            : 'Esta reserva não pode mais ser alterada.';
+          motivoBloqueioGerenciamento(reserva);
 
         return (
           <div className={styles.acoes}>
-            <button
-              type="button"
-              className={styles.editar}
-              disabled={!gerenciavel}
-              onClick={() => abrirEdicao(reserva)}
-              title={
-                gerenciavel
-                  ? 'Editar reserva'
-                  : motivoBloqueio
-              }
-              aria-label={`Editar reserva ${reserva.nome}`}
+            <Tooltip
+              texto={gerenciavel ? 'Editar reserva' : motivoBloqueio}
+              desabilitado={!gerenciavel}
             >
-              <Pencil size={14} />
-            </button>
+              <button
+                type="button"
+                className={styles.editar}
+                disabled={!gerenciavel}
+                onClick={() => abrirEdicao(reserva)}
+                aria-label={`Editar reserva ${reserva.nome}`}
+              >
+                <Pencil size={14} />
+              </button>
+            </Tooltip>
 
-            <button
-              type="button"
-              className={styles.cancelar}
-              disabled={!gerenciavel}
-              onClick={() =>
-                solicitarCancelamento(reserva)
-              }
-              title={
-                gerenciavel
-                  ? 'Cancelar reserva'
-                  : motivoBloqueio
-              }
-              aria-label={`Cancelar reserva ${reserva.nome}`}
+            <Tooltip
+              texto={gerenciavel ? 'Cancelar reserva' : motivoBloqueio}
+              desabilitado={!gerenciavel}
             >
-              <Trash2 size={14} />
-            </button>
+              <button
+                type="button"
+                className={styles.cancelar}
+                disabled={!gerenciavel}
+                onClick={() =>
+                  solicitarCancelamento(reserva)
+                }
+                aria-label={`Cancelar reserva ${reserva.nome}`}
+              >
+                <Trash2 size={14} />
+              </button>
+            </Tooltip>
           </div>
         );
       },
@@ -524,26 +753,18 @@ function ReservasAdmin() {
 
   return (
     <div className={styles.reservas}>
-      <div className={styles.cabecalhoSecao}>
-        <div>
-          <h2>Reservas</h2>
-
-          <p>
-            Consulte e gerencie todas as reservas
-            do sistema.
-          </p>
-        </div>
-
-        <RelatorioUso />
-        <span className={styles.contador}>
-          {total}{' '}
-          {total === 1
-            ? 'reserva'
-            : 'reservas'}
-        </span>
-      </div>
-
-      <div className={styles.filtros}>
+      <BarraFiltros
+        acoes={(
+          <div className={styles.acoesRelatorio}>
+            {!carregando && !erro && (
+              <span className={styles.contador} role="status">
+                {totalReservas} {totalReservas === 1 ? 'reserva' : 'reservas'}
+              </span>
+            )}
+            <RelatorioUso />
+          </div>
+        )}
+      >
         <CampoBusca
           valor={busca}
           aoAlterar={(valor) => {
@@ -557,6 +778,7 @@ function ReservasAdmin() {
           valor={modalidade}
           aoAlterar={(valor) => {
             setModalidade(valor);
+            setFiltroTiposRecurso([]);
             setPagina(1);
           }}
           valorTodos="todas"
@@ -577,58 +799,63 @@ function ReservasAdmin() {
             },
           ]}
         />
-      </div>
-
-
-      {mensagemSucesso && (
-        <p
-          className={styles.sucesso}
-          role="status"
-        >
-          {mensagemSucesso}
-        </p>
-      )}
-
-
-      {erro && (
-        <p
-          className={styles.erro}
-          role="alert"
-        >
-          {erro}
-        </p>
-      )}
-
-
-      {carregando ? (
-        <p
-          className={styles.carregando}
-          role="status"
-        >
-          Carregando reservas...
-        </p>
-      ) : (
-        <>
-          <TabelaAdministracao
-            colunas={colunas}
-            dados={reservas}
-            mensagemVazia={
-              busca.trim() ||
-              modalidade !== 'todas'
-                ? 'Nenhuma reserva encontrada para os filtros selecionados.'
-                : 'Nenhuma reserva cadastrada.'
-            }
+        {modalidade === 'recurso_geral' && (
+          <SelectRemoto
+            url="/api/tipos-recurso/"
+            valor={filtroTiposRecurso}
+            aoAlterar={(valor) => {
+              setFiltroTiposRecurso(valor);
+              setPagina(1);
+            }}
+            rotuloTodos="Todos os tipos de recurso"
+            ariaLabel="Filtrar reservas por tipo de recurso geral"
+            placeholderBusca="Buscar tipo..."
+            multiplo
           />
+        )}
+        <CampoPeriodo
+          inicio={periodo.inicio}
+          fim={periodo.fim}
+          aoAlterar={(valor) => {
+            setPeriodo(valor);
+            setPagina(1);
+          }}
+          ariaLabel="Filtrar reservas por período"
+        />
+      </BarraFiltros>
 
-          <Paginacao
-            paginaAtual={pagina}
-            totalPaginas={Math.ceil(
-              total / TAMANHO_PAGINA
-            )}
-            aoMudarPagina={setPagina}
-          />
-        </>
-      )}
+
+      <AlertBanner mensagem={mensagemSucesso} aoFechar={() => setMensagemSucesso('')} />
+
+
+      <AlertBanner tipo="erro" mensagem={erroCatalogo} />
+
+      <AlertBanner tipo="erro" mensagem={erro} />
+
+
+      <TabelaAdministracao
+        carregando={carregando}
+        rotuloCarregando="Carregando reservas..."
+        colunas={colunas}
+        dados={reservas}
+        renderizarExpansao={renderizarOcorrencias}
+        mensagemVazia={
+          busca.trim() ||
+          modalidade !== 'todas' ||
+          periodo.inicio ||
+          periodo.fim
+            ? 'Nenhuma reserva encontrada para os filtros selecionados.'
+            : 'Nenhuma reserva cadastrada.'
+        }
+      />
+
+      <Paginacao
+        paginaAtual={pagina}
+        totalPaginas={Math.ceil(
+          total / TAMANHO_PAGINA
+        )}
+        aoMudarPagina={setPagina}
+      />
 
 
       <ModalDetalheReserva
@@ -650,18 +877,18 @@ function ReservasAdmin() {
         }
         periodo={
           reservaDetalhes
-            ? `${formatarData(
-                reservaDetalhes.data
-              )} · ${formatarHorario(
-                reservaDetalhes.horario_inicio
-              )} às ${formatarHorario(
-                reservaDetalhes.horario_fim
-              )}`
+            ? periodoDetalhe(reservaDetalhes)
             : ''
         }
         detalhes={
           reservaDetalhes
             ? [
+                {
+                  rotulo: 'Total de repetições',
+                  valor: ehSerie(reservaDetalhes)
+                    ? `${reservaDetalhes.total_ocorrencias} datas agendadas`
+                    : null,
+                },
                 {
                   rotulo: 'Descrição',
                   valor:
@@ -713,10 +940,94 @@ function ReservasAdmin() {
             : []
         }
         administrativo
+        motivoAcoesIndisponiveis={
+          reservaDetalhes &&
+          !ehSerie(reservaDetalhes) &&
+          !podeGerenciar(reservaDetalhes)
+            ? motivoBloqueioGerenciamento(reservaDetalhes)
+            : undefined
+        }
+        acoesAdministrativas={
+          reservaDetalhes ? (
+            <div className={styles.acoesDetalhe}>
+              {!ehSerie(reservaDetalhes) && (
+                <>
+                  <button
+                    type="button"
+                    disabled={!podeGerenciar(reservaDetalhes)}
+                    onClick={() =>
+                      abrirEdicaoDetalhes(reservaDetalhes)
+                    }
+                  >
+                    <Pencil size={13} /> Editar
+                  </button>
+
+                  <button
+                    type="button"
+                    className={styles.cancelarDetalhe}
+                    disabled={!podeGerenciar(reservaDetalhes)}
+                    onClick={() =>
+                      solicitarCancelamentoDetalhes(reservaDetalhes)
+                    }
+                  >
+                    <Trash2 size={13} /> Cancelar
+                  </button>
+                </>
+              )}
+
+              {podeGerenciarRecorrencia(reservaDetalhes) && (
+                <button
+                  type="button"
+                  className={styles.larguraTotal}
+                  onClick={() =>
+                    abrirRecorrencia(reservaDetalhes)
+                  }
+                >
+                  <Repeat size={13} /> Gerenciar recorrência
+                </button>
+              )}
+            </div>
+          ) : null
+        }
         aoFechar={() =>
           setReservaDetalhes(null)
         }
       />
+
+
+      {recorrenciaGerenciada?.modalidade === 'area' && (
+        <GerenciarRecorrenciaModal
+          aberto
+          recorrenciaId={recorrenciaGerenciada.id}
+          areas={areas}
+          blocos={blocos}
+          aoFechar={() => setRecorrenciaGerenciada(null)}
+          aoSalvar={() => recorrenciaAlterada('Recorrência atualizada com sucesso.')}
+          aoCancelarRecorrencia={() => recorrenciaAlterada('Recorrência cancelada com sucesso.')}
+        />
+      )}
+
+
+      {recorrenciaGerenciada?.modalidade === 'veiculo' && (
+        <GerenciarRecorrenciaVeiculoModal
+          aberto
+          recorrenciaId={recorrenciaGerenciada.id}
+          aoFechar={() => setRecorrenciaGerenciada(null)}
+          aoSalvar={() => recorrenciaAlterada('Recorrência atualizada com sucesso.')}
+          aoCancelarRecorrencia={() => recorrenciaAlterada('Recorrência cancelada com sucesso.')}
+        />
+      )}
+
+
+      {recorrenciaGerenciada?.modalidade === 'recurso_geral' && (
+        <GerenciarRecorrenciaRecursoGeralModal
+          aberto
+          recorrenciaId={recorrenciaGerenciada.id}
+          aoFechar={() => setRecorrenciaGerenciada(null)}
+          aoSalvar={() => recorrenciaAlterada('Recorrência atualizada com sucesso.')}
+          aoCancelarRecorrencia={() => recorrenciaAlterada('Recorrência cancelada com sucesso.')}
+        />
+      )}
 
 
       {reservaEditando?.modalidade === 'area' && (

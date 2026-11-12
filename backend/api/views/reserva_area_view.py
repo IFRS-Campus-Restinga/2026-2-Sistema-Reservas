@@ -1,18 +1,27 @@
 from .view_helpers import listar
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django.utils.dateparse import parse_date
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from api.enumerations.status_reserva import StatusReserva
+from api.enumerations.tipo_recurso_reservavel import TipoRecursoReservavel
 from api.models.area_model import Area
 from api.models.reserva_area_model import ReservaArea
 from api.permissions.regras_comuns import LeituraPublica, UsuarioAutenticado
-from api.permissions.reserva_permissions import PodeGerenciarReserva
-from api.serializers.reserva_area_serializer import ReservaAreaSerializer, serializar_recorrencia
-from api.services.recorrencia_service import criar_reservas_recorrentes
+from api.permissions.reserva_permissions import (
+    PodeGerenciarReserva,
+    validar_autorizacao_gerenciamento_grupo,
+)
+from api.serializers.reserva_area_serializer import ReservaAreaSerializer
+from api.services.recorrencia_service import RECORRENCIA_AREA, criar_reservas_recorrentes, serializar_recorrencia
+from api.services.notificacao_service import (
+    criar_notificacao_alteracao_por_terceiro,
+    criar_notificacao_cancelamento_por_terceiro,
+)
 from api.validators.reserva_area_validator import validar_autorizacao, validar_disponibilidade_area
 from api.enumerations.auditoria_enumerations import AcaoAuditoria
 from api.services.auditoria import foto, registrar_auditoria
@@ -100,11 +109,11 @@ class ReservaAreaListCreateView(APIView):
 
             if dados_recorrencia:
                 recorrencia, datas_puladas = criar_reservas_recorrentes(
-                    request.user, dados, dados_recorrencia
+                    RECORRENCIA_AREA, request.user, dados, dados_recorrencia
                 )
 
                 return Response(
-                    {**serializar_recorrencia(recorrencia), "datas_puladas": datas_puladas},
+                    {**serializar_recorrencia(RECORRENCIA_AREA, recorrencia), "datas_puladas": datas_puladas},
                     status=status.HTTP_201_CREATED,
                 )
 
@@ -168,8 +177,12 @@ class ReservaAreaDetailView(APIView):
                 and request.data["status"] == StatusReserva.CANCELADA
             ):
                 reserva.status = StatusReserva.CANCELADA
-                reserva.save(update_fields=["status"])
+                reserva.cancelada_em = timezone.now()
+                reserva.cancelada_por = request.user
+                reserva.save(update_fields=["status", "cancelada_em", "cancelada_por"])
                 registrar_auditoria(request.user, AcaoAuditoria.CANCELAR, reserva, antes=antes, depois=foto(reserva))
+                if request.user.pk != reserva.usuario_id:
+                    criar_notificacao_cancelamento_por_terceiro(reserva, ator=request.user)
 
                 serializer = ReservaAreaSerializer(reserva)
 
@@ -210,10 +223,20 @@ class ReservaAreaDetailView(APIView):
             dados["area"] = areas[dados["area"].pk]
 
             validar_autorizacao(reserva.usuario, dados)
+            validar_autorizacao_gerenciamento_grupo(
+                request.user,
+                reserva.usuario,
+                TipoRecursoReservavel.AREA,
+                None,
+                dados["data"],
+                dados["data"],
+            )
             validar_disponibilidade_area(dados, excluir_reserva=reserva.pk)
 
             serializer.validated_data["area"] = dados["area"]
             serializer.save()
             registrar_auditoria(request.user, AcaoAuditoria.EDITAR, reserva, antes=antes, depois=foto(reserva))
+            if request.user.pk != reserva.usuario_id:
+                criar_notificacao_alteracao_por_terceiro(reserva, ator=request.user)
 
         return Response(serializer.data)

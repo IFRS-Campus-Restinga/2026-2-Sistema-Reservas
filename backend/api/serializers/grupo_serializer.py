@@ -20,6 +20,7 @@ class GrupoSerializer(serializers.ModelSerializer):
         required=False,
     )
     tipos_recurso_descricao = serializers.SerializerMethodField()
+    quantidade_membros = serializers.SerializerMethodField()
 
     class Meta:
         model = Grupo
@@ -27,6 +28,10 @@ class GrupoSerializer(serializers.ModelSerializer):
 
     def get_tipos_recurso_descricao(self, grupo):
         return [tipo_recurso.descricao for tipo_recurso in grupo.tipos_recurso]
+
+    def get_quantidade_membros(self, grupo):
+        quantidade = getattr(grupo, 'quantidade_membros', None)
+        return quantidade if quantidade is not None else grupo.membros.count()
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
@@ -68,3 +73,7 @@ class GrupoSerializer(serializers.ModelSerializer):
         if tipos_recurso_autorizados is not None:
             salvar_autorizacoes_grupo(grupo, tipos_recurso_autorizados, tipos_recurso)
         return grupo
+
+
+class CopiaGrupoSerializer(GrupoSerializer):
+    incluir_membros = serializers.BooleanField(default=True, write_only=True)

@@ -10,6 +10,9 @@ from api.services.timetable.celulas_service import CelulasService
 from api.services.timetable.reservas_timetable_service import ReservasTimetableService
 from api.enumerations.auditoria_enumerations import AcaoAuditoria, EntidadeAuditoria
 from api.services.auditoria import registrar_auditoria
+from api.services.timetable.sincronizacao_service import (
+    ultima_sincronizacao, sincronizacao_concluida,
+)
 
 
 class TimetableView(APIView):
@@ -46,6 +49,12 @@ class TimetableView(APIView):
                 "professor": c.professor,
             })
             
+        if request.query_params.get('incluir_metadados') == '1':
+            instante = ultima_sincronizacao()
+            return Response({
+                'grade': dados_organizados,
+                'ultima_sincronizacao': instante.isoformat() if instante else None,
+            })
         return Response(dados_organizados, status=status.HTTP_200_OK)
 
     def post(self, request):
@@ -76,11 +85,14 @@ class TimetableView(APIView):
                     },
                 )
 
+                instante = sincronizacao_concluida()
+
             return Response(
                 {
                     "mensagem": "Timetable sincronizada com sucesso com o EduPage.",
                     "total_aulas": len(celulas_salvas),
                     "total_reservas": total_reservas,
+                    "ultima_sincronizacao": instante.isoformat(),
                 },
                 status=status.HTTP_200_OK,
             )

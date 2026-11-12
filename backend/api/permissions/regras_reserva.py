@@ -63,6 +63,14 @@ def pode_reservar(usuario, tipo_recurso_autorizado, tipo_recurso_id=None, data=N
     )
 
 
+def ids_tipos_recurso_reservaveis(usuario, ids_tipos_recurso):
+    """Filtra os ids de TipoRecurso que o usuário pode reservar hoje, pela mesma regra de pode_reservar."""
+    return [
+        tipo_id for tipo_id in ids_tipos_recurso
+        if pode_reservar(usuario, TipoRecursoReservavel.RECURSO_GERAL, tipo_id)
+    ]
+
+
 def _tem_cobertura_grupo(usuario, tipo_recurso_autorizado, tipo_recurso_id, inicio, fim):
     if fim < inicio:
         return False

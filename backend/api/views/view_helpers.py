@@ -1,10 +1,13 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
+from django.db.models import Count, Max, Min
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
 from api.enumerations.auditoria_enumerations import AcaoAuditoria
+from api.models.reserva_model import Reserva
 from api.pagination import PaginacaoPadrao
 from api.services.filtros_listagem import filtrar_listagem
 from api.services.auditoria import foto, registrar_auditoria
@@ -21,12 +24,52 @@ class BuscarObjetoComPermissaoMixin:
         return obj
 
 
-def listar(request, queryset, serializer_class):
-    queryset = filtrar_listagem(request, queryset)
+def listar(request, queryset, serializer_class, campos_busca=None):
+    queryset = filtrar_listagem(request, queryset, campos_busca)
     paginator = PaginacaoPadrao()
     pagina = paginator.paginate_queryset(queryset, request)
     serializer = serializer_class(pagina, many=True)
     return paginator.get_paginated_response(serializer.data)
+
+
+# Reservas de veículo podem terminar em outro dia
+def _data_fim(reserva):
+    veiculo = getattr(reserva, 'reservaveiculo', None)
+    return veiculo.data_devolucao_prevista if veiculo is not None else reserva.data
+
+
+# Cada série vira um item: a próxima reserva em aberto, com as demais em "ocorrencias"
+def listar_agrupado_por_recorrencia(request, reservas, serializer_class):
+    grupos = {}
+    for reserva in reservas:
+        chave = ('serie', reserva.recorrencia_id) if reserva.recorrencia_id else ('reserva', reserva.pk)
+        grupos.setdefault(chave, []).append(reserva)
+    total_reservas = sum(len(grupo) for grupo in grupos.values())
+    paginator = PaginacaoPadrao()
+    pagina = paginator.paginate_queryset(list(grupos.values()), request)
+    ids_series = {grupo[0].recorrencia_id for grupo in pagina if grupo[0].recorrencia_id}
+    series = {
+        resumo['recorrencia_id']: resumo
+        for resumo in Reserva.objects.filter(recorrencia_id__in=ids_series).order_by()
+        .values('recorrencia_id').annotate(primeira=Min('data'), ultima=Max('data'), total=Count('id'))
+    }
+    agora = timezone.localtime()
+    resultados = []
+    for grupo in pagina:
+        grupo.sort(key=lambda r: (r.data, r.horario_inicio, r.pk))
+        futuras = [r for r in grupo if r.status not in ('CANCELADA', 'REJEITADA') and
+                   (_data_fim(r), r.horario_fim) >= (agora.date(), agora.time().replace(tzinfo=None))]
+        principal = (futuras or grupo)[0]
+        dados = serializer_class(principal).data
+        if principal.recorrencia_id:
+            serie = series[principal.recorrencia_id]
+            dados.update(primeira_data=serie['primeira'], ultima_data=serie['ultima'],
+                         total_ocorrencias=serie['total'],
+                         ocorrencias=serializer_class(grupo, many=True).data)
+        resultados.append(dados)
+    resposta = paginator.get_paginated_response(resultados)
+    resposta.data['total_reservas'] = total_reservas
+    return resposta
 
 
 def detalhar(instance, serializer_class):

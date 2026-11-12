@@ -1,5 +1,5 @@
 export { buscarUsuarioLogado } from './sessao'
-export { entrarComoPerfilDemonstracao } from './demonstracao'
+export { entrarComoUsuarioDemonstracao, listarUsuariosDemonstracao } from './demonstracao'
 export {
   listarRecursosGerais,
   criarRecursoGeral,
@@ -24,6 +24,21 @@ export {
     excluirBloco,
 } from './blocos';
 export {
+    criarTipoRecurso,
+    atualizarTipoRecurso,
+    excluirTipoRecurso,
+} from './tiposRecurso';
+export {
+    criarCategoriaRecurso,
+    atualizarCategoriaRecurso,
+    excluirCategoriaRecurso,
+} from './categoriasRecurso';
+export {
+    criarEquipamentoArea,
+    atualizarEquipamentoArea,
+    excluirEquipamentoArea,
+} from './equipamentosArea';
+export {
     buscarAreas,
     buscarArea,
     criarArea,
@@ -33,9 +48,11 @@ export {
 export {
     buscarGrupos,
     criarGrupo,
+    copiarGrupo,
     atualizarGrupo,
     excluirGrupo,
     buscarMembros,
+    buscarReservasGrupo,
     buscarCandidatos,
     adicionarMembros,
     atualizarMembro,
@@ -45,6 +62,9 @@ export {
   listarReservasRecursosGerais,
   criarReservaRecursoGeral,
   cancelarReservaRecursoGeral,
+  buscarRecorrenciaRecursoGeral,
+  atualizarRecorrenciaRecursoGeral,
+  cancelarRecorrenciaRecursoGeral,
 } from './reservasRecursosGerais';
 export {
   listarReservasAreas,
@@ -63,6 +83,9 @@ export {
   cancelarReservaVeiculo,
   consultarDisponibilidadeVeiculo,
   buscarAgendaVeiculo,
+  buscarRecorrenciaVeiculo,
+  atualizarRecorrenciaVeiculo,
+  cancelarRecorrenciaVeiculo,
 } from './reservasVeiculos';
 export { 
   confirmarReservaPendente, 

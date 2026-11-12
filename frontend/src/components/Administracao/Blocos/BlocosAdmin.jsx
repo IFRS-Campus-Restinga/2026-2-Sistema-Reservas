@@ -9,15 +9,21 @@ import { criarBloco, atualizarBloco, excluirBloco } from '../../../services';
 import TabelaAdministracao from '../TabelaAdmin/TabelaAdmin';
 import BlocoModal from './ModalBloco/BlocoModal';
 import ModalConfirmacao from '../ModalConfirmacao/ModalConfirmacao';
+import CampoBusca from '../CampoBusca/CampoBusca';
+import BarraFiltros from '../../BarraFiltros/BarraFiltros';
+import { ACESSIBILIDADE_LABELS } from '../../../utils/acessibilidadeBloco';
+import AlertBanner from '../../AlertBanner/AlertBanner';
+import Tooltip from '../../Tooltip/Tooltip';
 
 function BlocosAdministracao() {
 
     const [modalBlocoAberto, setModalBlocoAberto] = useState(false);
     const [blocoEditando, setBlocoEditando] = useState(null);
     const [blocoExcluindo, setBlocoExcluindo] = useState(null);
+    const [aviso, setAviso] = useState(null);
+    const [busca, setBusca] = useState('');
 
-
-    const { itens: blocos, carregando, erro, setErro, recarregar: carregarBlocos, paginacao } = useListaPaginada('/api/blocos/', {});
+    const { itens: blocos, carregando, erro, setErro, recarregar: carregarBlocos, paginacao } = useListaPaginada('/api/blocos/', { busca });
 
     function abrirCadastro() {
         setBlocoEditando(null);
@@ -43,6 +49,7 @@ function BlocosAdministracao() {
             await criarBloco(dados);
         }
         fecharModalBloco();
+        setAviso({ tipo: 'sucesso', mensagem: blocoEditando ? 'Bloco atualizado com sucesso.' : 'Bloco cadastrado com sucesso.' });
 
         await carregarBlocos();
     }
@@ -63,9 +70,10 @@ function BlocosAdministracao() {
             setBlocoExcluindo(null);
 
             await carregarBlocos();
+            setAviso({ tipo: 'sucesso', mensagem: 'Bloco excluído com sucesso.' });
         } catch (erro) {
             console.error(erro);
-            setErro('Não foi possível excluir o bloco.');
+            setAviso({ tipo: 'erro', mensagem: 'Não foi possível excluir o bloco.' });
         }
     }
 
@@ -99,13 +107,9 @@ function BlocosAdministracao() {
                 if (!bloco.acessibilidade || bloco.acessibilidade.length === 0) {
                     return 'Nenhuma';
                 }
-                const itens = bloco.acessibilidade.map(item => {
-                    if (item === 'PISO_TATIL') return 'Piso Tátil';
-                    if (item === 'BANHEIRO') return 'Banheiro Adaptado';
-                    if (item === 'BEBEDOURO') return 'Bebedouro Adaptado';
-                    return item;
-                });
-                return itens.join(', ');
+                return bloco.acessibilidade
+                    .map((item) => ACESSIBILIDADE_LABELS[item] || item)
+                    .join(', ');
             }
         },
         {
@@ -113,25 +117,27 @@ function BlocosAdministracao() {
             titulo: 'Ação',
             renderizar: (bloco) => (
                 <div className={styles.acoes}>
-                    <button
-                        type="button"
-                        className={styles.editar}
-                        onClick={() => abrirEdicao(bloco)}
-                        title="Editar"
-                        aria-label={`Editar bloco ${bloco.numero}`}
-                    >
-                        <Pencil size={13} />
-                    </button>
+                    <Tooltip texto="Editar bloco">
+                        <button
+                            type="button"
+                            className={styles.editar}
+                            onClick={() => abrirEdicao(bloco)}
+                            aria-label={`Editar bloco ${bloco.numero}`}
+                        >
+                            <Pencil size={13} />
+                        </button>
+                    </Tooltip>
 
-                    <button
-                        type="button"
-                        className={styles.excluir}
-                        onClick={() => solicitarExclusao(bloco)}
-                        title="Excluir"
-                        aria-label={`Excluir bloco ${bloco.numero}`}
-                    >
-                        <Trash2 size={13} />
-                    </button>
+                    <Tooltip texto="Excluir bloco">
+                        <button
+                            type="button"
+                            className={styles.excluir}
+                            onClick={() => solicitarExclusao(bloco)}
+                            aria-label={`Excluir bloco ${bloco.numero}`}
+                        >
+                            <Trash2 size={13} />
+                        </button>
+                    </Tooltip>
                 </div>
             ),
         },
@@ -139,30 +145,38 @@ function BlocosAdministracao() {
 
     return (
         <div className={styles.blocos}>
-            <div className={styles.barraAcoes}>
-                <button
-                    type="button"
-                    className={styles.adicionar}
-                    onClick={abrirCadastro}
-                >
-                    <Plus size={16} />
-                    Adicionar
-                </button>
-            </div>
-
-            {erro && (
-                <p className={styles.erro} role="alert">{erro}</p>
-            )}
-
-            {carregando ? (
-                <p className={styles.carregando} role="status">Carregando blocos...</p>
-            ) : (
-                <TabelaAdministracao
-                    colunas={colunas}
-                    dados={blocos}
-                    mensagemVazia="Nenhum bloco cadastrado."
+            <BarraFiltros
+                acoes={(
+                    <button
+                        type="button"
+                        className={styles.adicionar}
+                        onClick={abrirCadastro}
+                    >
+                        <Plus size={16} />
+                        Adicionar
+                    </button>
+                )}
+            >
+                <CampoBusca
+                    valor={busca}
+                    aoAlterar={setBusca}
+                    placeholder="Buscar bloco por nome ou número..."
                 />
-            )}
+            </BarraFiltros>
+
+            <AlertBanner tipo={aviso?.tipo} mensagem={aviso?.mensagem} aoFechar={() => setAviso(null)} />
+
+            <AlertBanner tipo="erro" mensagem={erro} />
+
+            <TabelaAdministracao
+                carregando={carregando}
+                rotuloCarregando="Carregando blocos..."
+                colunas={colunas}
+                dados={blocos}
+                mensagemVazia={busca.trim()
+                    ? 'Nenhum bloco encontrado para esta busca.'
+                    : 'Nenhum bloco cadastrado.'}
+            />
 
             <Paginacao {...paginacao} />
 

@@ -158,7 +158,7 @@
   border-left: 3px solid var(--cor-borda-reserva);
   border-radius: 6px;
   background: var(--cor-reserva);
-  padding: 3px 8px;
+  padding: 3px 6px;
   color: #fff;
   text-align: left;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -171,7 +171,7 @@
 
 /* Reserva que faz parte de uma recorrência: ícone no canto superior direito */
 .recorrente {
-  padding-right: 28px;
+  padding-right: 24px;
 }
 
 .iconeRecorrencia {
@@ -189,16 +189,78 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .reservaTitulo {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 
 .reservaDetalhe {
-  margin-top: 2px;
-  font-size: 0.75rem;
-  opacity: 0.85;
+  margin-top: 1px;
+  font-size: 0.72rem;
+  opacity: 0.9;
+}
+
+.linhaHorarioChip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  overflow: hidden;
+  margin-top: 1px;
+}
+
+.chipTimetable {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 4px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  background-color: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 4px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.campoData {
+  padding: var(--filtro-espaco-y) var(--filtro-espaco-x);
+  border: 1px solid var(--filtro-borda);
+  border-radius: var(--filtro-raio);
+  background-color: #ffffff;
+  color: var(--filtro-texto);
+  font-size: var(--filtro-fonte);
+  line-height: var(--filtro-linha);
+}
+
+.campoData:focus {
+  outline: 2px solid var(--cor-marca);
+  outline-offset: 0;
+}
+
+.botaoNavData {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  padding: 0 var(--filtro-espaco-y);
+  border: 1px solid var(--filtro-borda);
+  border-radius: var(--filtro-raio);
+  background-color: #ffffff;
+  color: var(--filtro-texto);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.botaoNavData:hover {
+  background-color: var(--bs-light, #f8f9fa);
+}
+
+.botaoNavData:focus-visible {
+  outline: 2px solid var(--cor-marca);
+  outline-offset: 0;
 }

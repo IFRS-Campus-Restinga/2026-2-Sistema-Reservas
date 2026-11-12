@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Paginacao from '../../components/Administracao/Paginacao/Paginacao';
 import { useNavigate } from "react-router-dom";
 import { useUsuario } from "../../hooks/useUsuario";
@@ -9,10 +9,18 @@ import {
 import { Check } from "lucide-react";
 
 import ModalNotificacao from "../../components/Notificacoes/ModalNotificacao";
+import AlertBanner from "../../components/AlertBanner/AlertBanner";
+import Select from "../../components/Select/Select";
 
 import styles from "./Notificacoes.module.css";
 
 import { useNotificacoes } from "../../hooks/useNotificacoes";
+import SkeletonListaItens from "../../components/Skeleton/SkeletonListaItens";
+
+const OPCOES_LEITURA = [
+  { valor: "false", rotulo: "Não lidas" },
+  { valor: "true", rotulo: "Lidas" },
+];
 
 function formatarTempo(dataHora) {
   if (!dataHora) return "";
@@ -66,8 +74,25 @@ function Notificacoes() {
     erro,
     marcarComoLida,
     marcarTodasComoLidas,
+    filtroLida,
+    mudarFiltroLida,
+    limparFiltroLida,
     paginacao,
   } = useNotificacoes();
+
+  useEffect(() => limparFiltroLida, [limparFiltroLida]);
+
+  const [erroMarcarTodas, setErroMarcarTodas] = useState('');
+
+  async function marcarTodas() {
+    try {
+      setErroMarcarTodas('');
+      await marcarTodasComoLidas();
+    } catch (falha) {
+      console.error(falha);
+      setErroMarcarTodas('Não foi possível marcar as notificações como lidas.');
+    }
+  }
 
   async function abrirNotificacao(notificacao) {
     let atualizada = notificacao;
@@ -96,7 +121,9 @@ function Notificacoes() {
           id: atualizada.reserva.id,
           modalidade:
             atualizada.reserva.modalidade,
-          termo_tipo: "responsabilidade",
+          termo_tipo:
+            atualizada.termo_tipo ||
+            "responsabilidade",
         },
       },
     });
@@ -126,7 +153,7 @@ function Notificacoes() {
             <button
               type="button"
               className={styles.marcarTodas}
-              onClick={marcarTodasComoLidas}
+              onClick={marcarTodas}
             >
               <Check size={15} />
 
@@ -135,21 +162,29 @@ function Notificacoes() {
           )}
         </header>
 
+        <div className={styles.filtros}>
+          <Select
+            valor={filtroLida}
+            aoAlterar={mudarFiltroLida}
+            opcoes={OPCOES_LEITURA}
+            valorTodos=""
+            rotuloTodos="Todas"
+            ariaLabel="Filtrar notificações por leitura"
+          />
+        </div>
 
-        {erro && (
-          <p className={styles.erro}>
-            {erro}
-          </p>
-        )}
+        <AlertBanner tipo="erro" mensagem={erroMarcarTodas} aoFechar={() => setErroMarcarTodas('')} />
+
+        <AlertBanner tipo="erro" mensagem={erro} />
 
 
         {carregando ? (
-          <p className={styles.estado}>
-            Carregando notificações...
-          </p>
+          <SkeletonListaItens variante="notificacao" espaco={9} rotulo="Carregando notificações..." />
         ) : notificacoes.length === 0 ? (
           <p className={styles.estado}>
-            Nenhuma notificação por enquanto.
+            {filtroLida
+              ? "Nenhuma notificação encontrada para o filtro selecionado."
+              : "Nenhuma notificação por enquanto."}
           </p>
         ) : (
           <div className={styles.lista}>

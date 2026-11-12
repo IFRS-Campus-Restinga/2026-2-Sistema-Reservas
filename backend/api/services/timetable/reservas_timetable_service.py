@@ -205,6 +205,7 @@ class ReservasTimetableService:
                 "area__bloco",
                 "usuario",
                 "recorrencia",
+                "celula_timetable",
                 "celula_timetable__periodo_letivo",
             )
             .order_by("horario_inicio")

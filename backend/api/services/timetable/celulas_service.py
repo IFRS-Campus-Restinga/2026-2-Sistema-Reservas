@@ -1,5 +1,4 @@
 from datetime import date
-from django.utils import timezone
 from django.db import transaction
 from api.models import Area
 from api.models.timetable import HorarioTimetable, PeriodoLetivo, CelulaTimetable
@@ -27,13 +26,11 @@ class CelulasService:
                 'data_inicio': date(hoje.year, 1, 1) if semestre_numero == 1 else date(hoje.year, 7, 1),
                 'data_fim': date(hoje.year, 6, 30) if semestre_numero == 1 else date(hoje.year, 12, 31),
                 'ativo': True,
-                'ultima_sincronizacao': timezone.now()
             }
         )
         
-        # Se ele já existia, atualizamos a data da sincronização e re-ativamos
+        # A data de sincronização só é registrada ao concluir todas as etapas.
         if not _:
-            periodo.ultima_sincronizacao = timezone.now()
             periodo.ativo = True
             periodo.save()
             
