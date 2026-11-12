@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-bootstrap';
 import { Repeat, Trash2 } from 'lucide-react';
 import Modal from '../Administracao/Modal/Modal';
@@ -65,6 +65,7 @@ function GerenciarRecorrenciaVeiculoModal({
   aoSalvar,
   aoCancelarRecorrencia,
 }) {
+  const controleModal = useRef(null);
   const [recorrencia, setRecorrencia] = useState(null);
   const [alteraveis, setAlteraveis] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -212,6 +213,8 @@ function GerenciarRecorrenciaVeiculoModal({
 
   return (
     <Modal
+      ref={controleModal}
+      confirmarDescarte
       aberto={aberto}
       titulo="Gerenciar recorrência"
       aoFechar={aoFechar}
@@ -317,7 +320,7 @@ function GerenciarRecorrenciaVeiculoModal({
             <Botao
               titulo="Cancelar"
               estilo="secundario"
-              aoClicar={aoFechar}
+              aoClicar={() => controleModal.current?.fechar()}
               desabilitado={enviando}
             />
 

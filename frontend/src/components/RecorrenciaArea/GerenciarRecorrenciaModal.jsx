@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Form } from 'react-bootstrap';
 import { Repeat, Trash2 } from 'lucide-react';
 import Modal from '../Administracao/Modal/Modal';
@@ -77,6 +77,7 @@ function GerenciarRecorrenciaModal({
   aoSalvar,
   aoCancelarRecorrencia,
 }) {
+  const controleModal = useRef(null);
   const [recorrencia, setRecorrencia] = useState(null);
   const [alteraveis, setAlteraveis] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -246,6 +247,8 @@ function GerenciarRecorrenciaModal({
 
   return (
     <Modal
+      ref={controleModal}
+      confirmarDescarte
       aberto={aberto}
       titulo="Gerenciar recorrência"
       aoFechar={aoFechar}
@@ -425,7 +428,7 @@ function GerenciarRecorrenciaModal({
             <Botao
               titulo="Cancelar"
               estilo="secundario"
-              aoClicar={aoFechar}
+              aoClicar={() => controleModal.current?.fechar()}
               desabilitado={enviando}
             />
 

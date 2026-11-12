@@ -13,6 +13,7 @@ import TimetableAdmin from "../../components/Administracao/Timetable/TimetableAd
 import GruposGerenciador from "../../components/Grupos/GruposGerenciador/GruposGerenciador";
 import AuditoriaAdmin from "../../components/Administracao/Auditoria/AuditoriaAdmin";
 import SolicitacoesAdmin from "../../components/Administracao/Solicitacoes/SolicitacoesAdmin";
+import CadastrosAdmin from "../../components/Administracao/Cadastros/CadastrosAdmin";
 
 const abas = [
   { 
@@ -42,6 +43,10 @@ const abas = [
   {
     id: "grupos",
     rotulo: "Grupos",
+  },
+  {
+    id: "cadastros",
+    rotulo: "Cadastros",
   },
   {
     id: "timetable",
@@ -104,6 +109,10 @@ function Administracao() {
 
         {abaAtiva === "grupos" && (
           <GruposGerenciador />
+        )}
+
+        {abaAtiva === "cadastros" && (
+          <CadastrosAdmin />
         )}
         
         {abaAtiva === "timetable" && (

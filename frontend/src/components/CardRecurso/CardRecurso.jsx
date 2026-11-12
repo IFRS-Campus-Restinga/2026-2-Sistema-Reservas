@@ -13,15 +13,15 @@ import styles from "./CardRecurso.module.css";
  * />
  *
  * Props:
- * - categoria: valor do enum CategoriaRecurso (ver utils/categoriaRecurso.js) que identifica
- *   o grupo de recursos exibido no card
+ * - categoria: ícone da categoria (enum IconeCategoria, ver utils/categoriaRecurso.js)
+ * - nomeCategoria (opcional): nome cadastrado da categoria; sem ele, usa o rótulo do ícone
  * - recursos: lista de RecursoGeral pertencentes a essa categoria (já filtrada pelo componente pai)
  * - aoClicar: função chamada ao clicar no card. Não é chamada quando não há nenhum recurso disponível.
  */
 
-function CardRecurso({ categoria, titulo, recursos = [], resumo, aoClicar }) {
+function CardRecurso({ categoria, nomeCategoria, titulo, recursos = [], resumo, aoClicar }) {
   const IconeCategoria = CATEGORIA_RECURSO_ICONE[categoria] ?? ICONE_CATEGORIA_PADRAO;
-  const rotuloCategoria = CATEGORIA_RECURSO_LABEL[categoria] ?? categoria;
+  const rotuloCategoria = nomeCategoria ?? CATEGORIA_RECURSO_LABEL[categoria] ?? categoria;
 
   const totalDisponivel = recursos.reduce((soma, recurso) => soma + Math.max(0, recurso.quantidade_total - recurso.quantidade_reservada), 0);
   const totalGeral = recursos.reduce((soma, recurso) => soma + recurso.quantidade_total, 0);

@@ -1,6 +1,6 @@
 import SelectRemoto from '../SelectRemoto/SelectRemoto';
 import useDisponibilidadeReserva, { intervaloDisponivel } from '../../hooks/useDisponibilidadeReserva';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Form, Alert } from 'react-bootstrap';
 import { CheckCircle2 } from 'lucide-react';
 import Modal from '../Administracao/Modal/Modal';
@@ -47,6 +47,7 @@ function ReservaAreaModal({
   aoFechar,
   aoReservar,
 }) {
+  const controleModal = useRef(null);
   const [areaId, setAreaId] = useState('');
   const [blocoId, setBlocoId] = useState('');
   const [titulo, setTitulo] = useState('');
@@ -250,6 +251,8 @@ function ReservaAreaModal({
 
   return (
     <Modal
+      ref={controleModal}
+      confirmarDescarte
       aberto={aberto}
       titulo={reservaEdicao ? 'Editar reserva' : 'Reservar área'}
       aoFechar={enviando ? undefined : aoFechar}
@@ -442,7 +445,7 @@ function ReservaAreaModal({
           <Botao
             titulo="Cancelar"
             estilo="secundario"
-            aoClicar={aoFechar}
+            aoClicar={() => controleModal.current?.fechar()}
             desabilitado={enviando}
           />
 

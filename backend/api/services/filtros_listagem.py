@@ -15,6 +15,8 @@ BUSCA = {
     'veiculo': ('nome', 'marca', 'modelo', 'placa'),
     'recursogeral': ('nome', 'codigo', 'tipo_recurso__descricao'),
     'tiporecurso': ('descricao',),
+    'categoriarecurso': ('nome',),
+    'equipamentoarea': ('nome',),
     'grupo': ('nome',),
     'membrogrupo': ('usuario__nome', 'usuario__email'),
     'reserva': ('nome', 'usuario__nome', 'usuario__email',
@@ -27,7 +29,8 @@ FILTROS = {
     'area': {'bloco': 'bloco_id', 'capacidade': 'capacidade__gte', 'status': 'status'},
     'veiculo': {'status': 'status'},
     'recursogeral': {'tipo_recurso': 'tipo_recurso_id', 'status': 'status', 'tipo_prazo': 'tipo_prazo'},
-    'tiporecurso': {'categoria': 'categoria'},
+    'tiporecurso': {'categoria': 'categoria_id'},
+    'notificacao': {'lida': 'lida'},
     'grupo': {'tipo_membro': 'tipo_membro_permitido',
               'recurso': 'autorizacoes__tipo_recurso_autorizado',
               'tipo_recurso': 'autorizacoes__tipo_recurso_id'},
@@ -130,8 +133,6 @@ def filtrar_listagem(request, queryset, campos_busca=None):
             busca |= Q(**{f'{campo}__icontains': termo})
         queryset = queryset.filter(busca)
     for parametro, campo in FILTROS.get(modelo, {}).items():
-        if modelo == 'tiporecurso' and parametro == 'categoria' and parametros.get('catalogo') == 'true':
-            campo = 'categoria_catalogo'
         if campo.endswith('_id'):
             ids = ids_do_parametro(parametros, parametro)
             if ids:
@@ -139,6 +140,10 @@ def filtrar_listagem(request, queryset, campos_busca=None):
             continue
         valor = parametros.get(parametro)
         if valor and valor not in ('todos', 'todas'):
+            if campo == 'lida':
+                if valor not in ('true', 'false'):
+                    raise ValidationError({parametro: 'Informe true ou false.'})
+                valor = valor == 'true'
             if campo == 'capacidade__gte':
                 try:
                     valor = int(valor)

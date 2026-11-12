@@ -79,7 +79,7 @@ class ReservaSerializer(serializers.ModelSerializer):
                 "id": recurso.id,
                 "nome": recurso.nome,
                 "tipo": recurso.tipo_recurso.descricao,
-                "categoria": recurso.tipo_recurso.categoria,
+                "categoria": recurso.tipo_recurso.categoria.nome if recurso.tipo_recurso.categoria else None,
             }
 
         return None

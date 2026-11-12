@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, Info } from 'lucide-react';
 import { listarTodosTiposRecurso } from '../../../services';
 import { TIPO_RECURSO_RESERVAVEL, TIPO_RECURSO_RESERVAVEL_LABEL } from '../../../utils/tipoRecursoReservavel';
@@ -52,6 +52,7 @@ function GrupoModal({
     aoFechar,
     aoSalvar,
 }) {
+    const controleModal = useRef(null);
     const [formulario, setFormulario] = useState(() => {
         const dados = montarFormulario(grupo, ehAdmin ? tipoInicial : 'aluno');
         if (copiando) dados.nome = `Cópia de ${dados.nome}`.slice(0, 100);
@@ -168,13 +169,15 @@ function GrupoModal({
 
     return (
         <Modal
+            ref={controleModal}
+            confirmarDescarte
             aberto
             titulo={copiando ? 'Copiar grupo' : grupo ? 'Editar grupo' : 'Novo grupo'}
             aoFechar={aoFechar}
             processando={salvando}
             rodape={
                 <>
-                    <button type="button" className={styles.cancelar} onClick={aoFechar} disabled={salvando}>
+                    <button type="button" className={styles.cancelar} onClick={() => controleModal.current?.fechar()} disabled={salvando}>
                         Cancelar
                     </button>
                     <button

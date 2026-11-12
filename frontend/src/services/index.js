@@ -24,6 +24,21 @@ export {
     excluirBloco,
 } from './blocos';
 export {
+    criarTipoRecurso,
+    atualizarTipoRecurso,
+    excluirTipoRecurso,
+} from './tiposRecurso';
+export {
+    criarCategoriaRecurso,
+    atualizarCategoriaRecurso,
+    excluirCategoriaRecurso,
+} from './categoriasRecurso';
+export {
+    criarEquipamentoArea,
+    atualizarEquipamentoArea,
+    excluirEquipamentoArea,
+} from './equipamentosArea';
+export {
     buscarAreas,
     buscarArea,
     criarArea,
