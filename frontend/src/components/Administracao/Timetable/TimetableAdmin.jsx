@@ -3,6 +3,7 @@ import { RefreshCw } from 'lucide-react';
 import { useTimetableStore } from '../../../store/timetableStore';
 import Select from '../../Select/Select';
 import AlertBanner from '../../AlertBanner/AlertBanner';
+import Tooltip from '../../Tooltip/Tooltip';
 import styles from './TimetableAdmin.module.css';
 import SkeletonGrade from '../../Skeleton/SkeletonGrade';
 
@@ -219,16 +220,24 @@ function TimetableAdmin() {
               filtro
             />
           </label>
-          <button 
-            type="button"
-            className={styles.botaoSincronizar} 
-            onClick={handleSincronizar}
-            disabled={sincronizando}
-            title="Sincronizar grade com o EduPage"
+          <Tooltip
+            texto={
+              sincronizando
+                ? 'Sincronização em andamento. Aguarde a conclusão.'
+                : 'Atualizar horários e bloqueios de salas com base na grade oficial do EduPage'
+            }
+            desabilitado={sincronizando}
           >
-            <RefreshCw size={15} className={sincronizando ? styles.girando : ''} />
-            {sincronizando ? 'Sincronizando...' : 'Sincronizar'}
-          </button>
+            <button 
+              type="button"
+              className={styles.botaoSincronizar} 
+              onClick={handleSincronizar}
+              disabled={sincronizando}
+            >
+              <RefreshCw size={15} className={sincronizando ? styles.girando : ''} />
+              {sincronizando ? 'Sincronizando...' : 'Sincronizar'}
+            </button>
+          </Tooltip>
         </div>
       </div>
 

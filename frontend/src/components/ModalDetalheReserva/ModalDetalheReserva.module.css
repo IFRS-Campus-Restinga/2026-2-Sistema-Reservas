@@ -164,6 +164,15 @@
   border-top: 1px solid #f3f4f6;
 }
 
+.gatilhoAcao {
+  flex: 1;
+  display: flex;
+}
+
+.gatilhoAcao > button {
+  width: 100%;
+}
+
 .acoes button {
   flex: 1;
   display: inline-flex;

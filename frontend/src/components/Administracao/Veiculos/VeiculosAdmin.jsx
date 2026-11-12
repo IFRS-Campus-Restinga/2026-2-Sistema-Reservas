@@ -14,6 +14,7 @@ import BarraFiltros from '../../BarraFiltros/BarraFiltros';
 import Select from '../../Select/Select';
 import { OPCOES_STATUS_RECURSO, STATUS_RECURSO_LABEL } from '../../../utils/statusRecurso';
 import AlertBanner from '../../AlertBanner/AlertBanner';
+import Tooltip from '../../Tooltip/Tooltip';
 
 function VeiculosAdministracao() {
     const [busca, setBusca] = useState('');
@@ -116,29 +117,31 @@ function VeiculosAdministracao() {
             titulo: 'Ação',
             renderizar: (veiculo) => (
                 <div className={styles.acoes}>
-                    <button
-                        type="button"
-                        className={styles.editar}
-                        onClick={() =>
-                            abrirEdicao(veiculo)
-                        }
-                        title="Editar"
-                        aria-label={`Editar ${veiculo.nome}`}
-                    >
-                        <Pencil size={13} />
-                    </button>
+                    <Tooltip texto="Editar veículo">
+                        <button
+                            type="button"
+                            className={styles.editar}
+                            onClick={() =>
+                                abrirEdicao(veiculo)
+                            }
+                            aria-label={`Editar ${veiculo.nome}`}
+                        >
+                            <Pencil size={13} />
+                        </button>
+                    </Tooltip>
 
-                    <button
-                        type="button"
-                        className={styles.excluir}
-                        onClick={() =>
-                            solicitarExclusao(veiculo)
-                        }
-                        title="Excluir"
-                        aria-label={`Excluir ${veiculo.nome}`}
-                    >
-                        <Trash2 size={13} />
-                    </button>
+                    <Tooltip texto="Excluir veículo">
+                        <button
+                            type="button"
+                            className={styles.excluir}
+                            onClick={() =>
+                                solicitarExclusao(veiculo)
+                            }
+                            aria-label={`Excluir ${veiculo.nome}`}
+                        >
+                            <Trash2 size={13} />
+                        </button>
+                    </Tooltip>
                 </div>
             ),
         },

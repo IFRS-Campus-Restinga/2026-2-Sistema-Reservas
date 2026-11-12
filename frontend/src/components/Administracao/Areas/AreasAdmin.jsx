@@ -16,6 +16,7 @@ import SelectRemoto from '../../SelectRemoto/SelectRemoto';
 import { OPCOES_STATUS_RECURSO, STATUS_RECURSO_LABEL } from '../../../utils/statusRecurso';
 import { TIPO_AREA_LABEL } from '../../../utils/tipoArea';
 import AlertBanner from '../../AlertBanner/AlertBanner';
+import Tooltip from '../../Tooltip/Tooltip';
 
 function AreasAdministracao() {
 
@@ -132,25 +133,27 @@ function AreasAdministracao() {
             titulo: 'Ação',
             renderizar: (area) => (
                 <div className={styles.acoes}>
-                    <button
-                        type="button"
-                        className={styles.editar}
-                        onClick={() => abrirEdicao(area)}
-                        title="Editar"
-                        aria-label={`Editar área ${area.nome}`}
-                    >
-                        <Pencil size={13} />
-                    </button>
+                    <Tooltip texto="Editar área">
+                        <button
+                            type="button"
+                            className={styles.editar}
+                            onClick={() => abrirEdicao(area)}
+                            aria-label={`Editar área ${area.nome}`}
+                        >
+                            <Pencil size={13} />
+                        </button>
+                    </Tooltip>
 
-                    <button
-                        type="button"
-                        className={styles.excluir}
-                        onClick={() => solicitarExclusao(area)}
-                        title="Excluir"
-                        aria-label={`Excluir área ${area.nome}`}
-                    >
-                        <Trash2 size={13} />
-                    </button>
+                    <Tooltip texto="Excluir área">
+                        <button
+                            type="button"
+                            className={styles.excluir}
+                            onClick={() => solicitarExclusao(area)}
+                            aria-label={`Excluir área ${area.nome}`}
+                        >
+                            <Trash2 size={13} />
+                        </button>
+                    </Tooltip>
                 </div>
             ),
         },

@@ -9,6 +9,8 @@ import TabelaAdministracao from '../../Administracao/TabelaAdmin/TabelaAdmin';
 import Paginacao from '../../Administracao/Paginacao/Paginacao';
 import BuscaUsuario from '../BuscaUsuario/BuscaUsuario';
 import Botao from '../../Botao/Botao';
+import Tooltip from '../../Tooltip/Tooltip';
+import DicaInfo from '../../Tooltip/DicaInfo';
 import { formatarValidadeMembro, formatarVigenciaGrupo, extrairMensagemErro } from '../gruposUtils';
 import AlertBanner from '../../AlertBanner/AlertBanner';
 import styles from './ModalMembros.module.css';
@@ -128,16 +130,17 @@ function ModalMembros({ grupo, aoFechar }) {
             chave: 'acao',
             titulo: 'Ação',
             renderizar: (membro) => (
-                <button
-                    type="button"
-                    className={styles.removerMembro}
-                    onClick={() => setMembroRemovendo(membro)}
-                    disabled={processandoId === membro.id}
-                    title="Remover"
-                    aria-label={`Remover ${membro.usuario_nome} do grupo`}
-                >
-                    <X size={14} />
-                </button>
+                <Tooltip texto="Remover membro do grupo">
+                    <button
+                        type="button"
+                        className={styles.removerMembro}
+                        onClick={() => setMembroRemovendo(membro)}
+                        disabled={processandoId === membro.id}
+                        aria-label={`Remover ${membro.usuario_nome} do grupo`}
+                    >
+                        <X size={14} />
+                    </button>
+                </Tooltip>
             ),
         },
     ];
@@ -159,7 +162,13 @@ function ModalMembros({ grupo, aoFechar }) {
                     <p className={styles.vigencia}>Vigência do grupo: {formatarVigenciaGrupo(grupo)}</p>
 
                     <section className={styles.secao}>
-                        <h3 className={styles.tituloSecao}>Adicionar membros</h3>
+                        <div className={styles.tituloComDica}>
+                            <h3 className={styles.tituloSecao}>Adicionar membros</h3>
+                            <DicaInfo
+                                texto="Os membros adicionados só conseguem reservar durante a vigência do grupo e até a data limite individual, se informada."
+                                rotulo="Explicação sobre validade dos membros"
+                            />
+                        </div>
                         <form className={styles.formAdicionar} onSubmit={(evento) => { evento.preventDefault(); setConfirmandoAdicao(true); }}>
                             <BuscaUsuario
                                 grupoId={grupo.id}
@@ -168,14 +177,15 @@ function ModalMembros({ grupo, aoFechar }) {
                                 aoSelecionar={(usuario) => setSelecionados((anteriores) => [...anteriores, usuario])}
                                 placeholder="Buscar usuário para adicionar..."
                             />
-                            <input
-                                type="date"
-                                className={styles.campoData}
-                                value={validoAte}
-                                onChange={(evento) => setValidoAte(evento.target.value)}
-                                title="Vazio usa a validade do grupo"
-                                aria-label="Válido até"
-                            />
+                            <Tooltip texto="Deixe em branco para seguir a validade do grupo.">
+                                <input
+                                    type="date"
+                                    className={styles.campoData}
+                                    value={validoAte}
+                                    onChange={(evento) => setValidoAte(evento.target.value)}
+                                    aria-label="Válido até"
+                                />
+                            </Tooltip>
                             <Botao
                                 titulo={selecionados.length > 0 ? `Adicionar (${selecionados.length})` : 'Adicionar'}
                                 icone={UserPlus}
