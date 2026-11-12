@@ -28,6 +28,7 @@ import {
   podeReservarArea,
   podeReservarRecursoGeral,
   podeReservarVeiculo,
+  podeVerMinhasReservas,
 } from "../utils/permissoes";
 
 export const ROTAS = [
@@ -82,7 +83,7 @@ export const ROTAS = [
     id: "minhas-reservas",
     path: "/minhas-reservas",
     componente: MinhasReservas,
-    permissao: podeReservarAlgo,
+    permissao: podeVerMinhasReservas,
     menu: { titulo: "Minhas Reservas", icone: ClipboardList },
   },
   {
