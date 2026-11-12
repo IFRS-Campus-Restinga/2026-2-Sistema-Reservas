@@ -28,6 +28,7 @@ import { cancelarReservaRecursoGeral } from '../../services/reservasRecursosGera
 import { statusReservaApresentado, SITUACAO_RESERVA_LABEL } from '../../utils/reserva';
 import { ehAdministrador } from '../../utils/permissoes';
 import styles from './MinhasReservas.module.css';
+import SkeletonListaItens from '../../components/Skeleton/SkeletonListaItens';
 
 const STATUS_ALTERAVEIS = {
   recurso_geral: ['PENDENTE', 'CONFIRMADA', 'AGUARDANDO_TERMO'],
@@ -374,8 +375,6 @@ function MinhasReservas() {
 
   return (
     <div className={styles.pagina}>
-      {carregando && <p role="status">Carregando reservas...</p>}
-
       <BarraFiltros>
         <CampoBusca
           valor={busca}
@@ -425,6 +424,8 @@ function MinhasReservas() {
       <AlertBanner tipo="erro" mensagem={erro} />
 
       <section className={styles.lista} aria-label="Minhas reservas">
+        {carregando && <SkeletonListaItens variante="reserva" quantidade={6} rotulo="Carregando reservas..." />}
+
         {!carregando && ordenadas.length === 0 && (
           <p className={styles.vazio}>
             {filtrando

@@ -101,16 +101,6 @@
   color: var(--cor-marca);
 }
 
-.carregando {
-  margin: 0;
-  padding: 40px 16px;
-  border: 1px solid #f3f4f6;
-  border-radius: 12px;
-  background-color: #ffffff;
-  color: #9ca3af;
-  text-align: center;
-}
-
 /* ADICIONADO */
 
 .nomeReserva {

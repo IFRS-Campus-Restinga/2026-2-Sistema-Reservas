@@ -11,6 +11,7 @@ import CardVeiculo from '../../components/CardVeiculo/CardVeiculo';
 import Select from '../../components/Select/Select';
 import AlertBanner from '../../components/AlertBanner/AlertBanner';
 import styles from './Veiculos.module.css';
+import SkeletonCardLista from '../../components/Skeleton/SkeletonCardLista';
 
 const OPCOES_STATUS = [
   { valor: 'ATIVO', rotulo: 'Ativos' },
@@ -35,7 +36,7 @@ function Veiculos() {
 
       <AlertBanner tipo="erro" mensagem={erro} />
       {carregando ? (
-        <p className="text-muted" role="status">Carregando veículos...</p>
+        <SkeletonCardLista rotulo="Carregando veículos..." />
       ) : filtrados.length === 0 ? (
         <div className={`text-center bg-white border rounded-3 py-5 px-3 text-muted ${styles.vazio}`}>
           <Search size={32} className="d-block mx-auto mb-2 opacity-25" />

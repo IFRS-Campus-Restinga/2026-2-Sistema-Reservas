@@ -18,6 +18,7 @@ import { FILTRO_TODOS } from '../gruposUtils';
 import { TIPO_RECURSO_RESERVAVEL, TIPO_RECURSO_RESERVAVEL_LABEL } from '../../../utils/tipoRecursoReservavel';
 import AlertBanner from '../../AlertBanner/AlertBanner';
 import styles from './GruposGerenciador.module.css';
+import SkeletonListaItens from '../../Skeleton/SkeletonListaItens';
 
 const OPCOES_RECURSO = Object.entries(TIPO_RECURSO_RESERVAVEL_LABEL)
     .map(([valor, rotulo]) => ({ valor, rotulo }));
@@ -189,7 +190,7 @@ function GruposGerenciador({ apenasMeusGrupos = false }) {
             <AlertBanner tipo="erro" mensagem={erro} />
 
             {carregando ? (
-                <p className={styles.carregando} role="status">Carregando grupos...</p>
+                <SkeletonListaItens variante="grupo" espaco={16} quantidade={4} rotulo="Carregando grupos..." />
             ) : gruposDaTela.length === 0 ? (
                 <p className={styles.vazio}>
                     {filtrando

@@ -11,6 +11,7 @@ import Select from "../../components/Select/Select";
 import CardArea from "../../components/CardArea/CardArea";
 import AlertBanner from "../../components/AlertBanner/AlertBanner";
 import styles from "./Areas.module.css";
+import SkeletonCardLista from "../../components/Skeleton/SkeletonCardLista";
 
 const OPCOES_CAPACIDADE = [
   { valor: 20, rotulo: "20+ pessoas" },
@@ -55,7 +56,7 @@ function Areas() {
       <AlertBanner tipo="erro" mensagem={erro} />
 
       {carregando ? (
-        <p className="text-muted" role="status">Carregando áreas...</p>
+        <SkeletonCardLista rotulo="Carregando áreas..." />
       ) : areasFiltradas.length === 0 ? (
         <div className={`text-center bg-white border rounded-3 py-5 px-3 text-muted ${styles.vazio}`}>
           <Search size={32} className="d-block mx-auto mb-2 opacity-25" />

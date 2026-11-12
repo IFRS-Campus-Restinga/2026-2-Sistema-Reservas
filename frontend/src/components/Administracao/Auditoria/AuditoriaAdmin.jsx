@@ -248,15 +248,13 @@ function AuditoriaAdmin() {
 
             <AlertBanner tipo="erro" mensagem={erro} />
 
-            {carregando ? (
-                <p className={styles.carregando} role="status">Carregando registros...</p>
-            ) : (
-                <TabelaAdministracao
-                    colunas={colunas}
-                    dados={logs}
-                    mensagemVazia="Nenhum registro de auditoria encontrado."
-                />
-            )}
+            <TabelaAdministracao
+                carregando={carregando}
+                rotuloCarregando="Carregando registros..."
+                colunas={colunas}
+                dados={logs}
+                mensagemVazia="Nenhum registro de auditoria encontrado."
+            />
 
             <Paginacao
                 paginaAtual={pagina}

@@ -193,17 +193,15 @@ function RecursosAdmin() {
 
             <AlertBanner tipo="erro" mensagem={erro} />
 
-            {carregando ? (
-                <p className={styles.carregando} role="status">Carregando recursos...</p>
-            ) : (
-                <TabelaAdministracao
-                    colunas={colunas}
-                    dados={recursos}
-                    mensagemVazia={filtrando
-                        ? 'Nenhum recurso encontrado para os filtros aplicados.'
-                        : 'Nenhum recurso cadastrado.'}
-                />
-            )}
+            <TabelaAdministracao
+                carregando={carregando}
+                rotuloCarregando="Carregando recursos..."
+                colunas={colunas}
+                dados={recursos}
+                mensagemVazia={filtrando
+                    ? 'Nenhum recurso encontrado para os filtros aplicados.'
+                    : 'Nenhum recurso cadastrado.'}
+            />
 
             <Paginacao {...paginacao} />
 

@@ -198,17 +198,15 @@ function AreasAdministracao() {
 
             <AlertBanner tipo="erro" mensagem={erro} />
 
-            {carregando ? (
-                <p className={styles.carregando} role="status">Carregando áreas...</p>
-            ) : (
-                <TabelaAdministracao
-                    colunas={colunas}
-                    dados={areas}
-                    mensagemVazia={filtrando
-                        ? 'Nenhuma área encontrada para os filtros aplicados.'
-                        : 'Nenhuma área cadastrada.'}
-                />
-            )}
+            <TabelaAdministracao
+                carregando={carregando}
+                rotuloCarregando="Carregando áreas..."
+                colunas={colunas}
+                dados={areas}
+                mensagemVazia={filtrando
+                    ? 'Nenhuma área encontrada para os filtros aplicados.'
+                    : 'Nenhuma área cadastrada.'}
+            />
 
             <Paginacao {...paginacao} />
 

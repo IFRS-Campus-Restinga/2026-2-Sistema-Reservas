@@ -178,17 +178,15 @@ function VeiculosAdministracao() {
 
             <AlertBanner tipo="erro" mensagem={erro} />
 
-            {carregando ? (
-                <p className={styles.carregando} role="status">Carregando veículos...</p>
-            ) : (
-                <TabelaAdministracao
-                    colunas={colunas}
-                    dados={veiculos}
-                    mensagemVazia={filtrando
-                        ? 'Nenhum veículo encontrado para os filtros aplicados.'
-                        : 'Nenhum veículo cadastrado.'}
-                />
-            )}
+            <TabelaAdministracao
+                carregando={carregando}
+                rotuloCarregando="Carregando veículos..."
+                colunas={colunas}
+                dados={veiculos}
+                mensagemVazia={filtrando
+                    ? 'Nenhum veículo encontrado para os filtros aplicados.'
+                    : 'Nenhum veículo cadastrado.'}
+            />
 
             <Paginacao {...paginacao} />
 
