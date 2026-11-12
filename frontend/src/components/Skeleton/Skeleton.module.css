@@ -1,0 +1,208 @@
+/* Estilos compartilhados por todos os skeletons de carregamento. */
+
+.visual {
+  color: #94a3b8;
+  opacity: 0;
+  animation: aparecer 150ms ease 200ms forwards;
+}
+
+@keyframes aparecer {
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visual :global(.placeholder) {
+    animation: none;
+  }
+}
+
+.bloco {
+  display: block;
+  flex-shrink: 0;
+  min-height: 0;
+  max-width: 100%;
+  cursor: default;
+}
+
+.linha {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* ---------- Cards (Áreas, Veículos, Recursos) ---------- */
+
+.card {
+  border-color: #f3f4f6;
+}
+
+/* ---------- Detalhe (área e veículo) ---------- */
+
+.cabecalhoDetalhe {
+  background: #e2e8f0;
+}
+
+/* ---------- Lista de itens ---------- */
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.conteudoItem {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.item[data-variante="reserva"] {
+  gap: 16px;
+  padding: 14px 20px;
+  border: 1px solid #e4eaf1;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.item[data-variante="notificacao"] {
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.item[data-variante="solicitacao"] {
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.item[data-variante="solicitacao"] .conteudoItem {
+  min-width: 220px;
+}
+
+.item[data-variante="grupo"] {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid #f3f4f6;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.acoesItem {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 520px) {
+  .item[data-variante="reserva"] {
+    gap: 10px;
+    padding: 13px;
+  }
+}
+
+/* ---------- Grade (Calendário e Timetable) ---------- */
+
+.barraGrade {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border-bottom: 1px solid #dee2e6;
+  background: #fff;
+}
+
+.legendaGrade {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 24px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #dee2e6;
+  background: #fff;
+}
+
+@media (min-width: 768px) {
+  .barraGrade,
+  .legendaGrade {
+    padding-right: 24px;
+    padding-left: 24px;
+  }
+}
+
+.espaco {
+  flex-grow: 1;
+}
+
+.grade {
+  overflow: hidden;
+  background: #fff;
+}
+
+.linhaGrade {
+  display: flex;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.celulaHora {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: flex-end;
+  width: 64px;
+  padding: 6px 8px 0 0;
+  border-right: 1px solid #f3f4f6;
+}
+
+.celulaGrade {
+  flex: 1 0 160px;
+  min-width: 160px;
+  padding: 4px;
+  border-right: 1px solid #f3f4f6;
+}
+
+.celulaGrade:last-child {
+  border-right: none;
+}
+
+.cabecalhoGrade {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+}
+
+/* Variante em cartões soltos, como a grade horária do EduPage. */
+.gradeCartoes {
+  display: grid;
+  grid-template-columns: 80px repeat(var(--colunas), 1fr);
+  gap: 10px;
+}
+
+.celulaLateral {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}

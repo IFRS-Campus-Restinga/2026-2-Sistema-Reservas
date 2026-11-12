@@ -217,3 +217,26 @@
   outline: 2px solid var(--cor-marca);
   outline-offset: 0;
 }
+
+.botaoNavData {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  padding: 0 var(--filtro-espaco-y);
+  border: 1px solid var(--filtro-borda);
+  border-radius: var(--filtro-raio);
+  background-color: #ffffff;
+  color: var(--filtro-texto);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.botaoNavData:hover {
+  background-color: var(--bs-light, #f8f9fa);
+}
+
+.botaoNavData:focus-visible {
+  outline: 2px solid var(--cor-marca);
+  outline-offset: 0;
+}

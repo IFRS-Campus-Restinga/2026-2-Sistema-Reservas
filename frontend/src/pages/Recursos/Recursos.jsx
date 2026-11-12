@@ -11,6 +11,7 @@ import Select from '../../components/Select/Select';
 import { CATEGORIA_RECURSO_LABEL } from '../../utils/categoriaRecurso';
 import AlertBanner from '../../components/AlertBanner/AlertBanner';
 import styles from './Recursos.module.css';
+import SkeletonCardLista from '../../components/Skeleton/SkeletonCardLista';
 
 function Recursos() {
   const navigate = useNavigate();
@@ -52,7 +53,9 @@ function Recursos() {
           <span>{total} tipo(s) encontrado(s)</span>
         </div>
 
-        {carregando ? <p role="status">Carregando recursos...</p> : tiposExibidos.length === 0 ? (
+        {carregando ? (
+          <SkeletonCardLista rotulo="Carregando recursos..." quantidade={6} classeGrade={styles.grade} />
+        ) : tiposExibidos.length === 0 ? (
           <div className={styles.vazio}>
             <PackageSearch size={30} aria-hidden="true" />
             <p>Nenhum recurso encontrado.</p>

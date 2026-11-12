@@ -165,17 +165,15 @@ function BlocosAdministracao() {
 
             <AlertBanner tipo="erro" mensagem={erro} />
 
-            {carregando ? (
-                <p className={styles.carregando} role="status">Carregando blocos...</p>
-            ) : (
-                <TabelaAdministracao
-                    colunas={colunas}
-                    dados={blocos}
-                    mensagemVazia={busca.trim()
-                        ? 'Nenhum bloco encontrado para esta busca.'
-                        : 'Nenhum bloco cadastrado.'}
-                />
-            )}
+            <TabelaAdministracao
+                carregando={carregando}
+                rotuloCarregando="Carregando blocos..."
+                colunas={colunas}
+                dados={blocos}
+                mensagemVazia={busca.trim()
+                    ? 'Nenhum bloco encontrado para esta busca.'
+                    : 'Nenhum bloco cadastrado.'}
+            />
 
             <Paginacao {...paginacao} />
 
