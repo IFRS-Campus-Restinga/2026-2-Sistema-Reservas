@@ -80,8 +80,11 @@ Cada pessoa que rodar o HUB localmente precisa cadastrar o sistema de novo (o `a
 
 ```powershell
 python manage.py migrate
+python manage.py inicializar_admins
 python manage.py runserver 8001
 ```
+
+O `inicializar_admins` autoriza como admin os e-mails de `backend/scripts/administradores.json` (ex.: `[{"email": "fulano@restinga.ifrs.edu.br"}]`). Quem estiver na lista já entra como admin no primeiro acesso; os grupos do HUB não definem mais quem é admin.
 
 Acesse sempre como **`http://localhost:8001`**, nunca `127.0.0.1:8001` — os cookies do HUB são host-only e ficam presos ao host exato usado no login (`localhost`). Usar `127.0.0.1` faz o navegador não mandar o cookie, e a autenticação parece simplesmente não funcionar.
 

@@ -13,6 +13,7 @@ Ao criar views que alteram dados, siga o guia de auditoria: [docs/AUDITORIA.md](
 ```powershell
 cd backend
 python manage.py migrate
+python manage.py inicializar_admins
 python manage.py runserver 8001
 ```
 

@@ -1,6 +1,8 @@
 import uuid
 
+from accounts.enumerations import Papel
 from accounts.models import HubUser
+from accounts.services.administrador_service import autorizar_administrador
 from hub_integrations.services.mapeamento_papel import mapear_papel
 
 PERFIL_DEMONSTRACAO_PADRAO = 'admin'
@@ -11,7 +13,7 @@ USUARIOS_DEMONSTRACAO = {
         'username': 'Helena Duarte',
         'email': 'helena.duarte@ifrs.edu.br',
         'access_profile': 'servidor',
-        'groups': ['admin'],
+        'admin': True,
         'descricao': 'Administradora principal',
     },
     'admin-2': {
@@ -19,7 +21,7 @@ USUARIOS_DEMONSTRACAO = {
         'username': 'Otávio Ramos',
         'email': 'otavio.ramos@ifrs.edu.br',
         'access_profile': 'servidor',
-        'groups': ['admin'],
+        'admin': True,
         'descricao': 'Segundo administrador',
     },
     'servidor': {
@@ -27,7 +29,6 @@ USUARIOS_DEMONSTRACAO = {
         'username': 'Paulo Rezende',
         'email': 'paulo.rezende@ifrs.edu.br',
         'access_profile': 'servidor',
-        'groups': [],
         'descricao': 'Com grupo de veículos',
     },
     'servidor-sem-grupo': {
@@ -35,7 +36,6 @@ USUARIOS_DEMONSTRACAO = {
         'username': 'Sônia Prado',
         'email': 'sonia.prado@ifrs.edu.br',
         'access_profile': 'servidor',
-        'groups': [],
         'descricao': 'Sem grupo',
     },
     'aluno': {
@@ -43,7 +43,6 @@ USUARIOS_DEMONSTRACAO = {
         'username': 'Clara Nogueira',
         'email': 'clara.nogueira@aluno.ifrs.edu.br',
         'access_profile': 'aluno',
-        'groups': [],
         'descricao': 'Com grupos vigentes',
     },
     'aluno-sem-grupo': {
@@ -51,7 +50,6 @@ USUARIOS_DEMONSTRACAO = {
         'username': 'Diego Azevedo',
         'email': 'diego.azevedo@aluno.ifrs.edu.br',
         'access_profile': 'aluno',
-        'groups': [],
         'descricao': 'Sem grupo',
     },
     'aluno-grupo-vencido': {
@@ -59,7 +57,6 @@ USUARIOS_DEMONSTRACAO = {
         'username': 'Bianca Teixeira',
         'email': 'bianca.teixeira@aluno.ifrs.edu.br',
         'access_profile': 'aluno',
-        'groups': [],
         'descricao': 'Com grupo vencido',
     },
     'convidado': {
@@ -67,7 +64,6 @@ USUARIOS_DEMONSTRACAO = {
         'username': 'Marcos Visitante',
         'email': 'marcos.visitante@example.com',
         'access_profile': 'convidado',
-        'groups': [],
         'descricao': 'Apenas visualiza o calendário',
     },
 }
@@ -85,7 +81,7 @@ def listar_usuarios_demonstracao():
             'chave': chave,
             'id': str(dados['id']),
             'nome': dados['username'],
-            'papel': mapear_papel(dados['access_profile'], dados['groups']),
+            'papel': Papel.ADMIN if dados.get('admin') else mapear_papel(dados['access_profile'], dados['email']),
             'descricao': dados['descricao'],
         }
         for chave, dados in USUARIOS_DEMONSTRACAO.items()
@@ -100,5 +96,7 @@ def garantir_usuario_demonstracao(perfil):
         'access_profile': dados['access_profile'],
         'is_active': True,
     }
-    papel = mapear_papel(dados['access_profile'], dados['groups'])
+    if dados.get('admin'):
+        autorizar_administrador(dados['email'])
+    papel = mapear_papel(dados['access_profile'], dados['email'])
     return HubUser.objects.sincronizar(dados['id'], dados_hub, papel)

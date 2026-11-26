@@ -1,4 +1,5 @@
 from accounts.enumerations import Papel
+from accounts.services.administrador_service import e_administrador
 
 _PAPEL_POR_ACCESS_PROFILE = {
     'servidor': Papel.SERVIDOR,
@@ -7,8 +8,8 @@ _PAPEL_POR_ACCESS_PROFILE = {
 }
 
 
-def mapear_papel(access_profile: str, groups: list[str]) -> str:
-    if 'admin' in groups:
+def mapear_papel(access_profile: str, email: str) -> str:
+    if e_administrador(email):
         return Papel.ADMIN
 
     return _PAPEL_POR_ACCESS_PROFILE.get(access_profile, Papel.CONVIDADO)

@@ -13,6 +13,7 @@ class HubUserManager(BaseUserManager):
                 'papel': papel,
                 'is_active': dados_hub.get('is_active', False),
                 'is_staff': papel == Papel.ADMIN,
+                'is_superuser': papel == Papel.ADMIN,
             },
         )
         return usuario

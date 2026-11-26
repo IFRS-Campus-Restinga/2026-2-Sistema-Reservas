@@ -14,7 +14,7 @@ def gerar_token_demonstracao(perfil):
         'iat': int(timezone.now().timestamp()),
         'jti': uuid.uuid4().hex,
         'user_id': str(dados['id']),
-        'groups': dados['groups'],
+        'groups': [],
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
 

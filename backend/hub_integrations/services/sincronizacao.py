@@ -10,7 +10,7 @@ def sincronizar_usuario(payload_jwt: dict):
 
     dados_hub = buscar_usuario_hub(user_id)
     if dados_hub is not None:
-        papel = mapear_papel(dados_hub.get('access_profile', ''), payload_jwt.get('groups', []))
+        papel = mapear_papel(dados_hub.get('access_profile', ''), dados_hub.get('email', ''))
         return HubUser.objects.sincronizar(user_id, dados_hub, papel)
 
     return HubUser.objects.filter(id=user_id).first()

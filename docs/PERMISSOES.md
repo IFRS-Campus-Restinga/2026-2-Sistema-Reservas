@@ -12,6 +12,8 @@
 
 Um grupo é "vigente" quando está dentro da validade dele e da validade do membro.
 
+Servidor, aluno e convidado vêm do perfil de acesso do HUB. O admin **não** vem do HUB: é quem tem o e-mail cadastrado em Administradores autorizados, preenchido pelo comando `python manage.py inicializar_admins` a partir de `backend/scripts/administradores.json`. O papel é recalculado sempre que o usuário é sincronizado com o HUB (no login e na renovação da sessão).
+
 Todas as regras ficam em `backend/api/permissions/`.
 
 ## Backend

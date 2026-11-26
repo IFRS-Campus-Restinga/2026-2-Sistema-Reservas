@@ -1,4 +1,5 @@
 from django.contrib import admin
-from .models import HubUser
+from .models import AdministradorAutorizado, HubUser
 
 admin.site.register(HubUser)
+admin.site.register(AdministradorAutorizado)
